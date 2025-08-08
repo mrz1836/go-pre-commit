@@ -1,10 +1,10 @@
 cff-version: 1.2.0
-message: "If you find go-template useful in your software or research, please cite this project using the following citation metadata. A citation helps support future development and encourages best practices in software reuse."
-title: "go-template"
-version: "1.2.0"
-url: "https://github.com/mrz1836/go-template"
-repository: "https://github.com/mrz1836/go-template"
-repository-code: "https://github.com/mrz1836/go-template"
+message: "If you find go-pre-commit useful in your software or research, please cite this project using the following citation metadata. A citation helps support future development and encourages best practices in software reuse."
+title: "go-pre-commit"
+version: "1.0.0"
+url: "https://github.com/mrz1836/go-pre-commit"
+repository: "https://github.com/mrz1836/go-pre-commit"
+repository-code: "https://github.com/mrz1836/go-pre-commit"
 date-released: 2021-04-24
 license: "Apache-2.0"
 type: software
@@ -17,13 +17,10 @@ keywords:
   - go-module
   - go-package
   - golang
-  - starter-template
-  - boilerplate
-  - library-scaffold
-  - CI/CD
-  - GitHub Actions
-  - GoReleaser
-  - test-automation
-  - open-source
+  - pre-commit
+  - pre-commit-hook
+  - code-quality
+  - code-linting
+  - code-formatting
 
-abstract: "go-template is a production-ready starter scaffold for Go libraries that bundles opinionated project structure, module management, and fully automated CI/CD workflows. It integrates GitHub Actions, GoReleaser, comprehensive testing and linting, and security scanning so maintainers can focus on writing code instead of setup and infrastructure."
+abstract: "go-pre-commit is a Go module that provides a pre-commit hook for Go projects, ensuring that code is formatted and linted before committing changes. It integrates with popular tools like `gofmt`, `golint`, and `go vet` to maintain code quality and consistency across Go projects. This module is designed to be easy to use and configure, making it a valuable addition to any Go developer's toolkit."

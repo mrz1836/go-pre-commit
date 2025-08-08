@@ -27,8 +27,10 @@ go.list
 # Notes
 todo.md
 
-# Distribution
-dist
+# Build output directory
+/bin/
+/build/
+/dist/
 
 # Code coverage
 coverage.txt
@@ -37,8 +39,9 @@ coverage.out
 # Fuzz Tests
 testdata
 
-# AI Models
-.claude
-
 # Node modules
 node_modules/
+
+# Binary executables
+/go-pre-commit
+/go-pre-commit.exe
