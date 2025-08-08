@@ -58,14 +58,11 @@
 			"errorlint",
 			"exhaustive",
 			"forbidigo",
-			"funcorder",
 			"gocheckcompilerdirectives",
 			"gochecknoglobals",
 			"gochecknoinits",
 			"gochecksumtype",
-			"gocognit",
 			"goconst",
-			"gocyclo",
 			"godox",
 			"goheader",
 			"gomoddirectives",
@@ -80,7 +77,6 @@
 			"misspell",
 			"musttag",
 			"nakedret",
-			"nestif",
 			"nilerr",
 			"nilnesserr",
 			"nilnil",
@@ -102,13 +98,17 @@
 			"unparam",
 			"unused",
 			"wastedassign",
-			"wsl_v5",
 			"zerologlint"
 		],
 		"disable": [
 			"gocritic",
-			"godot"
-		],
+			"godot",
+      "funcorder",
+      "gocognit",
+      "gocyclo",
+      "nestif",
+      "wsl_v5"
+    ],
 		"settings": {
 			"funcorder": {
 				"constructor-after-struct": true
