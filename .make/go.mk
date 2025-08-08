@@ -81,10 +81,10 @@ govulncheck: ## Scan for vulnerabilities
 	@echo "Running govulncheck..."
 	@govulncheck -show verbose ./...
 
-.PHONY: install
-install: ## Install the application binary
-	@echo "Installing binary..."
-	@go build -o $$GOPATH/bin/$(BINARY_NAME) $(TAGS) $(GOFLAGS)
+#.PHONY: install
+#install: ## Install the application binary
+#	@echo "Installing binary..."
+#	@go build -o $$GOPATH/bin/$(BINARY_NAME) $(TAGS) $(GOFLAGS)
 
 .PHONY: install-go
 install-go: ## Install using go install with specific version

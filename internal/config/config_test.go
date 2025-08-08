@@ -17,7 +17,7 @@ func TestLoad(t *testing.T) {
 	defer func() { _ = os.Chdir(originalWD) }()
 
 	// Change to repository root for test
-	err = os.Chdir("../../../..")
+	err = os.Chdir("../..")
 	require.NoError(t, err)
 
 	// Test loading configuration

@@ -227,17 +227,12 @@ func TestVersionInfo(t *testing.T) {
 		}
 	}()
 
-	// Ensure we're in the correct directory for building
-	expectedWD := "/Users/mrz/projects/go-pre-commit/cmd/gofortress-pre-commit"
-	if originalWD != expectedWD {
-		err = os.Chdir(expectedWD)
-		require.NoError(t, err, "Failed to change to correct directory")
-	}
+	// No need to change directory - tests should run from where they are
 
 	// Build a test binary
 	ctx := context.Background()
 	testBinary := "./test-version-binary"
-	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", testBinary, ".")
+	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", testBinary, "./cmd/gofortress-pre-commit")
 
 	// Add debug output for build failures
 	var stdout, stderr bytes.Buffer
@@ -291,12 +286,7 @@ func TestMainExitOnError(t *testing.T) {
 		}
 	}()
 
-	// Ensure we're in the correct directory for building
-	expectedWD := "/Users/mrz/projects/go-broadcast/.github/pre-commit/cmd/gofortress-pre-commit"
-	if originalWD != expectedWD {
-		err = os.Chdir(expectedWD)
-		require.NoError(t, err, "Failed to change to correct directory")
-	}
+	// No need to change directory - tests should run from where they are
 
 	// Reset command state before test
 	cmd.ResetCommand()
@@ -305,7 +295,7 @@ func TestMainExitOnError(t *testing.T) {
 	// Build a test binary
 	ctx := context.Background()
 	testBinary := "./test-exit-binary"
-	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", testBinary, ".")
+	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", testBinary, "./cmd/gofortress-pre-commit")
 
 	// Add debug output for build failures
 	var stdout, stderr bytes.Buffer
