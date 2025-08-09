@@ -1,5 +1,5 @@
-# 🚀 go-pre-commit
-> Tiny go powered pre-commit hook scaffold for Go libraries
+# 🔒 go-pre-commit
+> Lightning-fast, Git pre-commit hooks for Go projects - built in pure Go
 
 <table>
   <thead>
