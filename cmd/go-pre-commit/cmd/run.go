@@ -97,7 +97,7 @@ func runChecks(_ *cobra.Command, args []string) error {
 
 	// Check if pre-commit system is enabled
 	if !cfg.Enabled {
-		formatter.Warning("Pre-commit system is disabled in configuration (ENABLE_PRE_COMMIT_SYSTEM=false)")
+		formatter.Warning("Pre-commit system is disabled in configuration (ENABLE_GO_PRE_COMMIT=false)")
 		return nil
 	}
 

@@ -77,7 +77,7 @@ This is **go-pre-commit**: a lightning-fast, Go-native git pre-commit framework 
    ```
 
 6. **Environment configuration**
-   All settings controlled via `PRE_COMMIT_SYSTEM_*` variables in `.github/.env.shared`
+   All settings controlled via `GO_PRE_COMMIT_*` variables in `.github/.env.shared`
 
 ### 🧪 Testing Notes
 

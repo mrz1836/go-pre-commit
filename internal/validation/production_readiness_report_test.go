@@ -71,8 +71,8 @@ func (s *ProductionReadinessTestSuite) TestNewProductionReadinessValidator() {
 	// Verify env file contents
 	content, err := os.ReadFile(validator.envFile)
 	s.Require().NoError(err)
-	s.Contains(string(content), "ENABLE_PRE_COMMIT_SYSTEM=true")
-	s.Contains(string(content), "PRE_COMMIT_SYSTEM_LOG_LEVEL=info")
+	s.Contains(string(content), "ENABLE_GO_PRE_COMMIT=true")
+	s.Contains(string(content), "GO_PRE_COMMIT_LOG_LEVEL=info")
 }
 
 // Test system info collection

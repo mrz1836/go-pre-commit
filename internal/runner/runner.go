@@ -322,8 +322,8 @@ func (r *Runner) processSkipEnvironment() []string {
 
 	// Check multiple environment variables in order of precedence
 	skipEnvVars := []string{
-		"SKIP",                   // Standard pre-commit convention
-		"PRE_COMMIT_SYSTEM_SKIP", // GoFortress-specific
+		"SKIP",               // Standard pre-commit convention
+		"GO_PRE_COMMIT_SKIP", // GoFortress-specific
 	}
 
 	for _, envVar := range skipEnvVars {

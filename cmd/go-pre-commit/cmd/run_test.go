@@ -55,15 +55,15 @@ func TestRunCmd_ShowChecks(t *testing.T) {
 
 func TestRunCmd_DisabledSystem(t *testing.T) {
 	// Save original env
-	oldEnv := os.Getenv("ENABLE_PRE_COMMIT_SYSTEM")
+	oldEnv := os.Getenv("ENABLE_GO_PRE_COMMIT")
 	defer func() {
-		if err := os.Setenv("ENABLE_PRE_COMMIT_SYSTEM", oldEnv); err != nil {
-			t.Logf("Failed to restore ENABLE_PRE_COMMIT_SYSTEM: %v", err)
+		if err := os.Setenv("ENABLE_GO_PRE_COMMIT", oldEnv); err != nil {
+			t.Logf("Failed to restore ENABLE_GO_PRE_COMMIT: %v", err)
 		}
 	}()
 
 	// Disable pre-commit system
-	require.NoError(t, os.Setenv("ENABLE_PRE_COMMIT_SYSTEM", "false"))
+	require.NoError(t, os.Setenv("ENABLE_GO_PRE_COMMIT", "false"))
 
 	// Save original
 	oldArgs := os.Args
@@ -250,14 +250,14 @@ func (s *RunCommandTestSuite) createTestFile(filename, content string) {
 
 func (s *RunCommandTestSuite) createEnvFile() {
 	envContent := `# Pre-commit system configuration
-ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true
-PRE_COMMIT_SYSTEM_ENABLE_EOF=true
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=false
-PRE_COMMIT_SYSTEM_ENABLE_LINT=false
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=false
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=60
-PRE_COMMIT_SYSTEM_LOG_LEVEL=info
+ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true
+GO_PRE_COMMIT_ENABLE_EOF=true
+GO_PRE_COMMIT_ENABLE_FUMPT=false
+GO_PRE_COMMIT_ENABLE_LINT=false
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=false
+GO_PRE_COMMIT_TIMEOUT_SECONDS=60
+GO_PRE_COMMIT_LOG_LEVEL=info
 `
 	githubDir := filepath.Join(s.tempDir, ".github")
 	err := os.MkdirAll(githubDir, 0o750)
@@ -357,7 +357,7 @@ func (s *RunCommandTestSuite) TestRunChecksShowAvailableChecks() {
 // TestRunChecksDisabledSystem tests when the pre-commit system is disabled
 func (s *RunCommandTestSuite) TestRunChecksDisabledSystem() {
 	// Create env file with system disabled
-	envContent := `ENABLE_PRE_COMMIT_SYSTEM=false`
+	envContent := `ENABLE_GO_PRE_COMMIT=false`
 	githubDir := filepath.Join(s.tempDir, ".github")
 	err := os.MkdirAll(githubDir, 0o750)
 	s.Require().NoError(err)
@@ -413,7 +413,7 @@ func (s *RunCommandTestSuite) TestRunChecksInvalidGitRepository() {
 	s.Require().NoError(err)
 
 	envFile := filepath.Join(githubDir, ".env.shared")
-	err = os.WriteFile(envFile, []byte("ENABLE_PRE_COMMIT_SYSTEM=true"), 0o600)
+	err = os.WriteFile(envFile, []byte("ENABLE_GO_PRE_COMMIT=true"), 0o600)
 	s.Require().NoError(err)
 
 	// Reset flags before test

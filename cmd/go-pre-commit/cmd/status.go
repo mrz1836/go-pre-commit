@@ -65,7 +65,7 @@ func runStatus(_ *cobra.Command, _ []string) error {
 	if cfg.Enabled {
 		printSuccess("✓ Pre-commit system is enabled")
 	} else {
-		printWarning("⚠ Pre-commit system is disabled (ENABLE_PRE_COMMIT_SYSTEM=false)")
+		printWarning("⚠ Pre-commit system is disabled (ENABLE_GO_PRE_COMMIT=false)")
 	}
 
 	// Hook status

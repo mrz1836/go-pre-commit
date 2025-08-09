@@ -153,28 +153,28 @@ func (s *ConfigTestSuite) TearDownTest() {
 
 func (s *ConfigTestSuite) clearEnvVars() {
 	envVars := []string{
-		"ENABLE_PRE_COMMIT_SYSTEM",
-		"PRE_COMMIT_SYSTEM_LOG_LEVEL",
-		"PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB",
-		"PRE_COMMIT_SYSTEM_MAX_FILES_OPEN",
-		"PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS",
-		"PRE_COMMIT_SYSTEM_ENABLE_FUMPT",
-		"PRE_COMMIT_SYSTEM_ENABLE_LINT",
-		"PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY",
-		"PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE",
-		"PRE_COMMIT_SYSTEM_ENABLE_EOF",
-		"PRE_COMMIT_SYSTEM_FUMPT_VERSION",
-		"PRE_COMMIT_SYSTEM_GOLANGCI_LINT_VERSION",
-		"PRE_COMMIT_SYSTEM_PARALLEL_WORKERS",
-		"PRE_COMMIT_SYSTEM_FAIL_FAST",
-		"PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_LINT_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_EOF_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_HOOKS_PATH",
-		"PRE_COMMIT_SYSTEM_EXCLUDE_PATTERNS",
-		"PRE_COMMIT_SYSTEM_COLOR_OUTPUT",
+		"ENABLE_GO_PRE_COMMIT",
+		"GO_PRE_COMMIT_LOG_LEVEL",
+		"GO_PRE_COMMIT_MAX_FILE_SIZE_MB",
+		"GO_PRE_COMMIT_MAX_FILES_OPEN",
+		"GO_PRE_COMMIT_TIMEOUT_SECONDS",
+		"GO_PRE_COMMIT_ENABLE_FUMPT",
+		"GO_PRE_COMMIT_ENABLE_LINT",
+		"GO_PRE_COMMIT_ENABLE_MOD_TIDY",
+		"GO_PRE_COMMIT_ENABLE_WHITESPACE",
+		"GO_PRE_COMMIT_ENABLE_EOF",
+		"GO_PRE_COMMIT_FUMPT_VERSION",
+		"GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
+		"GO_PRE_COMMIT_PARALLEL_WORKERS",
+		"GO_PRE_COMMIT_FAIL_FAST",
+		"GO_PRE_COMMIT_FUMPT_TIMEOUT",
+		"GO_PRE_COMMIT_LINT_TIMEOUT",
+		"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT",
+		"GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
+		"GO_PRE_COMMIT_EOF_TIMEOUT",
+		"GO_PRE_COMMIT_HOOKS_PATH",
+		"GO_PRE_COMMIT_EXCLUDE_PATTERNS",
+		"GO_PRE_COMMIT_COLOR_OUTPUT",
 	}
 
 	for _, envVar := range envVars {
@@ -195,28 +195,28 @@ func (s *ConfigTestSuite) createEnvFile(content string) {
 // TestLoadWithCustomConfiguration tests loading with custom environment variables
 func (s *ConfigTestSuite) TestLoadWithCustomConfiguration() {
 	envContent := `# Custom configuration
-ENABLE_PRE_COMMIT_SYSTEM=false
-PRE_COMMIT_SYSTEM_LOG_LEVEL=debug
-PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB=5
-PRE_COMMIT_SYSTEM_MAX_FILES_OPEN=50
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=120
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=false
-PRE_COMMIT_SYSTEM_ENABLE_LINT=false
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=true
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=false
-PRE_COMMIT_SYSTEM_ENABLE_EOF=true
-PRE_COMMIT_SYSTEM_FUMPT_VERSION=v0.5.0
-PRE_COMMIT_SYSTEM_GOLANGCI_LINT_VERSION=v1.54.0
-PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=4
-PRE_COMMIT_SYSTEM_FAIL_FAST=true
-PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT=60
-PRE_COMMIT_SYSTEM_LINT_TIMEOUT=90
-PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT=45
-PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT=15
-PRE_COMMIT_SYSTEM_EOF_TIMEOUT=10
-PRE_COMMIT_SYSTEM_HOOKS_PATH=.git/custom-hooks
-PRE_COMMIT_SYSTEM_EXCLUDE_PATTERNS=vendor/,dist/,build/
-PRE_COMMIT_SYSTEM_COLOR_OUTPUT=false
+ENABLE_GO_PRE_COMMIT=false
+GO_PRE_COMMIT_LOG_LEVEL=debug
+GO_PRE_COMMIT_MAX_FILE_SIZE_MB=5
+GO_PRE_COMMIT_MAX_FILES_OPEN=50
+GO_PRE_COMMIT_TIMEOUT_SECONDS=120
+GO_PRE_COMMIT_ENABLE_FUMPT=false
+GO_PRE_COMMIT_ENABLE_LINT=false
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
+GO_PRE_COMMIT_ENABLE_WHITESPACE=false
+GO_PRE_COMMIT_ENABLE_EOF=true
+GO_PRE_COMMIT_FUMPT_VERSION=v0.5.0
+GO_PRE_COMMIT_GOLANGCI_LINT_VERSION=v1.54.0
+GO_PRE_COMMIT_PARALLEL_WORKERS=4
+GO_PRE_COMMIT_FAIL_FAST=true
+GO_PRE_COMMIT_FUMPT_TIMEOUT=60
+GO_PRE_COMMIT_LINT_TIMEOUT=90
+GO_PRE_COMMIT_MOD_TIDY_TIMEOUT=45
+GO_PRE_COMMIT_WHITESPACE_TIMEOUT=15
+GO_PRE_COMMIT_EOF_TIMEOUT=10
+GO_PRE_COMMIT_HOOKS_PATH=.git/custom-hooks
+GO_PRE_COMMIT_EXCLUDE_PATTERNS=vendor/,dist/,build/
+GO_PRE_COMMIT_COLOR_OUTPUT=false
 `
 	s.createEnvFile(envContent)
 
@@ -267,7 +267,7 @@ PRE_COMMIT_SYSTEM_COLOR_OUTPUT=false
 
 // TestLoadWithMinimalConfiguration tests loading with minimal configuration
 func (s *ConfigTestSuite) TestLoadWithMinimalConfiguration() {
-	envContent := `ENABLE_PRE_COMMIT_SYSTEM=true
+	envContent := `ENABLE_GO_PRE_COMMIT=true
 `
 	s.createEnvFile(envContent)
 
@@ -290,8 +290,8 @@ func (s *ConfigTestSuite) TestLoadWithMinimalConfiguration() {
 
 // TestLoadWithEmptyExcludePatterns tests exclude patterns handling
 func (s *ConfigTestSuite) TestLoadWithEmptyExcludePatterns() {
-	envContent := `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_EXCLUDE_PATTERNS=
+	envContent := `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_EXCLUDE_PATTERNS=
 `
 	s.createEnvFile(envContent)
 
@@ -306,8 +306,8 @@ PRE_COMMIT_SYSTEM_EXCLUDE_PATTERNS=
 
 // TestLoadWithSpacedExcludePatterns tests exclude patterns with spaces
 func (s *ConfigTestSuite) TestLoadWithSpacedExcludePatterns() {
-	envContent := `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_EXCLUDE_PATTERNS=vendor/ , node_modules/ , .git/
+	envContent := `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_EXCLUDE_PATTERNS=vendor/ , node_modules/ , .git/
 `
 	s.createEnvFile(envContent)
 
@@ -346,7 +346,7 @@ func (s *ConfigTestSuite) TestLoadCorruptedEnvFile() {
 // TestFindEnvFileInParentDirectories tests finding env file in parent directories
 func (s *ConfigTestSuite) TestFindEnvFileInParentDirectories() {
 	// Create env file in parent directory
-	envContent := `ENABLE_PRE_COMMIT_SYSTEM=true
+	envContent := `ENABLE_GO_PRE_COMMIT=true
 `
 	s.createEnvFile(envContent)
 
@@ -367,7 +367,7 @@ func (s *ConfigTestSuite) TestFindEnvFileInParentDirectories() {
 
 // TestFindEnvFileInCurrentDirectory tests finding env file in current directory
 func (s *ConfigTestSuite) TestFindEnvFileInCurrentDirectory() {
-	envContent := `ENABLE_PRE_COMMIT_SYSTEM=true
+	envContent := `ENABLE_GO_PRE_COMMIT=true
 `
 	s.createEnvFile(envContent)
 
@@ -379,7 +379,7 @@ func (s *ConfigTestSuite) TestFindEnvFileInCurrentDirectory() {
 
 // TestConfigStructInitialization tests that all config fields are properly initialized
 func (s *ConfigTestSuite) TestConfigStructInitialization() {
-	envContent := `ENABLE_PRE_COMMIT_SYSTEM=true
+	envContent := `ENABLE_GO_PRE_COMMIT=true
 `
 	s.createEnvFile(envContent)
 
@@ -551,13 +551,13 @@ func TestLoadIntegrationWithRealProject(t *testing.T) {
 
 	// Create .env.shared file
 	envContent := `# Project configuration
-ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_LOG_LEVEL=debug
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=true
-PRE_COMMIT_SYSTEM_ENABLE_LINT=true
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=true
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true
-PRE_COMMIT_SYSTEM_ENABLE_EOF=true
+ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_LOG_LEVEL=debug
+GO_PRE_COMMIT_ENABLE_FUMPT=true
+GO_PRE_COMMIT_ENABLE_LINT=true
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true
+GO_PRE_COMMIT_ENABLE_EOF=true
 `
 	envFile := filepath.Join(tmpDir, ".github", ".env.shared")
 	err = os.WriteFile(envFile, []byte(envContent), 0o600)

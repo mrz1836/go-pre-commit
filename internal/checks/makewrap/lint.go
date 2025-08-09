@@ -124,7 +124,7 @@ func (c *LintCheck) runMakeLint(ctx context.Context) error {
 			return prerrors.NewToolExecutionError(
 				"make lint",
 				output,
-				fmt.Sprintf("Lint check timed out after %v. Consider increasing PRE_COMMIT_SYSTEM_LINT_TIMEOUT or run 'make lint' manually to see detailed output.", c.timeout),
+				fmt.Sprintf("Lint check timed out after %v. Consider increasing GO_PRE_COMMIT_LINT_TIMEOUT or run 'make lint' manually to see detailed output.", c.timeout),
 			)
 		}
 
@@ -132,7 +132,7 @@ func (c *LintCheck) runMakeLint(ctx context.Context) error {
 		if strings.Contains(output, "No rule to make target") {
 			return prerrors.NewMakeTargetNotFoundError(
 				"lint",
-				"Create a 'lint' target in your Makefile or disable linting with PRE_COMMIT_SYSTEM_ENABLE_LINT=false",
+				"Create a 'lint' target in your Makefile or disable linting with GO_PRE_COMMIT_ENABLE_LINT=false",
 			)
 		}
 
@@ -213,7 +213,7 @@ func (c *LintCheck) runDirectLint(ctx context.Context, files []string) error {
 			return prerrors.NewToolExecutionError(
 				"golangci-lint run",
 				output,
-				fmt.Sprintf("Lint check timed out after %v. Consider increasing PRE_COMMIT_SYSTEM_LINT_TIMEOUT or running on fewer files.", c.timeout),
+				fmt.Sprintf("Lint check timed out after %v. Consider increasing GO_PRE_COMMIT_LINT_TIMEOUT or running on fewer files.", c.timeout),
 			)
 		}
 

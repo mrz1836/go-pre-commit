@@ -32,9 +32,9 @@ fi
 # Check if pre-commit system is enabled
 if [[ -f "$CONFIG_FILE" ]]; then
     # Source config to check if enabled
-    if grep -q "^ENABLE_PRE_COMMIT_SYSTEM=false" "$CONFIG_FILE" 2>/dev/null; then
+    if grep -q "^ENABLE_GO_PRE_COMMIT=false" "$CONFIG_FILE" 2>/dev/null; then
         if [[ "$CI_ENV" != "true" ]]; then
-            echo "Go pre-commit system is disabled (ENABLE_PRE_COMMIT_SYSTEM=false)"
+            echo "Go pre-commit system is disabled (ENABLE_GO_PRE_COMMIT=false)"
         fi
         exit 0
     fi

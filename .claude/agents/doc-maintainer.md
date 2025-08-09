@@ -70,8 +70,8 @@ When environment variables change in `.github/.env.shared`:
 
 \```bash
 # Core settings
-ENABLE_PRE_COMMIT_SYSTEM=true              # Enable/disable the system
-PRE_COMMIT_SYSTEM_FAIL_FAST=false          # Stop on first failure
+ENABLE_GO_PRE_COMMIT=true              # Enable/disable the system
+GO_PRE_COMMIT_FAIL_FAST=false          # Stop on first failure
 \```
 ```
 

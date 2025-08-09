@@ -41,20 +41,20 @@ func (s *SkipFunctionalityTestSuite) SetupSuite() {
 	// Create comprehensive .env.shared file
 	s.envFile = filepath.Join(githubDir, ".env.shared")
 	envContent := `# Test environment configuration for SKIP functionality testing
-ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_LOG_LEVEL=info
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=true
-PRE_COMMIT_SYSTEM_ENABLE_LINT=true
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=true
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true
-PRE_COMMIT_SYSTEM_ENABLE_EOF=true
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=120
-PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=2
-PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT=30
-PRE_COMMIT_SYSTEM_LINT_TIMEOUT=60
-PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT=30
-PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT=30
-PRE_COMMIT_SYSTEM_EOF_TIMEOUT=30
+ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_LOG_LEVEL=info
+GO_PRE_COMMIT_ENABLE_FUMPT=true
+GO_PRE_COMMIT_ENABLE_LINT=true
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true
+GO_PRE_COMMIT_ENABLE_EOF=true
+GO_PRE_COMMIT_TIMEOUT_SECONDS=120
+GO_PRE_COMMIT_PARALLEL_WORKERS=2
+GO_PRE_COMMIT_FUMPT_TIMEOUT=30
+GO_PRE_COMMIT_LINT_TIMEOUT=60
+GO_PRE_COMMIT_MOD_TIDY_TIMEOUT=30
+GO_PRE_COMMIT_WHITESPACE_TIMEOUT=30
+GO_PRE_COMMIT_EOF_TIMEOUT=30
 `
 	s.Require().NoError(os.WriteFile(s.envFile, []byte(envContent), 0o600))
 
@@ -130,7 +130,7 @@ func (s *SkipFunctionalityTestSuite) findGitRoot() (string, error) {
 func (s *SkipFunctionalityTestSuite) TearDownTest() {
 	// Clean up SKIP environment variable
 	s.Require().NoError(os.Unsetenv("SKIP"))
-	s.Require().NoError(os.Unsetenv("PRE_COMMIT_SYSTEM_SKIP"))
+	s.Require().NoError(os.Unsetenv("GO_PRE_COMMIT_SKIP"))
 	s.Require().NoError(os.Unsetenv("CI"))
 }
 
@@ -413,7 +413,7 @@ func (s *SkipFunctionalityTestSuite) TestSkipEnvironmentVariablePrecedence() {
 		},
 		{
 			name:        "Pre-commit System Specific Variable",
-			skipVar:     "PRE_COMMIT_SYSTEM_SKIP",
+			skipVar:     "GO_PRE_COMMIT_SKIP",
 			skipValue:   "whitespace,eof",
 			description: "Pre-commit system specific SKIP variable",
 		},

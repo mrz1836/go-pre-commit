@@ -165,7 +165,7 @@ func (c *ModTidyCheck) runMakeModTidy(ctx context.Context) error {
 			return prerrors.NewToolExecutionError(
 				"make mod-tidy",
 				output,
-				fmt.Sprintf("Mod tidy check timed out after %v. Consider increasing PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT or run 'make mod-tidy' manually.", c.timeout),
+				fmt.Sprintf("Mod tidy check timed out after %v. Consider increasing GO_PRE_COMMIT_MOD_TIDY_TIMEOUT or run 'make mod-tidy' manually.", c.timeout),
 			)
 		}
 
@@ -173,7 +173,7 @@ func (c *ModTidyCheck) runMakeModTidy(ctx context.Context) error {
 		if strings.Contains(output, "No rule to make target") {
 			return prerrors.NewMakeTargetNotFoundError(
 				"mod-tidy",
-				"Create a 'mod-tidy' target in your Makefile or disable mod-tidy with PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=false",
+				"Create a 'mod-tidy' target in your Makefile or disable mod-tidy with GO_PRE_COMMIT_ENABLE_MOD_TIDY=false",
 			)
 		}
 
@@ -254,7 +254,7 @@ func (c *ModTidyCheck) runDirectModTidy(ctx context.Context) error {
 			return prerrors.NewToolExecutionError(
 				"go mod tidy",
 				output,
-				fmt.Sprintf("Mod tidy timed out after %v. Consider increasing PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT.", c.timeout),
+				fmt.Sprintf("Mod tidy timed out after %v. Consider increasing GO_PRE_COMMIT_MOD_TIDY_TIMEOUT.", c.timeout),
 			)
 		}
 
@@ -329,7 +329,7 @@ func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, repoRoot string) er
 			return prerrors.NewToolExecutionError(
 				"go mod tidy -diff",
 				output,
-				fmt.Sprintf("Mod tidy check timed out after %v. Consider increasing PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT.", c.timeout),
+				fmt.Sprintf("Mod tidy check timed out after %v. Consider increasing GO_PRE_COMMIT_MOD_TIDY_TIMEOUT.", c.timeout),
 			)
 		}
 

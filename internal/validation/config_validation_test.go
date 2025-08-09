@@ -35,17 +35,17 @@ func (s *ConfigValidationTestSuite) SetupSuite() {
 	// Store original environment variables that might affect tests
 	s.originalEnv = make(map[string]string)
 	envVarsToSave := []string{
-		"ENABLE_PRE_COMMIT_SYSTEM", "PRE_COMMIT_SYSTEM_LOG_LEVEL",
-		"PRE_COMMIT_SYSTEM_ENABLE_FUMPT", "PRE_COMMIT_SYSTEM_ENABLE_LINT",
-		"PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY", "PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE",
-		"PRE_COMMIT_SYSTEM_ENABLE_EOF", "PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS",
-		"PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB", "PRE_COMMIT_SYSTEM_MAX_FILES_OPEN",
-		"PRE_COMMIT_SYSTEM_FUMPT_VERSION", "PRE_COMMIT_SYSTEM_GOLANGCI_LINT_VERSION",
-		"PRE_COMMIT_SYSTEM_PARALLEL_WORKERS", "PRE_COMMIT_SYSTEM_FAIL_FAST",
-		"PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT", "PRE_COMMIT_SYSTEM_LINT_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT", "PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_EOF_TIMEOUT", "PRE_COMMIT_SYSTEM_HOOKS_PATH",
-		"PRE_COMMIT_SYSTEM_COLOR_OUTPUT", "NO_COLOR", "CI",
+		"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+		"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
+		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
+		"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+		"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
+		"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
+		"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+		"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
+		"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
+		"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
+		"GO_PRE_COMMIT_COLOR_OUTPUT", "NO_COLOR", "CI",
 	}
 
 	for _, envVar := range envVarsToSave {
@@ -126,17 +126,17 @@ func (s *ConfigValidationTestSuite) findGitRoot() (string, error) {
 func (s *ConfigValidationTestSuite) TearDownTest() {
 	// Clean up any environment variables set during the test
 	envVarsToClean := []string{
-		"ENABLE_PRE_COMMIT_SYSTEM", "PRE_COMMIT_SYSTEM_LOG_LEVEL",
-		"PRE_COMMIT_SYSTEM_ENABLE_FUMPT", "PRE_COMMIT_SYSTEM_ENABLE_LINT",
-		"PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY", "PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE",
-		"PRE_COMMIT_SYSTEM_ENABLE_EOF", "PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS",
-		"PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB", "PRE_COMMIT_SYSTEM_MAX_FILES_OPEN",
-		"PRE_COMMIT_SYSTEM_FUMPT_VERSION", "PRE_COMMIT_SYSTEM_GOLANGCI_LINT_VERSION",
-		"PRE_COMMIT_SYSTEM_PARALLEL_WORKERS", "PRE_COMMIT_SYSTEM_FAIL_FAST",
-		"PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT", "PRE_COMMIT_SYSTEM_LINT_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT", "PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_EOF_TIMEOUT", "PRE_COMMIT_SYSTEM_HOOKS_PATH",
-		"PRE_COMMIT_SYSTEM_COLOR_OUTPUT", "NO_COLOR", "CI",
+		"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+		"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
+		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
+		"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+		"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
+		"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
+		"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+		"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
+		"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
+		"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
+		"GO_PRE_COMMIT_COLOR_OUTPUT", "NO_COLOR", "CI",
 	}
 
 	for _, envVar := range envVarsToClean {
@@ -179,36 +179,36 @@ func (s *ConfigValidationTestSuite) TestInvalidConfigFile() {
 		},
 		{
 			name:        "Invalid Boolean",
-			content:     "ENABLE_PRE_COMMIT_SYSTEM=maybe\n",
+			content:     "ENABLE_GO_PRE_COMMIT=maybe\n",
 			shouldError: false, // Should use default for invalid boolean
 			description: "Invalid boolean should fall back to default",
 		},
 		{
 			name:        "Invalid Integer",
-			content:     "PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=not-a-number\n",
+			content:     "GO_PRE_COMMIT_TIMEOUT_SECONDS=not-a-number\n",
 			shouldError: false, // Should use default for invalid integer
 			description: "Invalid integer should fall back to default",
 		},
 		{
 			name: "Invalid Timeout Values",
-			content: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=0
-PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT=-1
+			content: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_TIMEOUT_SECONDS=0
+GO_PRE_COMMIT_FUMPT_TIMEOUT=-1
 `,
 			shouldError: true, // Validation should catch invalid timeouts
 			description: "Zero or negative timeouts should cause validation error",
 		},
 		{
 			name: "Invalid Log Level",
-			content: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_LOG_LEVEL=invalid
+			content: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_LOG_LEVEL=invalid
 `,
 			shouldError: true, // Validation should catch invalid log level
 			description: "Invalid log level should cause validation error",
 		},
 		{
 			name: "Malformed Environment Variables",
-			content: `ENABLE_PRE_COMMIT_SYSTEM=true
+			content: `ENABLE_GO_PRE_COMMIT=true
 =invalid_line_no_key
 KEY_WITHOUT_VALUE
 VALID_KEY=valid_value
@@ -251,12 +251,12 @@ func (s *ConfigValidationTestSuite) TestEnvironmentVariablePrecedence() {
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
 	envFile := filepath.Join(githubDir, ".env.shared")
-	baseConfig := `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_LOG_LEVEL=info
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=120
-PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=2
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=true
-PRE_COMMIT_SYSTEM_ENABLE_LINT=false
+	baseConfig := `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_LOG_LEVEL=info
+GO_PRE_COMMIT_TIMEOUT_SECONDS=120
+GO_PRE_COMMIT_PARALLEL_WORKERS=2
+GO_PRE_COMMIT_ENABLE_FUMPT=true
+GO_PRE_COMMIT_ENABLE_LINT=false
 `
 	s.Require().NoError(os.WriteFile(envFile, []byte(baseConfig), 0o600))
 
@@ -271,9 +271,9 @@ PRE_COMMIT_SYSTEM_ENABLE_LINT=false
 		{
 			name: "Environment Variables Override File",
 			envOverrides: map[string]string{
-				"PRE_COMMIT_SYSTEM_LOG_LEVEL":        "debug",
-				"PRE_COMMIT_SYSTEM_PARALLEL_WORKERS": "4",
-				"PRE_COMMIT_SYSTEM_ENABLE_FUMPT":     "false",
+				"GO_PRE_COMMIT_LOG_LEVEL":        "debug",
+				"GO_PRE_COMMIT_PARALLEL_WORKERS": "4",
+				"GO_PRE_COMMIT_ENABLE_FUMPT":     "false",
 			},
 			expectedLog:     "debug",
 			expectedWorkers: 4,
@@ -283,7 +283,7 @@ PRE_COMMIT_SYSTEM_ENABLE_LINT=false
 		{
 			name: "Partial Override",
 			envOverrides: map[string]string{
-				"PRE_COMMIT_SYSTEM_LOG_LEVEL": "warn",
+				"GO_PRE_COMMIT_LOG_LEVEL": "warn",
 			},
 			expectedLog:     "warn",
 			expectedWorkers: 2,    // From file
@@ -328,17 +328,17 @@ PRE_COMMIT_SYSTEM_ENABLE_LINT=false
 func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 	// Clean environment variables to ensure defaults are tested
 	envVarsToClean := []string{
-		"ENABLE_PRE_COMMIT_SYSTEM", "PRE_COMMIT_SYSTEM_LOG_LEVEL",
-		"PRE_COMMIT_SYSTEM_ENABLE_FUMPT", "PRE_COMMIT_SYSTEM_ENABLE_LINT",
-		"PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY", "PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE",
-		"PRE_COMMIT_SYSTEM_ENABLE_EOF", "PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS",
-		"PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB", "PRE_COMMIT_SYSTEM_MAX_FILES_OPEN",
-		"PRE_COMMIT_SYSTEM_FUMPT_VERSION", "PRE_COMMIT_SYSTEM_GOLANGCI_LINT_VERSION",
-		"PRE_COMMIT_SYSTEM_PARALLEL_WORKERS", "PRE_COMMIT_SYSTEM_FAIL_FAST",
-		"PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT", "PRE_COMMIT_SYSTEM_LINT_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT", "PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_EOF_TIMEOUT", "PRE_COMMIT_SYSTEM_HOOKS_PATH",
-		"PRE_COMMIT_SYSTEM_COLOR_OUTPUT", "NO_COLOR", "CI",
+		"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+		"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
+		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
+		"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+		"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
+		"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
+		"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+		"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
+		"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
+		"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
+		"GO_PRE_COMMIT_COLOR_OUTPUT", "NO_COLOR", "CI",
 	}
 
 	// Store and clear environment variables
@@ -363,7 +363,7 @@ func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
 	envFile := filepath.Join(githubDir, ".env.shared")
-	minimalConfig := `ENABLE_PRE_COMMIT_SYSTEM=true
+	minimalConfig := `ENABLE_GO_PRE_COMMIT=true
 `
 	s.Require().NoError(os.WriteFile(envFile, []byte(minimalConfig), 0o600))
 
@@ -455,25 +455,25 @@ func (s *ConfigValidationTestSuite) TestConfigurationValidation() {
 	}{
 		{
 			name: "Valid Configuration",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_LOG_LEVEL=debug
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=60
-PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT=30
-PRE_COMMIT_SYSTEM_LINT_TIMEOUT=120
-PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT=30
-PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT=15
-PRE_COMMIT_SYSTEM_EOF_TIMEOUT=15
-PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB=50
-PRE_COMMIT_SYSTEM_MAX_FILES_OPEN=200
-PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=4
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_LOG_LEVEL=debug
+GO_PRE_COMMIT_TIMEOUT_SECONDS=60
+GO_PRE_COMMIT_FUMPT_TIMEOUT=30
+GO_PRE_COMMIT_LINT_TIMEOUT=120
+GO_PRE_COMMIT_MOD_TIDY_TIMEOUT=30
+GO_PRE_COMMIT_WHITESPACE_TIMEOUT=15
+GO_PRE_COMMIT_EOF_TIMEOUT=15
+GO_PRE_COMMIT_MAX_FILE_SIZE_MB=50
+GO_PRE_COMMIT_MAX_FILES_OPEN=200
+GO_PRE_COMMIT_PARALLEL_WORKERS=4
 `,
 			shouldError: false,
 			description: "Valid configuration should pass validation",
 		},
 		{
 			name: "Zero Timeout",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=0
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_TIMEOUT_SECONDS=0
 `,
 			shouldError:   true,
 			expectedError: "TIMEOUT_SECONDS must be greater than 0",
@@ -481,8 +481,8 @@ PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=0
 		},
 		{
 			name: "Negative File Size",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB=-1
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_MAX_FILE_SIZE_MB=-1
 `,
 			shouldError:   true,
 			expectedError: "MAX_FILE_SIZE_MB must be greater than 0",
@@ -490,8 +490,8 @@ PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB=-1
 		},
 		{
 			name: "Invalid Log Level",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_LOG_LEVEL=trace
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_LOG_LEVEL=trace
 `,
 			shouldError:   true,
 			expectedError: "LOG_LEVEL must be one of",
@@ -499,8 +499,8 @@ PRE_COMMIT_SYSTEM_LOG_LEVEL=trace
 		},
 		{
 			name: "Invalid Tool Version",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_FUMPT_VERSION=invalid-version
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_FUMPT_VERSION=invalid-version
 `,
 			shouldError:   true,
 			expectedError: "FUMPT_VERSION must be 'latest' or a valid version",
@@ -508,8 +508,8 @@ PRE_COMMIT_SYSTEM_FUMPT_VERSION=invalid-version
 		},
 		{
 			name: "Negative Parallel Workers",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=-1
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_PARALLEL_WORKERS=-1
 `,
 			shouldError:   true,
 			expectedError: "PARALLEL_WORKERS must be 0 (auto) or positive",
@@ -521,17 +521,17 @@ PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=-1
 		s.Run(tc.name, func() {
 			// Clean environment variables before each subtest
 			envVarsToClean := []string{
-				"ENABLE_PRE_COMMIT_SYSTEM", "PRE_COMMIT_SYSTEM_LOG_LEVEL",
-				"PRE_COMMIT_SYSTEM_ENABLE_FUMPT", "PRE_COMMIT_SYSTEM_ENABLE_LINT",
-				"PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY", "PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE",
-				"PRE_COMMIT_SYSTEM_ENABLE_EOF", "PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS",
-				"PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB", "PRE_COMMIT_SYSTEM_MAX_FILES_OPEN",
-				"PRE_COMMIT_SYSTEM_FUMPT_VERSION", "PRE_COMMIT_SYSTEM_GOLANGCI_LINT_VERSION",
-				"PRE_COMMIT_SYSTEM_PARALLEL_WORKERS", "PRE_COMMIT_SYSTEM_FAIL_FAST",
-				"PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT", "PRE_COMMIT_SYSTEM_LINT_TIMEOUT",
-				"PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT", "PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT",
-				"PRE_COMMIT_SYSTEM_EOF_TIMEOUT", "PRE_COMMIT_SYSTEM_HOOKS_PATH",
-				"PRE_COMMIT_SYSTEM_COLOR_OUTPUT", "NO_COLOR", "CI",
+				"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+				"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
+				"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
+				"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+				"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
+				"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
+				"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+				"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
+				"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
+				"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
+				"GO_PRE_COMMIT_COLOR_OUTPUT", "NO_COLOR", "CI",
 			}
 
 			for _, envVar := range envVarsToClean {
@@ -576,28 +576,28 @@ func (s *ConfigValidationTestSuite) TestPartialConfiguration() {
 	}{
 		{
 			name: "Only Checks Enabled",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=true
-PRE_COMMIT_SYSTEM_ENABLE_LINT=false
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=true
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=false
-PRE_COMMIT_SYSTEM_ENABLE_EOF=true
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_ENABLE_FUMPT=true
+GO_PRE_COMMIT_ENABLE_LINT=false
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
+GO_PRE_COMMIT_ENABLE_WHITESPACE=false
+GO_PRE_COMMIT_ENABLE_EOF=true
 `,
 			description: "Configuration with only check settings should work",
 		},
 		{
 			name: "Only Performance Settings",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=1
-PRE_COMMIT_SYSTEM_FAIL_FAST=true
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_PARALLEL_WORKERS=1
+GO_PRE_COMMIT_FAIL_FAST=true
 `,
 			description: "Configuration with only performance settings should work",
 		},
 		{
 			name: "Only Timeout Settings",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT=45
-PRE_COMMIT_SYSTEM_LINT_TIMEOUT=90
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_FUMPT_TIMEOUT=45
+GO_PRE_COMMIT_LINT_TIMEOUT=90
 `,
 			description: "Configuration with only timeout settings should work",
 		},
@@ -631,17 +631,17 @@ PRE_COMMIT_SYSTEM_LINT_TIMEOUT=90
 func (s *ConfigValidationTestSuite) TestConfigurationDirectoryDetection() {
 	// Clean environment variables to ensure test isolation
 	envVarsToClean := []string{
-		"ENABLE_PRE_COMMIT_SYSTEM", "PRE_COMMIT_SYSTEM_LOG_LEVEL",
-		"PRE_COMMIT_SYSTEM_ENABLE_FUMPT", "PRE_COMMIT_SYSTEM_ENABLE_LINT",
-		"PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY", "PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE",
-		"PRE_COMMIT_SYSTEM_ENABLE_EOF", "PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS",
-		"PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB", "PRE_COMMIT_SYSTEM_MAX_FILES_OPEN",
-		"PRE_COMMIT_SYSTEM_FUMPT_VERSION", "PRE_COMMIT_SYSTEM_GOLANGCI_LINT_VERSION",
-		"PRE_COMMIT_SYSTEM_PARALLEL_WORKERS", "PRE_COMMIT_SYSTEM_FAIL_FAST",
-		"PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT", "PRE_COMMIT_SYSTEM_LINT_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT", "PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT",
-		"PRE_COMMIT_SYSTEM_EOF_TIMEOUT", "PRE_COMMIT_SYSTEM_HOOKS_PATH",
-		"PRE_COMMIT_SYSTEM_COLOR_OUTPUT", "NO_COLOR", "CI",
+		"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+		"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
+		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
+		"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+		"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
+		"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
+		"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+		"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
+		"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
+		"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
+		"GO_PRE_COMMIT_COLOR_OUTPUT", "NO_COLOR", "CI",
 	}
 
 	// Store and clear environment variables
@@ -680,8 +680,8 @@ func (s *ConfigValidationTestSuite) TestConfigurationDirectoryDetection() {
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
 	envFile := filepath.Join(githubDir, ".env.shared")
-	testConfig := `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_LOG_LEVEL=debug
+	testConfig := `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_LOG_LEVEL=debug
 `
 	s.Require().NoError(os.WriteFile(envFile, []byte(testConfig), 0o600))
 
@@ -700,8 +700,8 @@ func (s *ConfigValidationTestSuite) TestConfigurationHelp() {
 	help := config.GetConfigHelp()
 
 	// Validate that help contains key information
-	s.Contains(help, "ENABLE_PRE_COMMIT_SYSTEM", "Help should document main enable flag")
-	s.Contains(help, "PRE_COMMIT_SYSTEM_LOG_LEVEL", "Help should document log level")
+	s.Contains(help, "ENABLE_GO_PRE_COMMIT", "Help should document main enable flag")
+	s.Contains(help, "GO_PRE_COMMIT_LOG_LEVEL", "Help should document log level")
 	s.Contains(help, "Example .github/.env.shared", "Help should include example")
 	s.Contains(help, "Core Settings", "Help should have sections")
 	s.Contains(help, "Check Configuration", "Help should document checks")

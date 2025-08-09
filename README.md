@@ -148,21 +148,21 @@ git commit -m "Test commit"
 
 ```bash
 # Core settings
-ENABLE_PRE_COMMIT_SYSTEM=true              # Enable/disable the system
-PRE_COMMIT_SYSTEM_FAIL_FAST=false          # Stop on first failure
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=120      # Overall timeout
-PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=2       # Number of parallel workers
+ENABLE_GO_PRE_COMMIT=true              # Enable/disable the system
+GO_PRE_COMMIT_FAIL_FAST=false          # Stop on first failure
+GO_PRE_COMMIT_TIMEOUT_SECONDS=120      # Overall timeout
+GO_PRE_COMMIT_PARALLEL_WORKERS=2       # Number of parallel workers
 
 # Individual checks
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=true        # Format with fumpt
-PRE_COMMIT_SYSTEM_ENABLE_LINT=true         # Run golangci-lint
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=true     # Run go mod tidy
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true   # Fix trailing whitespace
-PRE_COMMIT_SYSTEM_ENABLE_EOF=true          # Ensure files end with newline
+GO_PRE_COMMIT_ENABLE_FUMPT=true        # Format with fumpt
+GO_PRE_COMMIT_ENABLE_LINT=true         # Run golangci-lint
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=true     # Run go mod tidy
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true   # Fix trailing whitespace
+GO_PRE_COMMIT_ENABLE_EOF=true          # Ensure files end with newline
 
 # Auto-staging (automatically stage fixed files)
-PRE_COMMIT_SYSTEM_WHITESPACE_AUTO_STAGE=true
-PRE_COMMIT_SYSTEM_EOF_AUTO_STAGE=true
+GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true
+GO_PRE_COMMIT_EOF_AUTO_STAGE=true
 ```
 
 <br/>
@@ -272,12 +272,12 @@ curl -o .github/.env.shared https://raw.githubusercontent.com/mrz1836/go-pre-com
 
 # Or create a minimal configuration
 cat > .github/.env.shared << 'EOF'
-ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=true
-PRE_COMMIT_SYSTEM_ENABLE_LINT=true
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=true
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true
-PRE_COMMIT_SYSTEM_ENABLE_EOF=true
+ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_ENABLE_FUMPT=true
+GO_PRE_COMMIT_ENABLE_LINT=true
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true
+GO_PRE_COMMIT_ENABLE_EOF=true
 EOF
 ```
 

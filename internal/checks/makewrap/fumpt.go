@@ -123,7 +123,7 @@ func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
 			return prerrors.NewToolExecutionError(
 				"make fumpt",
 				output,
-				fmt.Sprintf("Fumpt check timed out after %v. Consider increasing PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT or run 'make fumpt' manually.", c.timeout),
+				fmt.Sprintf("Fumpt check timed out after %v. Consider increasing GO_PRE_COMMIT_FUMPT_TIMEOUT or run 'make fumpt' manually.", c.timeout),
 			)
 		}
 
@@ -131,7 +131,7 @@ func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
 		if strings.Contains(output, "No rule to make target") {
 			return prerrors.NewMakeTargetNotFoundError(
 				"fumpt",
-				"Create a 'fumpt' target in your Makefile or disable fumpt with PRE_COMMIT_SYSTEM_ENABLE_FUMPT=false",
+				"Create a 'fumpt' target in your Makefile or disable fumpt with GO_PRE_COMMIT_ENABLE_FUMPT=false",
 			)
 		}
 
@@ -202,7 +202,7 @@ func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
 			"Run 'make fumpt' manually to see detailed error output.",
 			"Check your Makefile and gofumpt installation.",
 			"If using a git GUI (Tower, SourceTree, etc.), try using terminal instead.",
-			"Ensure PRE_COMMIT_SYSTEM_FUMPT_VERSION is set correctly in .env.shared",
+			"Ensure GO_PRE_COMMIT_FUMPT_VERSION is set correctly in .env.shared",
 		}
 
 		return prerrors.NewToolExecutionError(
@@ -257,7 +257,7 @@ func (c *FumptCheck) runDirectFumpt(ctx context.Context, files []string) error {
 			return prerrors.NewToolExecutionError(
 				"gofumpt",
 				output,
-				fmt.Sprintf("Fumpt timed out after %v. Consider running on fewer files or increasing PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT.", c.timeout),
+				fmt.Sprintf("Fumpt timed out after %v. Consider running on fewer files or increasing GO_PRE_COMMIT_FUMPT_TIMEOUT.", c.timeout),
 			)
 		}
 

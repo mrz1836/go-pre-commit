@@ -13,14 +13,14 @@ import (
 func TestNewDefault(t *testing.T) {
 	// Save original env
 	originalNoColor := os.Getenv("NO_COLOR")
-	originalPreCommitColor := os.Getenv("PRE_COMMIT_SYSTEM_COLOR_OUTPUT")
+	originalPreCommitColor := os.Getenv("GO_PRE_COMMIT_COLOR_OUTPUT")
 
 	defer func() {
 		if err := os.Setenv("NO_COLOR", originalNoColor); err != nil {
 			t.Errorf("Failed to restore NO_COLOR: %v", err)
 		}
-		if err := os.Setenv("PRE_COMMIT_SYSTEM_COLOR_OUTPUT", originalPreCommitColor); err != nil {
-			t.Errorf("Failed to restore PRE_COMMIT_SYSTEM_COLOR_OUTPUT: %v", err)
+		if err := os.Setenv("GO_PRE_COMMIT_COLOR_OUTPUT", originalPreCommitColor); err != nil {
+			t.Errorf("Failed to restore GO_PRE_COMMIT_COLOR_OUTPUT: %v", err)
 		}
 	}()
 
@@ -28,8 +28,8 @@ func TestNewDefault(t *testing.T) {
 		if err := os.Unsetenv("NO_COLOR"); err != nil {
 			t.Errorf("Failed to unset NO_COLOR: %v", err)
 		}
-		if err := os.Unsetenv("PRE_COMMIT_SYSTEM_COLOR_OUTPUT"); err != nil {
-			t.Errorf("Failed to unset PRE_COMMIT_SYSTEM_COLOR_OUTPUT: %v", err)
+		if err := os.Unsetenv("GO_PRE_COMMIT_COLOR_OUTPUT"); err != nil {
+			t.Errorf("Failed to unset GO_PRE_COMMIT_COLOR_OUTPUT: %v", err)
 		}
 
 		f := NewDefault()
@@ -45,12 +45,12 @@ func TestNewDefault(t *testing.T) {
 		assert.False(t, f.colorEnabled)
 	})
 
-	t.Run("PRE_COMMIT_SYSTEM_COLOR_OUTPUT DisablesColor", func(t *testing.T) {
+	t.Run("GO_PRE_COMMIT_COLOR_OUTPUT DisablesColor", func(t *testing.T) {
 		if err := os.Unsetenv("NO_COLOR"); err != nil {
 			t.Errorf("Failed to unset NO_COLOR: %v", err)
 		}
-		if err := os.Setenv("PRE_COMMIT_SYSTEM_COLOR_OUTPUT", "false"); err != nil {
-			t.Errorf("Failed to set PRE_COMMIT_SYSTEM_COLOR_OUTPUT: %v", err)
+		if err := os.Setenv("GO_PRE_COMMIT_COLOR_OUTPUT", "false"); err != nil {
+			t.Errorf("Failed to set GO_PRE_COMMIT_COLOR_OUTPUT: %v", err)
 		}
 
 		f := NewDefault()
@@ -197,7 +197,7 @@ func TestParseLintError(t *testing.T) {
 			name:               "Timeout",
 			output:             "context deadline exceeded (timeout)",
 			expectedMessage:    "golangci-lint timed out",
-			expectedSuggestion: "Increase timeout with PRE_COMMIT_SYSTEM_LINT_TIMEOUT or run 'golangci-lint run' manually.",
+			expectedSuggestion: "Increase timeout with GO_PRE_COMMIT_LINT_TIMEOUT or run 'golangci-lint run' manually.",
 		},
 		{
 			name:               "LintingIssues",

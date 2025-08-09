@@ -69,14 +69,14 @@ func (s *StatusTestSuite) TearDownTest() {
 	verbose = s.origVerbose
 
 	// Clear environment variables that might affect other tests
-	_ = os.Unsetenv("ENABLE_PRE_COMMIT_SYSTEM")
-	_ = os.Unsetenv("PRE_COMMIT_SYSTEM_ENABLE_FUMPT")
-	_ = os.Unsetenv("PRE_COMMIT_SYSTEM_ENABLE_LINT")
-	_ = os.Unsetenv("PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY")
-	_ = os.Unsetenv("PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE")
-	_ = os.Unsetenv("PRE_COMMIT_SYSTEM_ENABLE_EOF")
-	_ = os.Unsetenv("PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS")
-	_ = os.Unsetenv("PRE_COMMIT_SYSTEM_PARALLEL_WORKERS")
+	_ = os.Unsetenv("ENABLE_GO_PRE_COMMIT")
+	_ = os.Unsetenv("GO_PRE_COMMIT_ENABLE_FUMPT")
+	_ = os.Unsetenv("GO_PRE_COMMIT_ENABLE_LINT")
+	_ = os.Unsetenv("GO_PRE_COMMIT_ENABLE_MOD_TIDY")
+	_ = os.Unsetenv("GO_PRE_COMMIT_ENABLE_WHITESPACE")
+	_ = os.Unsetenv("GO_PRE_COMMIT_ENABLE_EOF")
+	_ = os.Unsetenv("GO_PRE_COMMIT_TIMEOUT_SECONDS")
+	_ = os.Unsetenv("GO_PRE_COMMIT_PARALLEL_WORKERS")
 
 	// Change back to original directory
 	_ = os.Chdir(s.originalWD)
@@ -99,7 +99,7 @@ func (s *StatusTestSuite) TestStatusCommand() {
 // Test basic status with no hooks installed
 func (s *StatusTestSuite) TestStatusNoHooks() {
 	// Create minimal config
-	configContent := `ENABLE_PRE_COMMIT_SYSTEM=true`
+	configContent := `ENABLE_GO_PRE_COMMIT=true`
 	err := os.WriteFile(s.configFile, []byte(configContent), 0o600)
 	s.Require().NoError(err)
 
@@ -120,7 +120,7 @@ func (s *StatusTestSuite) TestStatusNoHooks() {
 // Test status with hooks installed
 func (s *StatusTestSuite) TestStatusWithHooks() {
 	// Create config
-	configContent := `ENABLE_PRE_COMMIT_SYSTEM=true`
+	configContent := `ENABLE_GO_PRE_COMMIT=true`
 	err := os.WriteFile(s.configFile, []byte(configContent), 0o600)
 	s.Require().NoError(err)
 
@@ -152,7 +152,7 @@ func (s *StatusTestSuite) TestStatusWithHooks() {
 // Test status with conflicting hooks
 func (s *StatusTestSuite) TestStatusWithConflictingHooks() {
 	// Create config
-	configContent := `ENABLE_PRE_COMMIT_SYSTEM=true`
+	configContent := `ENABLE_GO_PRE_COMMIT=true`
 	err := os.WriteFile(s.configFile, []byte(configContent), 0o600)
 	s.Require().NoError(err)
 
@@ -176,7 +176,7 @@ func (s *StatusTestSuite) TestStatusWithConflictingHooks() {
 // Test status with disabled system
 func (s *StatusTestSuite) TestStatusDisabledSystem() {
 	// Create config with system disabled
-	configContent := `ENABLE_PRE_COMMIT_SYSTEM=false`
+	configContent := `ENABLE_GO_PRE_COMMIT=false`
 	err := os.WriteFile(s.configFile, []byte(configContent), 0o600)
 	s.Require().NoError(err)
 
@@ -188,20 +188,20 @@ func (s *StatusTestSuite) TestStatusDisabledSystem() {
 
 	// Verify output
 	s.Contains(output, "⚠ Pre-commit system is disabled")
-	s.Contains(output, "ENABLE_PRE_COMMIT_SYSTEM=false")
+	s.Contains(output, "ENABLE_GO_PRE_COMMIT=false")
 }
 
 // Test verbose status
 func (s *StatusTestSuite) TestStatusVerbose() {
 	// Create config
-	configContent := `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=true
-PRE_COMMIT_SYSTEM_ENABLE_LINT=false
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=true
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true
-PRE_COMMIT_SYSTEM_ENABLE_EOF=true
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=60
-PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=4`
+	configContent := `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_ENABLE_FUMPT=true
+GO_PRE_COMMIT_ENABLE_LINT=false
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true
+GO_PRE_COMMIT_ENABLE_EOF=true
+GO_PRE_COMMIT_TIMEOUT_SECONDS=60
+GO_PRE_COMMIT_PARALLEL_WORKERS=4`
 	err := os.WriteFile(s.configFile, []byte(configContent), 0o600)
 	s.Require().NoError(err)
 
@@ -241,7 +241,7 @@ PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=4`
 // Test status with non-executable hook
 func (s *StatusTestSuite) TestStatusNonExecutableHook() {
 	// Create config
-	configContent := `ENABLE_PRE_COMMIT_SYSTEM=true`
+	configContent := `ENABLE_GO_PRE_COMMIT=true`
 	err := os.WriteFile(s.configFile, []byte(configContent), 0o600)
 	s.Require().NoError(err)
 
@@ -265,7 +265,7 @@ func (s *StatusTestSuite) TestStatusNonExecutableHook() {
 // Test status with multiple hook types
 func (s *StatusTestSuite) TestStatusMultipleHookTypes() {
 	// Create config
-	configContent := `ENABLE_PRE_COMMIT_SYSTEM=true`
+	configContent := `ENABLE_GO_PRE_COMMIT=true`
 	err := os.WriteFile(s.configFile, []byte(configContent), 0o600)
 	s.Require().NoError(err)
 
@@ -321,7 +321,7 @@ func (s *StatusTestSuite) TestStatusErrors() {
 	configFile := filepath.Join(nonGitDir, ".github", ".env.shared")
 	err = os.MkdirAll(filepath.Dir(configFile), 0o750)
 	s.Require().NoError(err)
-	err = os.WriteFile(configFile, []byte("ENABLE_PRE_COMMIT_SYSTEM=true"), 0o600)
+	err = os.WriteFile(configFile, []byte("ENABLE_GO_PRE_COMMIT=true"), 0o600)
 	s.Require().NoError(err)
 
 	output = s.captureOutput(func() {
@@ -334,7 +334,7 @@ func (s *StatusTestSuite) TestStatusErrors() {
 // Test with installer error
 func (s *StatusTestSuite) TestStatusInstallerError() {
 	// Create config
-	configContent := `ENABLE_PRE_COMMIT_SYSTEM=true`
+	configContent := `ENABLE_GO_PRE_COMMIT=true`
 	err := os.WriteFile(s.configFile, []byte(configContent), 0o600)
 	s.Require().NoError(err)
 
@@ -434,9 +434,9 @@ func TestStatusIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	configFile := filepath.Join(configDir, ".env.shared")
-	configContent := `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=true
-PRE_COMMIT_SYSTEM_ENABLE_LINT=true`
+	configContent := `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_ENABLE_FUMPT=true
+GO_PRE_COMMIT_ENABLE_LINT=true`
 	err = os.WriteFile(configFile, []byte(configContent), 0o600)
 	require.NoError(t, err)
 
@@ -504,7 +504,7 @@ func BenchmarkRunStatus(b *testing.B) {
 	// Create config
 	configFile := filepath.Join(tempDir, ".github", ".env.shared")
 	_ = os.MkdirAll(filepath.Dir(configFile), 0o750)
-	_ = os.WriteFile(configFile, []byte("ENABLE_PRE_COMMIT_SYSTEM=true"), 0o600)
+	_ = os.WriteFile(configFile, []byte("ENABLE_GO_PRE_COMMIT=true"), 0o600)
 
 	// Install some hooks
 	hooksDir := filepath.Join(tempDir, ".git", "hooks")
@@ -551,7 +551,7 @@ func TestVerboseModeEdgeCases(t *testing.T) {
 	configFile := filepath.Join(tempDir, ".github", ".env.shared")
 	err = os.MkdirAll(filepath.Dir(configFile), 0o750)
 	require.NoError(t, err)
-	configContent := `ENABLE_PRE_COMMIT_SYSTEM=true`
+	configContent := `ENABLE_GO_PRE_COMMIT=true`
 	err = os.WriteFile(configFile, []byte(configContent), 0o600)
 	require.NoError(t, err)
 
@@ -607,7 +607,7 @@ func TestStatusHookPermissions(t *testing.T) {
 	configFile := filepath.Join(tempDir, ".github", ".env.shared")
 	err = os.MkdirAll(filepath.Dir(configFile), 0o750)
 	require.NoError(t, err)
-	err = os.WriteFile(configFile, []byte("ENABLE_PRE_COMMIT_SYSTEM=true"), 0o600)
+	err = os.WriteFile(configFile, []byte("ENABLE_GO_PRE_COMMIT=true"), 0o600)
 	require.NoError(t, err)
 
 	// Test different permission scenarios
@@ -674,7 +674,7 @@ func TestStatusOldHookFormat(t *testing.T) {
 	configFile := filepath.Join(tempDir, ".github", ".env.shared")
 	err = os.MkdirAll(filepath.Dir(configFile), 0o750)
 	require.NoError(t, err)
-	err = os.WriteFile(configFile, []byte("ENABLE_PRE_COMMIT_SYSTEM=true"), 0o600)
+	err = os.WriteFile(configFile, []byte("ENABLE_GO_PRE_COMMIT=true"), 0o600)
 	require.NoError(t, err)
 
 	// Install hook with old format (still valid)
@@ -720,7 +720,7 @@ func TestStatusConcurrent(t *testing.T) {
 	configFile := filepath.Join(tempDir, ".github", ".env.shared")
 	err = os.MkdirAll(filepath.Dir(configFile), 0o750)
 	require.NoError(t, err)
-	err = os.WriteFile(configFile, []byte("ENABLE_PRE_COMMIT_SYSTEM=true"), 0o600)
+	err = os.WriteFile(configFile, []byte("ENABLE_GO_PRE_COMMIT=true"), 0o600)
 	require.NoError(t, err)
 
 	// Run status command concurrently
@@ -784,7 +784,7 @@ func TestInstallerStatusEdgeCases(t *testing.T) {
 	configFile := filepath.Join(tempDir, ".github", ".env.shared")
 	err = os.MkdirAll(filepath.Dir(configFile), 0o750)
 	require.NoError(t, err)
-	err = os.WriteFile(configFile, []byte("ENABLE_PRE_COMMIT_SYSTEM=true"), 0o600)
+	err = os.WriteFile(configFile, []byte("ENABLE_GO_PRE_COMMIT=true"), 0o600)
 	require.NoError(t, err)
 
 	// Test with symlink hook
@@ -842,27 +842,27 @@ func TestConfigurationStatusDisplay(t *testing.T) {
 	}{
 		{
 			name: "All checks enabled",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=true
-PRE_COMMIT_SYSTEM_ENABLE_LINT=true
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=true
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true
-PRE_COMMIT_SYSTEM_ENABLE_EOF=true`,
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_ENABLE_FUMPT=true
+GO_PRE_COMMIT_ENABLE_LINT=true
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true
+GO_PRE_COMMIT_ENABLE_EOF=true`,
 		},
 		{
 			name: "Some checks disabled",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=false
-PRE_COMMIT_SYSTEM_ENABLE_LINT=false
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=true
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true
-PRE_COMMIT_SYSTEM_ENABLE_EOF=false`,
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_ENABLE_FUMPT=false
+GO_PRE_COMMIT_ENABLE_LINT=false
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true
+GO_PRE_COMMIT_ENABLE_EOF=false`,
 		},
 		{
 			name: "Custom timeout and workers",
-			config: `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=120
-PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=8`,
+			config: `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_TIMEOUT_SECONDS=120
+GO_PRE_COMMIT_PARALLEL_WORKERS=8`,
 		},
 	}
 
@@ -947,7 +947,7 @@ func TestModifiedTimeDisplay(t *testing.T) {
 	configFile := filepath.Join(tempDir, ".github", ".env.shared")
 	err = os.MkdirAll(filepath.Dir(configFile), 0o750)
 	require.NoError(t, err)
-	err = os.WriteFile(configFile, []byte("ENABLE_PRE_COMMIT_SYSTEM=true"), 0o600)
+	err = os.WriteFile(configFile, []byte("ENABLE_GO_PRE_COMMIT=true"), 0o600)
 	require.NoError(t, err)
 
 	// Install hook with known time

@@ -42,20 +42,20 @@ func (s *ProductionScenariosTestSuite) SetupSuite() {
 	// Create production-like .env.shared file
 	s.envFile = filepath.Join(githubDir, ".env.shared")
 	envContent := `# Production-like environment configuration
-ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_LOG_LEVEL=info
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=false
-PRE_COMMIT_SYSTEM_ENABLE_LINT=false
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=false
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true
-PRE_COMMIT_SYSTEM_ENABLE_EOF=true
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=120
-PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=4
-PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB=50
-PRE_COMMIT_SYSTEM_MAX_FILES_OPEN=500
-PRE_COMMIT_SYSTEM_EXCLUDE_PATTERNS="vendor/,node_modules/,.git/,dist/,build/,coverage/,*.log,*.tmp"
-PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT=60
-PRE_COMMIT_SYSTEM_EOF_TIMEOUT=60
+ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_LOG_LEVEL=info
+GO_PRE_COMMIT_ENABLE_FUMPT=false
+GO_PRE_COMMIT_ENABLE_LINT=false
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=false
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true
+GO_PRE_COMMIT_ENABLE_EOF=true
+GO_PRE_COMMIT_TIMEOUT_SECONDS=120
+GO_PRE_COMMIT_PARALLEL_WORKERS=4
+GO_PRE_COMMIT_MAX_FILE_SIZE_MB=50
+GO_PRE_COMMIT_MAX_FILES_OPEN=500
+GO_PRE_COMMIT_EXCLUDE_PATTERNS="vendor/,node_modules/,.git/,dist/,build/,coverage/,*.log,*.tmp"
+GO_PRE_COMMIT_WHITESPACE_TIMEOUT=60
+GO_PRE_COMMIT_EOF_TIMEOUT=60
 `
 	s.Require().NoError(os.WriteFile(s.envFile, []byte(envContent), 0o600))
 
@@ -404,24 +404,24 @@ func (s *ProductionScenariosTestSuite) TestResourceConstrainedEnvironment() {
 		{
 			name: "Limited Memory",
 			config: map[string]string{
-				"PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB": "1",
-				"PRE_COMMIT_SYSTEM_MAX_FILES_OPEN":   "10",
+				"GO_PRE_COMMIT_MAX_FILE_SIZE_MB": "1",
+				"GO_PRE_COMMIT_MAX_FILES_OPEN":   "10",
 			},
 			description: "Environment with limited memory resources",
 		},
 		{
 			name: "Single Worker",
 			config: map[string]string{
-				"PRE_COMMIT_SYSTEM_PARALLEL_WORKERS": "1",
+				"GO_PRE_COMMIT_PARALLEL_WORKERS": "1",
 			},
 			description: "Environment with limited CPU (single worker)",
 		},
 		{
 			name: "Short Timeouts",
 			config: map[string]string{
-				"PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS":    "30",
-				"PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT": "10",
-				"PRE_COMMIT_SYSTEM_EOF_TIMEOUT":        "10",
+				"GO_PRE_COMMIT_TIMEOUT_SECONDS":    "30",
+				"GO_PRE_COMMIT_WHITESPACE_TIMEOUT": "10",
+				"GO_PRE_COMMIT_EOF_TIMEOUT":        "10",
 			},
 			description: "Environment with aggressive timeouts",
 		},
@@ -834,12 +834,12 @@ exit 0
 func (s *ProductionScenariosTestSuite) createConstrainedConfig(overrides map[string]string) {
 	// Start with base config
 	config := map[string]string{
-		"ENABLE_PRE_COMMIT_SYSTEM":            "true",
-		"PRE_COMMIT_SYSTEM_LOG_LEVEL":         "info",
-		"PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE": "true",
-		"PRE_COMMIT_SYSTEM_ENABLE_EOF":        "true",
-		"PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS":   "120",
-		"PRE_COMMIT_SYSTEM_PARALLEL_WORKERS":  "4",
+		"ENABLE_GO_PRE_COMMIT":            "true",
+		"GO_PRE_COMMIT_LOG_LEVEL":         "info",
+		"GO_PRE_COMMIT_ENABLE_WHITESPACE": "true",
+		"GO_PRE_COMMIT_ENABLE_EOF":        "true",
+		"GO_PRE_COMMIT_TIMEOUT_SECONDS":   "120",
+		"GO_PRE_COMMIT_PARALLEL_WORKERS":  "4",
 	}
 
 	// Apply overrides
@@ -857,20 +857,20 @@ func (s *ProductionScenariosTestSuite) createConstrainedConfig(overrides map[str
 }
 
 func (s *ProductionScenariosTestSuite) restoreOriginalConfig() {
-	originalConfig := `ENABLE_PRE_COMMIT_SYSTEM=true
-PRE_COMMIT_SYSTEM_LOG_LEVEL=info
-PRE_COMMIT_SYSTEM_ENABLE_FUMPT=false
-PRE_COMMIT_SYSTEM_ENABLE_LINT=false
-PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=false
-PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true
-PRE_COMMIT_SYSTEM_ENABLE_EOF=true
-PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=120
-PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=4
-PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB=50
-PRE_COMMIT_SYSTEM_MAX_FILES_OPEN=500
-PRE_COMMIT_SYSTEM_EXCLUDE_PATTERNS="vendor/,node_modules/,.git/,dist/,build/,coverage/,*.log,*.tmp"
-PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT=60
-PRE_COMMIT_SYSTEM_EOF_TIMEOUT=60
+	originalConfig := `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_LOG_LEVEL=info
+GO_PRE_COMMIT_ENABLE_FUMPT=false
+GO_PRE_COMMIT_ENABLE_LINT=false
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=false
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true
+GO_PRE_COMMIT_ENABLE_EOF=true
+GO_PRE_COMMIT_TIMEOUT_SECONDS=120
+GO_PRE_COMMIT_PARALLEL_WORKERS=4
+GO_PRE_COMMIT_MAX_FILE_SIZE_MB=50
+GO_PRE_COMMIT_MAX_FILES_OPEN=500
+GO_PRE_COMMIT_EXCLUDE_PATTERNS="vendor/,node_modules/,.git/,dist/,build/,coverage/,*.log,*.tmp"
+GO_PRE_COMMIT_WHITESPACE_TIMEOUT=60
+GO_PRE_COMMIT_EOF_TIMEOUT=60
 `
 	s.Require().NoError(os.WriteFile(s.envFile, []byte(originalConfig), 0o600))
 }

@@ -57,8 +57,8 @@ func runInstall(_ *cobra.Command, _ []string) error {
 
 	// Check if pre-commit system is enabled
 	if !cfg.Enabled {
-		printWarning("Pre-commit system is disabled in configuration (ENABLE_PRE_COMMIT_SYSTEM=false)")
-		printInfo("To enable, set ENABLE_PRE_COMMIT_SYSTEM=true in .github/.env.shared")
+		printWarning("Pre-commit system is disabled in configuration (ENABLE_GO_PRE_COMMIT=false)")
+		printInfo("To enable, set ENABLE_GO_PRE_COMMIT=true in .github/.env.shared")
 		return nil
 	}
 

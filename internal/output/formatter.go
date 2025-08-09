@@ -52,7 +52,7 @@ func New(opts Options) *Formatter {
 func NewDefault() *Formatter {
 	// Check for color disable flags
 	colorEnabled := os.Getenv("NO_COLOR") == "" &&
-		os.Getenv("PRE_COMMIT_SYSTEM_COLOR_OUTPUT") != "false"
+		os.Getenv("GO_PRE_COMMIT_COLOR_OUTPUT") != "false"
 
 	return New(Options{
 		ColorEnabled: colorEnabled,
@@ -190,7 +190,7 @@ func (f *Formatter) parseLintError(output string) (string, string) {
 
 	if strings.Contains(output, "timeout") {
 		return "golangci-lint timed out",
-			"Increase timeout with PRE_COMMIT_SYSTEM_LINT_TIMEOUT or run 'golangci-lint run' manually."
+			"Increase timeout with GO_PRE_COMMIT_LINT_TIMEOUT or run 'golangci-lint run' manually."
 	}
 
 	// Check for actual linting issues
