@@ -326,6 +326,38 @@ PRE_COMMIT_SYSTEM_ENABLE_LINT=false
 
 // TestConfigurationDefaults validates default values are properly set
 func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
+	// Clean environment variables to ensure defaults are tested
+	envVarsToClean := []string{
+		"ENABLE_PRE_COMMIT_SYSTEM", "PRE_COMMIT_SYSTEM_LOG_LEVEL",
+		"PRE_COMMIT_SYSTEM_ENABLE_FUMPT", "PRE_COMMIT_SYSTEM_ENABLE_LINT",
+		"PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY", "PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE",
+		"PRE_COMMIT_SYSTEM_ENABLE_EOF", "PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS",
+		"PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB", "PRE_COMMIT_SYSTEM_MAX_FILES_OPEN",
+		"PRE_COMMIT_SYSTEM_FUMPT_VERSION", "PRE_COMMIT_SYSTEM_GOLANGCI_LINT_VERSION",
+		"PRE_COMMIT_SYSTEM_PARALLEL_WORKERS", "PRE_COMMIT_SYSTEM_FAIL_FAST",
+		"PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT", "PRE_COMMIT_SYSTEM_LINT_TIMEOUT",
+		"PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT", "PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT",
+		"PRE_COMMIT_SYSTEM_EOF_TIMEOUT", "PRE_COMMIT_SYSTEM_HOOKS_PATH",
+		"PRE_COMMIT_SYSTEM_COLOR_OUTPUT", "NO_COLOR", "CI",
+	}
+
+	// Store and clear environment variables
+	originalEnvValues := make(map[string]string)
+	for _, envVar := range envVarsToClean {
+		originalEnvValues[envVar] = os.Getenv(envVar)
+		s.Require().NoError(os.Unsetenv(envVar))
+	}
+	defer func() {
+		// Restore environment variables
+		for envVar, originalValue := range originalEnvValues {
+			if originalValue == "" {
+				s.Require().NoError(os.Unsetenv(envVar))
+			} else {
+				s.Require().NoError(os.Setenv(envVar, originalValue))
+			}
+		}
+	}()
+
 	// Create minimal .env.shared file with only required setting
 	githubDir := filepath.Join(s.tempDir, ".github")
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
@@ -335,15 +367,33 @@ func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 `
 	s.Require().NoError(os.WriteFile(envFile, []byte(minimalConfig), 0o600))
 
+	// Save current directory and change to a completely isolated directory
+	currentDir, err := os.Getwd()
+	s.Require().NoError(err)
+
+	// Create a completely isolated directory that has no parent .env.shared files
+	isolatedDir := filepath.Join(os.TempDir(), "config-test-isolated")
+	s.Require().NoError(os.MkdirAll(isolatedDir, 0o750))
+	defer func() { _ = os.RemoveAll(isolatedDir) }()
+
+	// Copy our test config to the isolated directory
+	isolatedGithubDir := filepath.Join(isolatedDir, ".github")
+	s.Require().NoError(os.MkdirAll(isolatedGithubDir, 0o750))
+	isolatedEnvFile := filepath.Join(isolatedGithubDir, ".env.shared")
+	s.Require().NoError(os.WriteFile(isolatedEnvFile, []byte(minimalConfig), 0o600))
+
+	s.Require().NoError(os.Chdir(isolatedDir))
+	defer func() { _ = os.Chdir(currentDir) }()
+
 	cfg, err := config.Load()
 	s.Require().NoError(err, "Minimal configuration should load successfully")
 
-	// Validate all defaults
+	// Validate all defaults (based on actual code defaults in config.go)
 	expectedDefaults := map[string]interface{}{
 		"LogLevel":                    "info",
 		"MaxFileSize":                 int64(10 * 1024 * 1024), // 10MB
 		"MaxFilesOpen":                100,
-		"Timeout":                     120,
+		"Timeout":                     300, // Actual default from config.go line 96
 		"Checks.Fumpt":                true,
 		"Checks.Lint":                 true,
 		"Checks.ModTidy":              true,
@@ -351,7 +401,7 @@ func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 		"Checks.EOF":                  true,
 		"ToolVersions.Fumpt":          "latest",
 		"ToolVersions.GolangciLint":   "latest",
-		"Performance.ParallelWorkers": 2, // Default parallel workers
+		"Performance.ParallelWorkers": 0, // Actual default from config.go line 114 (0 = auto)
 		"Performance.FailFast":        false,
 		"CheckTimeouts.Fumpt":         30,
 		"CheckTimeouts.Lint":          60,
@@ -579,12 +629,54 @@ PRE_COMMIT_SYSTEM_LINT_TIMEOUT=90
 
 // TestConfigurationDirectoryDetection validates directory detection logic
 func (s *ConfigValidationTestSuite) TestConfigurationDirectoryDetection() {
+	// Clean environment variables to ensure test isolation
+	envVarsToClean := []string{
+		"ENABLE_PRE_COMMIT_SYSTEM", "PRE_COMMIT_SYSTEM_LOG_LEVEL",
+		"PRE_COMMIT_SYSTEM_ENABLE_FUMPT", "PRE_COMMIT_SYSTEM_ENABLE_LINT",
+		"PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY", "PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE",
+		"PRE_COMMIT_SYSTEM_ENABLE_EOF", "PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS",
+		"PRE_COMMIT_SYSTEM_MAX_FILE_SIZE_MB", "PRE_COMMIT_SYSTEM_MAX_FILES_OPEN",
+		"PRE_COMMIT_SYSTEM_FUMPT_VERSION", "PRE_COMMIT_SYSTEM_GOLANGCI_LINT_VERSION",
+		"PRE_COMMIT_SYSTEM_PARALLEL_WORKERS", "PRE_COMMIT_SYSTEM_FAIL_FAST",
+		"PRE_COMMIT_SYSTEM_FUMPT_TIMEOUT", "PRE_COMMIT_SYSTEM_LINT_TIMEOUT",
+		"PRE_COMMIT_SYSTEM_MOD_TIDY_TIMEOUT", "PRE_COMMIT_SYSTEM_WHITESPACE_TIMEOUT",
+		"PRE_COMMIT_SYSTEM_EOF_TIMEOUT", "PRE_COMMIT_SYSTEM_HOOKS_PATH",
+		"PRE_COMMIT_SYSTEM_COLOR_OUTPUT", "NO_COLOR", "CI",
+	}
+
+	// Store and clear environment variables
+	originalEnvValues := make(map[string]string)
+	for _, envVar := range envVarsToClean {
+		originalEnvValues[envVar] = os.Getenv(envVar)
+		s.Require().NoError(os.Unsetenv(envVar))
+	}
+	defer func() {
+		// Restore environment variables
+		for envVar, originalValue := range originalEnvValues {
+			if originalValue == "" {
+				s.Require().NoError(os.Unsetenv(envVar))
+			} else {
+				s.Require().NoError(os.Setenv(envVar, originalValue))
+			}
+		}
+	}()
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	s.Require().NoError(err)
+	defer func() { _ = os.Chdir(currentDir) }()
+
+	// Create a completely isolated directory structure in temp
+	isolatedDir := filepath.Join(os.TempDir(), "config-test-directory-detection")
+	s.Require().NoError(os.MkdirAll(isolatedDir, 0o750))
+	defer func() { _ = os.RemoveAll(isolatedDir) }()
+
 	// Create nested directory structure
-	nestedDir := filepath.Join(s.tempDir, "deep", "nested", "directory")
+	nestedDir := filepath.Join(isolatedDir, "deep", "nested", "directory")
 	s.Require().NoError(os.MkdirAll(nestedDir, 0o750))
 
-	// Create .github/.env.shared at the root
-	githubDir := filepath.Join(s.tempDir, ".github")
+	// Create .github/.env.shared at the isolated root
+	githubDir := filepath.Join(isolatedDir, ".github")
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
 	envFile := filepath.Join(githubDir, ".env.shared")
@@ -600,10 +692,7 @@ PRE_COMMIT_SYSTEM_LOG_LEVEL=debug
 	cfg, err := config.Load()
 	s.Require().NoError(err, "Should find .env.shared file by walking up directories")
 	s.NotNil(cfg, "Configuration should be loaded")
-	s.Equal("info", cfg.LogLevel, "Should load default configuration")
-
-	// Change back to temp directory
-	s.Require().NoError(os.Chdir(s.tempDir))
+	s.Equal("debug", cfg.LogLevel, "Should load configured log level")
 }
 
 // TestConfigurationHelp validates the configuration help functionality
