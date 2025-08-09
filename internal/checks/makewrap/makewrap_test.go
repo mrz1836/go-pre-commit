@@ -164,7 +164,7 @@ func TestLintCheck_Run_NoMake(t *testing.T) {
 
 	err = check.Run(ctx, []string{"test.go"})
 	require.Error(t, err)
-	// Lint check will fail to find repository root first
+	// Lint check will fail to find repository root when running direct lint
 	assert.Contains(t, err.Error(), "failed to find repository root")
 }
 
