@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -164,8 +165,13 @@ func TestLintCheck_Run_NoMake(t *testing.T) {
 
 	err = check.Run(ctx, []string{"test.go"})
 	require.Error(t, err)
-	// Lint check will fail to find repository root when running direct lint
-	assert.Contains(t, err.Error(), "failed to find repository root")
+	// Lint check will either fail to find repository root (if golangci-lint exists)
+	// or fail to find golangci-lint tool (in CI environments)
+	errMsg := err.Error()
+	assert.True(t,
+		strings.Contains(errMsg, "failed to find repository root") ||
+			strings.Contains(errMsg, "golangci-lint not found"),
+		"Expected error to contain either 'failed to find repository root' or 'golangci-lint not found', got: %s", errMsg)
 }
 
 func TestNewModTidyCheck(t *testing.T) {
