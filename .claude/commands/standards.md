@@ -2,7 +2,7 @@
 allowed-tools: Task, Read, Grep, Glob
 argument-hint: [package-or-file]
 description: Validate Go standards compliance
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 📏 Validate Go Standards

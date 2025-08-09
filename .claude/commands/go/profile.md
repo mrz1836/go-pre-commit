@@ -2,7 +2,7 @@
 allowed-tools: Task, Bash(go test:*), Bash(go tool pprof:*), Write
 argument-hint: [cpu|mem|trace] [package]
 description: Profile performance issues with pprof
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 🔬 Performance Profiling

@@ -2,7 +2,7 @@
 allowed-tools: Task, Read, Edit, MultiEdit, Grep, Glob
 argument-hint: [package-or-directory]
 description: Remove duplicate code and improve structure
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 🧹 Clean Code and Remove Duplicates

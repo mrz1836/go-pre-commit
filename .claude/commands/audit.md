@@ -1,7 +1,7 @@
 ---
 allowed-tools: Task, Bash(go list:*), Bash(govulncheck:*), Bash(gitleaks:*)
 description: Security audit with vulnerability scanning
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 🔒 Security Audit

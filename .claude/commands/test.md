@@ -2,7 +2,7 @@
 allowed-tools: Task, Bash(go test:*), Bash(make test:*), Read, Write, Edit
 argument-hint: [package-or-function-name]
 description: Create or fix tests with go-tester agent
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 🧪 Create or Fix Tests

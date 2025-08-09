@@ -2,7 +2,7 @@
 allowed-tools: Task, Read, Edit, MultiEdit, Bash(git diff:*), Grep
 argument-hint: [feature-or-file]
 description: Update documentation for new or modified features
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 📚 Update Documentation

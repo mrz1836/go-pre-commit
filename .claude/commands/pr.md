@@ -2,7 +2,7 @@
 allowed-tools: Task, Bash(git:*), Read, Edit
 argument-hint: [pr-title]
 description: Complete pull request workflow with pr-orchestrator
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 🚀 Create Pull Request

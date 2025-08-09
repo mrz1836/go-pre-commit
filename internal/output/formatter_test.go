@@ -59,42 +59,94 @@ func TestNewDefault(t *testing.T) {
 }
 
 func TestFormatterOutput(t *testing.T) {
-	var out, err bytes.Buffer
+	t.Run("ColorDisabled", func(t *testing.T) {
+		var out, err bytes.Buffer
 
-	f := New(Options{
-		ColorEnabled: false, // Disable color for predictable testing
-		Out:          &out,
-		Err:          &err,
+		f := New(Options{
+			ColorEnabled: false,
+			Out:          &out,
+			Err:          &err,
+		})
+
+		t.Run("Success", func(t *testing.T) {
+			out.Reset()
+			f.Success("test message")
+			assert.Equal(t, "✓ test message\n", out.String())
+		})
+
+		t.Run("Error", func(t *testing.T) {
+			err.Reset()
+			f.Error("test error")
+			assert.Equal(t, "✗ test error\n", err.String())
+		})
+
+		t.Run("Warning", func(t *testing.T) {
+			err.Reset()
+			f.Warning("test warning")
+			assert.Equal(t, "⚠ test warning\n", err.String())
+		})
+
+		t.Run("Info", func(t *testing.T) {
+			out.Reset()
+			f.Info("test info")
+			assert.Equal(t, "ℹ test info\n", out.String())
+		})
+
+		t.Run("Progress", func(t *testing.T) {
+			out.Reset()
+			f.Progress("test progress")
+			assert.Equal(t, "⏳ test progress\n", out.String())
+		})
 	})
 
-	t.Run("Success", func(t *testing.T) {
-		out.Reset()
-		f.Success("test message")
-		assert.Equal(t, "✓ test message\n", out.String())
-	})
+	t.Run("ColorEnabled", func(t *testing.T) {
+		var out, err bytes.Buffer
 
-	t.Run("Error", func(t *testing.T) {
-		err.Reset()
-		f.Error("test error")
-		assert.Equal(t, "✗ test error\n", err.String())
-	})
+		f := New(Options{
+			ColorEnabled: true,
+			Out:          &out,
+			Err:          &err,
+		})
 
-	t.Run("Warning", func(t *testing.T) {
-		err.Reset()
-		f.Warning("test warning")
-		assert.Equal(t, "⚠ test warning\n", err.String())
-	})
+		t.Run("Success", func(t *testing.T) {
+			out.Reset()
+			f.Success("test message with %s", "formatting")
+			outputStr := out.String()
+			assert.Contains(t, outputStr, "✓")
+			assert.Contains(t, outputStr, "test message with formatting")
+		})
 
-	t.Run("Info", func(t *testing.T) {
-		out.Reset()
-		f.Info("test info")
-		assert.Equal(t, "ℹ test info\n", out.String())
-	})
+		t.Run("Error", func(t *testing.T) {
+			err.Reset()
+			f.Error("test error with %d code", 500)
+			outputStr := err.String()
+			assert.Contains(t, outputStr, "✗")
+			assert.Contains(t, outputStr, "test error with 500 code")
+		})
 
-	t.Run("Progress", func(t *testing.T) {
-		out.Reset()
-		f.Progress("test progress")
-		assert.Equal(t, "⏳ test progress\n", out.String())
+		t.Run("Warning", func(t *testing.T) {
+			err.Reset()
+			f.Warning("test warning")
+			outputStr := err.String()
+			assert.Contains(t, outputStr, "⚠")
+			assert.Contains(t, outputStr, "test warning")
+		})
+
+		t.Run("Info", func(t *testing.T) {
+			out.Reset()
+			f.Info("test info")
+			outputStr := out.String()
+			assert.Contains(t, outputStr, "ℹ")
+			assert.Contains(t, outputStr, "test info")
+		})
+
+		t.Run("Progress", func(t *testing.T) {
+			out.Reset()
+			f.Progress("test progress")
+			outputStr := out.String()
+			assert.Contains(t, outputStr, "⏳")
+			assert.Contains(t, outputStr, "test progress")
+		})
 	})
 }
 
@@ -346,6 +398,24 @@ func TestFormatExecutionStats(t *testing.T) {
 			fileCount: 0,
 			expected:  "3 skipped in 100ms",
 		},
+		{
+			name:      "AllZero",
+			passed:    0,
+			failed:    0,
+			skipped:   0,
+			duration:  10 * time.Millisecond,
+			fileCount: 0,
+			expected:  " in 10ms",
+		},
+		{
+			name:      "AllZeroWithFiles",
+			passed:    0,
+			failed:    0,
+			skipped:   0,
+			duration:  25 * time.Millisecond,
+			fileCount: 5,
+			expected:  " on 5 file(s) in 25ms",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -399,58 +469,119 @@ func TestParseGenericMakeError(t *testing.T) {
 }
 
 func TestHeaderAndSubheaderFormatting(t *testing.T) {
-	var out bytes.Buffer
-	f := New(Options{
-		ColorEnabled: false,
-		Out:          &out,
+	t.Run("ColorDisabled", func(t *testing.T) {
+		var out bytes.Buffer
+		f := New(Options{
+			ColorEnabled: false,
+			Out:          &out,
+		})
+
+		t.Run("Header", func(t *testing.T) {
+			out.Reset()
+			f.Header("Test Header")
+			expected := "\nTest Header\n───────────\n"
+			assert.Equal(t, expected, out.String())
+		})
+
+		t.Run("Subheader", func(t *testing.T) {
+			out.Reset()
+			f.Subheader("Test Subheader")
+			expected := "\nTest Subheader:\n"
+			assert.Equal(t, expected, out.String())
+		})
+
+		t.Run("Detail", func(t *testing.T) {
+			out.Reset()
+			f.Detail("Detail message")
+			expected := "  Detail message\n"
+			assert.Equal(t, expected, out.String())
+		})
 	})
 
-	t.Run("Header", func(t *testing.T) {
-		out.Reset()
-		f.Header("Test Header")
-		expected := "\nTest Header\n───────────\n"
-		assert.Equal(t, expected, out.String())
-	})
+	t.Run("ColorEnabled", func(t *testing.T) {
+		var out bytes.Buffer
+		f := New(Options{
+			ColorEnabled: true,
+			Out:          &out,
+		})
 
-	t.Run("Subheader", func(t *testing.T) {
-		out.Reset()
-		f.Subheader("Test Subheader")
-		expected := "\nTest Subheader:\n"
-		assert.Equal(t, expected, out.String())
-	})
+		t.Run("Header", func(t *testing.T) {
+			out.Reset()
+			f.Header("Test Header")
+			outputStr := out.String()
+			// Should contain header text and separator
+			assert.Contains(t, outputStr, "Test Header")
+			assert.Contains(t, outputStr, "───────────")
+		})
 
-	t.Run("Detail", func(t *testing.T) {
-		out.Reset()
-		f.Detail("Detail message")
-		expected := "  Detail message\n"
-		assert.Equal(t, expected, out.String())
+		t.Run("Subheader", func(t *testing.T) {
+			out.Reset()
+			f.Subheader("Test Subheader")
+			outputStr := out.String()
+			assert.Contains(t, outputStr, "Test Subheader:")
+		})
 	})
 }
 
 func TestCodeBlock(t *testing.T) {
-	var out bytes.Buffer
-	f := New(Options{
-		ColorEnabled: false,
-		Out:          &out,
+	t.Run("ColorDisabled", func(t *testing.T) {
+		var out bytes.Buffer
+		f := New(Options{
+			ColorEnabled: false,
+			Out:          &out,
+		})
+
+		out.Reset()
+		f.CodeBlock("line 1\nline 2\nline 3")
+		expected := "    line 1\n    line 2\n    line 3\n"
+		assert.Equal(t, expected, out.String())
 	})
 
-	out.Reset()
-	f.CodeBlock("line 1\nline 2\nline 3")
-	expected := "    line 1\n    line 2\n    line 3\n"
-	assert.Equal(t, expected, out.String())
+	t.Run("ColorEnabled", func(t *testing.T) {
+		var out bytes.Buffer
+		f := New(Options{
+			ColorEnabled: true,
+			Out:          &out,
+		})
+
+		out.Reset()
+		f.CodeBlock("line 1\nline 2\nline 3")
+		outputStr := out.String()
+		// Should contain indented content
+		assert.Contains(t, outputStr, "    line 1")
+		assert.Contains(t, outputStr, "    line 2")
+		assert.Contains(t, outputStr, "    line 3")
+	})
 }
 
 func TestSuggestAction(t *testing.T) {
-	var out bytes.Buffer
-	f := New(Options{
-		ColorEnabled: false,
-		Out:          &out,
+	t.Run("ColorDisabled", func(t *testing.T) {
+		var out bytes.Buffer
+		f := New(Options{
+			ColorEnabled: false,
+			Out:          &out,
+		})
+
+		out.Reset()
+		f.SuggestAction("Try this action")
+		expected := "💡 Try this action\n"
+		assert.Equal(t, expected, out.String())
 	})
 
-	out.Reset()
-	f.SuggestAction("Try this action")
-	expected := "💡 Try this action\n"
-	assert.Equal(t, expected, out.String())
+	t.Run("ColorEnabled", func(t *testing.T) {
+		var out bytes.Buffer
+		f := New(Options{
+			ColorEnabled: true,
+			Out:          &out,
+		})
+
+		out.Reset()
+		f.SuggestAction("Try this action")
+		outputStr := out.String()
+		// Should contain the message content
+		assert.Contains(t, outputStr, "Try this action")
+		assert.Contains(t, outputStr, "💡")
+	})
 }
 
 func TestHighlight(t *testing.T) {
@@ -511,4 +642,101 @@ func TestParseTextMakeError(t *testing.T) {
 			assert.Equal(t, tc.expectedSuggestion, suggestion)
 		})
 	}
+}
+
+// TestNewFormatterOptions tests the New function with different options
+func TestNewFormatterOptions(t *testing.T) {
+	t.Run("WithCustomWriters", func(t *testing.T) {
+		var out, err bytes.Buffer
+		f := New(Options{
+			ColorEnabled: true,
+			Out:          &out,
+			Err:          &err,
+		})
+
+		// Test that custom writers are used
+		f.Success("test")
+		assert.Contains(t, out.String(), "test")
+		assert.Empty(t, err.String())
+
+		err.Reset()
+		f.Error("error test")
+		assert.Contains(t, err.String(), "error test")
+	})
+
+	t.Run("WithNilWriters", func(t *testing.T) {
+		// Should default to os.Stdout/os.Stderr when nil writers provided
+		f := New(Options{
+			ColorEnabled: false,
+			Out:          nil,
+			Err:          nil,
+		})
+
+		// Should not panic and should use default writers
+		assert.NotPanics(t, func() {
+			f.Success("test")
+			f.Error("error")
+		})
+	})
+}
+
+// TestFormatterWithStringFormatting tests string formatting in various methods
+func TestFormatterWithStringFormatting(t *testing.T) {
+	var out, err bytes.Buffer
+	f := New(Options{
+		ColorEnabled: false,
+		Out:          &out,
+		Err:          &err,
+	})
+
+	t.Run("SuccessWithFormatting", func(t *testing.T) {
+		out.Reset()
+		f.Success("Processing %d files with %s", 5, "success")
+		assert.Equal(t, "✓ Processing 5 files with success\n", out.String())
+	})
+
+	t.Run("ErrorWithFormatting", func(t *testing.T) {
+		err.Reset()
+		f.Error("Failed to process %s: %v", "file.go", "permission denied")
+		assert.Equal(t, "✗ Failed to process file.go: permission denied\n", err.String())
+	})
+
+	t.Run("DetailWithFormatting", func(t *testing.T) {
+		out.Reset()
+		f.Detail("Found %d issues in %s", 3, "main.go")
+		assert.Equal(t, "  Found 3 issues in main.go\n", out.String())
+	})
+
+	t.Run("WarningWithFormatting", func(t *testing.T) {
+		err.Reset()
+		f.Warning("Deprecated feature used in %s line %d", "utils.go", 42)
+		assert.Equal(t, "⚠ Deprecated feature used in utils.go line 42\n", err.String())
+	})
+
+	t.Run("InfoWithFormatting", func(t *testing.T) {
+		out.Reset()
+		f.Info("Processed %d/%d files", 8, 10)
+		assert.Equal(t, "ℹ Processed 8/10 files\n", out.String())
+	})
+
+	t.Run("ProgressWithFormatting", func(t *testing.T) {
+		out.Reset()
+		f.Progress("Running %s checks...", "syntax")
+		assert.Equal(t, "⏳ Running syntax checks...\n", out.String())
+	})
+}
+
+// TestParseMakeErrorWhitespaceHandling tests whitespace handling in ParseMakeError
+func TestParseMakeErrorWhitespaceHandling(t *testing.T) {
+	f := NewDefault()
+
+	// Test with leading/trailing whitespace
+	message, suggestion := f.ParseMakeError("make lint", "  \n\tgolangci-lint: no such file or directory\n\t  ")
+	assert.Equal(t, "golangci-lint binary not found", message)
+	assert.Contains(t, suggestion, "Install golangci-lint")
+
+	// Test with empty output (just whitespace)
+	message, suggestion = f.ParseMakeError("make unknown-target", "   \n\t   ")
+	assert.Equal(t, "Make command 'make unknown-target' failed", message)
+	assert.Contains(t, suggestion, "Run 'make unknown-target' manually")
 }

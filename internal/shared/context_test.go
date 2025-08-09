@@ -455,3 +455,362 @@ func BenchmarkHasMakeTarget(b *testing.B) {
 		ctx.HasMakeTarget(context.Background(), "lint")
 	}
 }
+
+// Tests for GetAvailableMakeTargets function (currently 0% coverage)
+func TestGetAvailableMakeTargets(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldDir) }()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Initialize git repository
+	ctx := context.Background()
+	require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", "test@example.com").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", "Test User").Run())
+
+	t.Run("with valid makefile", func(t *testing.T) {
+		// Create Makefile with various target types
+		makefileContent := `# Test Makefile
+
+help:
+	@echo "Available targets:"
+
+build: ## Build the project
+	@echo "Building..."
+
+test: ## Run tests
+	@echo "Testing..."
+
+# This is a comment
+clean:
+	@echo "Cleaning..."
+
+# Hidden target
+.PHONY: help build test clean
+
+# Variable assignment
+VERSION = 1.0.0
+
+# Target with dependency
+install: build
+	@echo "Installing..."
+`
+		err := os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+		require.NoError(t, err)
+
+		sharedCtx := NewContext()
+		targets, err := sharedCtx.GetAvailableMakeTargets(ctx)
+		require.NoError(t, err)
+
+		// Should contain the main targets but not hidden ones
+		expectedTargets := []string{"help", "build", "test", "clean", "install"}
+		for _, expected := range expectedTargets {
+			assert.Contains(t, targets, expected, "Missing target: %s", expected)
+		}
+
+		// Should not contain hidden or invalid targets
+		for _, target := range targets {
+			assert.NotEmpty(t, target)
+			assert.NotContains(t, target, ".") // No .PHONY etc
+			assert.NotContains(t, target, "/") // No paths
+			assert.NotContains(t, target, "%") // No patterns
+		}
+	})
+
+	t.Run("with make command failure", func(t *testing.T) {
+		// Remove Makefile to cause make -qp to fail
+		_ = os.Remove("Makefile")
+
+		sharedCtx := NewContext()
+		targets, err := sharedCtx.GetAvailableMakeTargets(ctx)
+
+		// Should return fallback targets when make fails
+		require.NoError(t, err)
+		expectedFallbacks := []string{"help", "build", "test", "clean", "install"}
+		assert.ElementsMatch(t, expectedFallbacks, targets)
+	})
+
+	t.Run("without git repository", func(t *testing.T) {
+		// Move to non-git directory
+		nonGitDir := t.TempDir()
+		err := os.Chdir(nonGitDir)
+		require.NoError(t, err)
+
+		sharedCtx := NewContext()
+		targets, err := sharedCtx.GetAvailableMakeTargets(ctx)
+
+		// Should fail when not in git repository
+		require.Error(t, err)
+		assert.Nil(t, targets)
+		assert.Contains(t, err.Error(), "failed to find repository root")
+	})
+
+	t.Run("with timeout", func(t *testing.T) {
+		// Back to git repo
+		err := os.Chdir(tmpDir)
+		require.NoError(t, err)
+
+		// Create a simple Makefile
+		err = os.WriteFile("Makefile", []byte("test:\n\t@echo test"), 0o600)
+		require.NoError(t, err)
+
+		// Test with very short timeout
+		shortCtx, cancel := context.WithTimeout(ctx, 1*time.Nanosecond)
+		defer cancel()
+		time.Sleep(10 * time.Millisecond) // Ensure timeout
+
+		sharedCtx := NewContext()
+		targets, err := sharedCtx.GetAvailableMakeTargets(shortCtx)
+
+		// Should return fallback targets on timeout
+		require.NoError(t, err) // Function handles timeout gracefully
+		expectedFallbacks := []string{"help", "build", "test", "clean", "install"}
+		assert.ElementsMatch(t, expectedFallbacks, targets)
+	})
+}
+
+// Tests for parseMakeTargets function (currently 0% coverage)
+func TestParseMakeTargets(t *testing.T) {
+	sharedCtx := NewContext()
+
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name: "basic targets",
+			input: `build:
+test:
+clean:`,
+			expected: []string{"build", "test", "clean"},
+		},
+		{
+			name: "targets with dependencies",
+			input: `build: deps
+test: build
+clean:`,
+			expected: []string{"build", "test", "clean"},
+		},
+		{
+			name: "mixed content with variables and comments",
+			input: `# This is a comment
+VERSION = 1.0.0
+
+build: ## Build target
+	@echo building
+
+# Another comment
+test:
+	@echo testing
+
+.PHONY: build test`,
+			expected: []string{"build", "test"},
+		},
+		{
+			name: "skip hidden and special targets",
+			input: `.PHONY: all
+.DEFAULT_GOAL := build
+
+all: build test
+build:
+test:
+%pattern:
+target/with/slash:
+	@echo should skip`,
+			expected: []string{"all", "build", "test"},
+		},
+		{
+			name:     "empty input",
+			input:    "",
+			expected: []string{},
+		},
+		{
+			name: "no targets",
+			input: `# Just comments
+VERSION = 1.0.0
+# More comments`,
+			expected: []string{},
+		},
+		{
+			name: "duplicate targets",
+			input: `build:
+test:
+build: ## Duplicate build target
+clean:`,
+			expected: []string{"build", "test", "clean"}, // Should deduplicate
+		},
+		{
+			name: "targets with whitespace",
+			input: `  build  :
+		test		:
+clean	:`,
+			expected: []string{"build", "test", "clean"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := sharedCtx.parseMakeTargets(tt.input)
+			assert.ElementsMatch(t, tt.expected, result)
+		})
+	}
+}
+
+// Tests for extractTargetDescription function (currently 45% coverage)
+func TestExtractTargetDescription(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldDir) }()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Initialize git repository
+	ctx := context.Background()
+	require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", "test@example.com").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", "Test User").Run())
+
+	sharedCtx := NewContext()
+
+	t.Run("with help target that provides descriptions", func(t *testing.T) {
+		// Create Makefile with help target
+		makefileContent := `help:
+	@echo "Available targets:"
+	@echo "  build    - Build the project"
+	@echo "  test     - Run tests"
+	@echo "  clean    - Clean build artifacts"
+
+build:
+	@echo "Building..."
+
+test:
+	@echo "Testing..."
+
+clean:
+	@echo "Cleaning..."
+`
+		err := os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+		require.NoError(t, err)
+
+		// Test extracting description for existing target
+		desc := sharedCtx.extractTargetDescription(ctx, tmpDir, "build")
+		assert.Contains(t, desc, "Build the project")
+
+		desc = sharedCtx.extractTargetDescription(ctx, tmpDir, "test")
+		assert.Contains(t, desc, "Run tests")
+
+		desc = sharedCtx.extractTargetDescription(ctx, tmpDir, "clean")
+		assert.Contains(t, desc, "Clean build artifacts")
+	})
+
+	t.Run("without help target", func(t *testing.T) {
+		// Create Makefile without help target
+		makefileContent := `build:
+	@echo "Building..."
+
+test:
+	@echo "Testing..."
+`
+		err := os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+		require.NoError(t, err)
+
+		// Should return empty description when help fails
+		desc := sharedCtx.extractTargetDescription(ctx, tmpDir, "build")
+		assert.Empty(t, desc)
+	})
+
+	t.Run("for non-existent target", func(t *testing.T) {
+		// Create Makefile with help that doesn't mention the target
+		makefileContent := `help:
+	@echo "Available targets:"
+	@echo "  build - Build the project"
+
+build:
+	@echo "Building..."
+`
+		err := os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+		require.NoError(t, err)
+
+		// Should return empty description for non-mentioned target
+		desc := sharedCtx.extractTargetDescription(ctx, tmpDir, "nonexistent")
+		assert.Empty(t, desc)
+	})
+
+	t.Run("with timeout", func(t *testing.T) {
+		// Test timeout behavior by using a very short timeout
+		shortCtx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
+		defer cancel()
+
+		// Create Makefile with normal help target
+		makefileContent := `help:
+	@echo "Available targets:"
+	@echo "  build - Build the project"
+
+build:
+	@echo "Building..."
+`
+		err := os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+		require.NoError(t, err)
+
+		// Should handle timeout gracefully
+		start := time.Now()
+		desc := sharedCtx.extractTargetDescription(shortCtx, tmpDir, "build")
+		elapsed := time.Since(start)
+
+		// Should return empty on timeout and complete quickly
+		assert.Empty(t, desc)
+		assert.Less(t, elapsed, 1*time.Second)
+	})
+
+	t.Run("with various description formats", func(t *testing.T) {
+		// Test different formats of help output
+		makefileContent := `help:
+	@echo "build: Build the application"
+	@echo "test - Run all tests"
+	@echo "clean:      Clean up files"
+	@echo "  deploy  -  Deploy to production"
+	@echo "format		Format the code"
+
+build:
+	@echo "Building..."
+
+test:
+	@echo "Testing..."
+
+clean:
+	@echo "Cleaning..."
+
+deploy:
+	@echo "Deploying..."
+
+format:
+	@echo "Formatting..."
+`
+		err := os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+		require.NoError(t, err)
+
+		// Test different description extraction patterns
+		desc := sharedCtx.extractTargetDescription(ctx, tmpDir, "build")
+		assert.NotEmpty(t, desc)
+		assert.Contains(t, desc, "Build the application")
+
+		desc = sharedCtx.extractTargetDescription(ctx, tmpDir, "test")
+		assert.Contains(t, desc, "Run all tests")
+
+		desc = sharedCtx.extractTargetDescription(ctx, tmpDir, "clean")
+		assert.Contains(t, desc, "Clean up files")
+
+		desc = sharedCtx.extractTargetDescription(ctx, tmpDir, "deploy")
+		assert.Contains(t, desc, "Deploy to production")
+
+		desc = sharedCtx.extractTargetDescription(ctx, tmpDir, "format")
+		assert.Contains(t, desc, "Format the code")
+	})
+}

@@ -16,12 +16,19 @@ var (
 )
 
 func main() {
+	os.Exit(run())
+}
+
+// run executes the main application logic and returns the exit code.
+// This function is separated from main() to enable testing.
+func run() int {
 	// Set version information for the root command
 	cmd.SetVersionInfo(version, commit, buildDate)
 
 	// Execute the root command
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
+	return 0
 }

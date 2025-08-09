@@ -2,7 +2,7 @@
 allowed-tools: Task, Read, Edit, MultiEdit, Grep, Glob
 argument-hint: [target-package-or-file]
 description: Refactor code to remove duplicates and improve structure
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## ♻️ Refactor Code

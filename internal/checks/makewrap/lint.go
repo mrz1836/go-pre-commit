@@ -146,15 +146,18 @@ func (c *LintCheck) runMakeLint(ctx context.Context) error {
 		// Try to determine if this is linting issues vs. actual failure
 		if strings.Contains(output, "level=error") ||
 			strings.Contains(output, "ERRO") ||
-			strings.Contains(output, ".go:") && strings.Contains(output, ":") {
+			(strings.Contains(output, ".go:") && strings.Contains(output, ":")) {
 			// This looks like linting issues, not a tool failure
 			// Extract and format specific lint errors for better visibility
 			formattedOutput := formatLintErrors(output)
-			return prerrors.NewToolExecutionError(
-				"make lint",
-				formattedOutput,
-				"Fix the linting issues shown above. Run 'make lint' to see full details and 'golangci-lint run --help' for configuration options.",
-			)
+			// For lint errors, return the formatted output as the error message
+			return &prerrors.CheckError{
+				Err:        prerrors.ErrLintingIssues,
+				Message:    formattedOutput,
+				Suggestion: "Fix the linting issues shown above. Run 'make lint' to see full details and 'golangci-lint run --help' for configuration options.",
+				Command:    "make lint",
+				Output:     formattedOutput,
+			}
 		}
 
 		// Generic failure
@@ -228,11 +231,14 @@ func (c *LintCheck) runDirectLint(ctx context.Context, files []string) error {
 			// This looks like linting issues, not a tool failure
 			// Extract and format specific lint errors for better visibility
 			formattedOutput := formatLintErrors(output)
-			return prerrors.NewToolExecutionError(
-				"golangci-lint run",
-				formattedOutput,
-				"Fix the linting issues shown above. Run 'golangci-lint run' to see full details.",
-			)
+			// For lint errors, return the formatted output as the error message
+			return &prerrors.CheckError{
+				Err:        prerrors.ErrLintingIssues,
+				Message:    formattedOutput,
+				Suggestion: "Fix the linting issues shown above. Run 'golangci-lint run' to see full details.",
+				Command:    "golangci-lint run",
+				Output:     formattedOutput,
+			}
 		}
 
 		// Generic failure

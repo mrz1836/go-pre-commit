@@ -145,6 +145,7 @@ func (sc *Context) extractTargetDescription(ctx context.Context, repoRoot, targe
 
 	output, err := cmd.Output()
 	if err == nil {
+		// Successfully got help output, try to parse it
 		lines := strings.Split(string(output), "\n")
 		for _, line := range lines {
 			if strings.Contains(line, target) {
@@ -160,31 +161,33 @@ func (sc *Context) extractTargetDescription(ctx context.Context, repoRoot, targe
 				}
 			}
 		}
+
+		// Help succeeded but no description found for target
+		// Only use fallbacks if help succeeded (meaning help target exists)
+		commonTargets := map[string]string{
+			"fumpt":     "Format Go code with gofumpt",
+			"lint":      "Run golangci-lint on Go code",
+			"mod-tidy":  "Tidy Go module dependencies",
+			"test":      "Run tests",
+			"build":     "Build the project",
+			"clean":     "Clean build artifacts",
+			"install":   "Install dependencies",
+			"help":      "Show help information",
+			"format":    "Format source code",
+			"check":     "Run checks",
+			"validate":  "Validate code",
+			"generate":  "Generate code",
+			"docs":      "Generate documentation",
+			"coverage":  "Generate test coverage",
+			"benchmark": "Run benchmarks",
+		}
+
+		if desc, exists := commonTargets[target]; exists {
+			return desc
+		}
 	}
 
-	// Fallback descriptions for common targets
-	commonTargets := map[string]string{
-		"fumpt":     "Format Go code with gofumpt",
-		"lint":      "Run golangci-lint on Go code",
-		"mod-tidy":  "Tidy Go module dependencies",
-		"test":      "Run tests",
-		"build":     "Build the project",
-		"clean":     "Clean build artifacts",
-		"install":   "Install dependencies",
-		"help":      "Show help information",
-		"format":    "Format source code",
-		"check":     "Run checks",
-		"validate":  "Validate code",
-		"generate":  "Generate code",
-		"docs":      "Generate documentation",
-		"coverage":  "Generate test coverage",
-		"benchmark": "Run benchmarks",
-	}
-
-	if desc, exists := commonTargets[target]; exists {
-		return desc
-	}
-
+	// Help failed (no help target, timeout, or other error) - return empty
 	return ""
 }
 
@@ -192,6 +195,13 @@ func (sc *Context) extractTargetDescription(ctx context.Context, repoRoot, targe
 func (sc *Context) GetAvailableMakeTargets(ctx context.Context) ([]string, error) {
 	repoRoot, err := sc.GetRepoRoot(ctx)
 	if err != nil {
+		// Check if it's a timeout vs not a git repo
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) ||
+			strings.Contains(err.Error(), "context deadline exceeded") {
+			// Timeout case - return fallback targets
+			return []string{"help", "build", "test", "clean", "install"}, nil
+		}
+		// Not a git repo or other error - return the error
 		return nil, fmt.Errorf("failed to find repository root: %w", err)
 	}
 

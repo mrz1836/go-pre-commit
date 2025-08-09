@@ -2,7 +2,7 @@
 allowed-tools: Task, Bash(git diff:*), Bash(git status:*), Bash(make test:*), Bash(make lint:*)
 argument-hint: [specific-file-or-package]
 description: Fix test errors and linting issues in parallel
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 🔧 Fix Test and Linting Issues

@@ -2,7 +2,7 @@
 allowed-tools: Task, Bash(go test -bench:*), Bash(benchstat:*), Write
 argument-hint: [package-or-function]
 description: Run and analyze benchmarks
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 📊 Benchmark Analysis

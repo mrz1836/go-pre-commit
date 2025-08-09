@@ -1,7 +1,7 @@
 ---
 allowed-tools: Task, Bash(make test:*), Bash(make lint:*), Bash(go test:*), Bash(git status:*)
 description: Full validation suite with parallel agent execution
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## ✅ Full Project Validation

@@ -2,7 +2,7 @@
 allowed-tools: Task, Bash(git:*), Read, Edit, Bash(make:*)
 argument-hint: <version>
 description: Prepare and validate release
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 📦 Prepare Release

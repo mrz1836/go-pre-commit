@@ -2,7 +2,7 @@
 allowed-tools: Task, Bash(git:*), Write, Edit
 argument-hint: <feature-name>
 description: Start new feature development workflow
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 🚀 Start New Feature Development

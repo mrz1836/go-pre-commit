@@ -2,7 +2,7 @@
 allowed-tools: Task, Bash(gh:*), Read, Edit, Grep
 argument-hint: [workflow-name-or-run-id]
 description: Diagnose and fix CI/CD issues with ci-guardian
-model: sonnet
+claude-sonnet-4-0
 ---
 
 ## 🔧 Diagnose CI Issues

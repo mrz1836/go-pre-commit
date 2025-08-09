@@ -353,13 +353,28 @@ func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, repoRoot string) er
 		return fmt.Errorf("%w: %s", ErrModTidyDiffFailed, output)
 	}
 
-	// If there's any diff output, it means changes would be made
+	// If there's any diff output (excluding warnings), it means changes would be made
 	if diffOutput := stdout.String(); diffOutput != "" {
-		return prerrors.NewToolExecutionError(
-			"go mod tidy -diff",
-			diffOutput,
-			"go.mod or go.sum are not tidy. Run 'go mod tidy' to update dependencies.",
-		)
+		// Filter out go warnings which are not actual diffs
+		lines := strings.Split(diffOutput, "\n")
+		var actualDiffs []string
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			// Skip empty lines and go warnings
+			if line == "" || strings.HasPrefix(line, "go: warning:") {
+				continue
+			}
+			actualDiffs = append(actualDiffs, line)
+		}
+
+		// If there are actual diffs (not just warnings), return error
+		if len(actualDiffs) > 0 {
+			return prerrors.NewToolExecutionError(
+				"go mod tidy -diff",
+				strings.Join(actualDiffs, "\n"),
+				"go.mod or go.sum are not tidy. Run 'go mod tidy' to update dependencies.",
+			)
+		}
 	}
 
 	return nil
