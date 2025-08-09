@@ -260,12 +260,9 @@ PRE_COMMIT_SYSTEM_COLOR_OUTPUT=false
 	// UI settings
 	s.False(cfg.UI.ColorOutput)
 
-	// Directory should be derived from env file location
-	// The config code uses filepath.Dir(envPath) + "/pre-commit"
-	// When envPath is ".github/.env.shared", Directory becomes ".github/pre-commit"
-	// When envPath is absolute, Directory becomes absolute
-	expectedDir := ".github/pre-commit"
-	s.Equal(expectedDir, cfg.Directory)
+	// Directory should be empty for PATH-based binary lookup approach
+	// We no longer use directory-based approach, binary is found via PATH
+	s.Empty(cfg.Directory)
 }
 
 // TestLoadWithMinimalConfiguration tests loading with minimal configuration
@@ -391,7 +388,8 @@ func (s *ConfigTestSuite) TestConfigStructInitialization() {
 	s.NotNil(cfg)
 
 	// Verify all major struct fields are initialized
-	s.NotEmpty(cfg.Directory)
+	// Directory is intentionally empty for PATH-based approach
+	s.Empty(cfg.Directory)
 	s.NotEmpty(cfg.LogLevel)
 	s.Positive(cfg.MaxFileSize)
 	s.Positive(cfg.MaxFilesOpen)
@@ -584,36 +582,9 @@ PRE_COMMIT_SYSTEM_ENABLE_EOF=true
 			assert.True(t, cfg.Enabled)
 			assert.Equal(t, "debug", cfg.LogLevel)
 
-			// Directory should always point to .github/pre-commit
-			// The behavior depends on whether we're in the current directory or subdirectory
-			if subDir == "." {
-				// When in root directory, env file is found as ".github/.env.shared"
-				// so Directory becomes ".github/pre-commit"
-				assert.Equal(t, ".github/pre-commit", cfg.Directory)
-			} else {
-				// When in subdirectory, env file is found with absolute path
-				// so Directory becomes absolute path
-				expectedDir := filepath.Join(tmpDir, ".github", "pre-commit")
-				// Use EvalSymlinks to handle macOS /var vs /private/var differences
-				// Only resolve if the path exists, otherwise compare parent directories
-				if _, err := os.Stat(expectedDir); err == nil {
-					expectedDirResolved, err := filepath.EvalSymlinks(expectedDir)
-					require.NoError(t, err)
-					actualDirResolved, err := filepath.EvalSymlinks(cfg.Directory)
-					require.NoError(t, err)
-					assert.Equal(t, expectedDirResolved, actualDirResolved)
-				} else {
-					// Compare parent directories since pre-commit dir doesn't exist
-					expectedParent := filepath.Dir(expectedDir)
-					actualParent := filepath.Dir(cfg.Directory)
-					expectedParentResolved, err := filepath.EvalSymlinks(expectedParent)
-					require.NoError(t, err)
-					actualParentResolved, err := filepath.EvalSymlinks(actualParent)
-					require.NoError(t, err)
-					assert.Equal(t, expectedParentResolved, actualParentResolved)
-					assert.Equal(t, "pre-commit", filepath.Base(cfg.Directory))
-				}
-			}
+			// Directory should be empty for PATH-based binary lookup approach
+			// We no longer use directory-based approach, binary is found via PATH
+			assert.Empty(t, cfg.Directory)
 		})
 	}
 }

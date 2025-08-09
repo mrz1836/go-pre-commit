@@ -73,7 +73,7 @@ func runInstall(_ *cobra.Command, _ []string) error {
 	}
 
 	// Create installer with configuration for enhanced validation
-	installer := git.NewInstallerWithConfig(repoRoot, cfg.Directory, cfg)
+	installer := git.NewInstallerWithConfig(repoRoot, "", cfg)
 
 	// Install each hook type
 	installed := make([]string, 0, len(hookTypes))

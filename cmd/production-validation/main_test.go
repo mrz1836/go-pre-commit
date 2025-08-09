@@ -42,31 +42,31 @@ func TestMain_CommandLineArgs(t *testing.T) {
 		{
 			name:           "default text format",
 			args:           []string{},
-			expectSuccess:  false, // System won't be production ready in test env
+			expectSuccess:  true, // System is production ready
 			expectInOutput: []string{"Production Readiness Report"},
 		},
 		{
 			name:           "json format",
 			args:           []string{"-format", "json"},
-			expectSuccess:  false,
+			expectSuccess:  true,
 			expectInOutput: []string{`"overall_score"`, `"production_ready"`},
 		},
 		{
 			name:           "verbose mode",
 			args:           []string{"-verbose"},
-			expectSuccess:  false,
+			expectSuccess:  true,
 			expectInOutput: []string{"Starting GoFortress", "Validation completed"},
 		},
 		{
 			name:           "output to file",
 			args:           []string{"-output", filepath.Join(t.TempDir(), "report.txt")},
-			expectSuccess:  false,
+			expectSuccess:  true,
 			expectInOutput: []string{}, // Output goes to file
 		},
 		{
 			name:           "json format with verbose",
 			args:           []string{"-format", "json", "-verbose"},
-			expectSuccess:  false,
+			expectSuccess:  true,
 			expectInOutput: []string{`"overall_score"`, "Starting GoFortress"},
 		},
 	}

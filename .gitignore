@@ -46,3 +46,4 @@ node_modules/
 /go-pre-commit
 /go-pre-commit.exe
 /go-pre-commit
+/cmd/go-pre-commit/go-pre-commit

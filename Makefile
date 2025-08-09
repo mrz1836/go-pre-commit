@@ -37,11 +37,11 @@ install: build
 	@$(GO) install ./cmd/$(BINARY_NAME)
 	@echo "Installed to $$(go env GOPATH)/bin/$(BINARY_NAME)"
 
-## uninstall: Remove the binary from GOPATH/bin
-uninstall:
-	@echo "Uninstalling $(BINARY_NAME)..."
-	@rm -f $$(go env GOPATH)/bin/$(BINARY_NAME)
-	@echo "Uninstalled $(BINARY_NAME)"
+### uninstall: Remove the binary from GOPATH/bin
+#uninstall:
+#	@echo "Uninstalling $(BINARY_NAME)..."
+#	@rm -f $$(go env GOPATH)/bin/$(BINARY_NAME)
+#	@echo "Uninstalled $(BINARY_NAME)"
 
 # Development helpers
 ## dev-install: Quick build and install for development

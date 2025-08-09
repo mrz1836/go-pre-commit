@@ -19,7 +19,6 @@ const hookScriptTemplate = `#!/bin/bash
 
 # Configuration
 REPO_ROOT="%s"
-PRE_COMMIT_DIR="%s"
 BINARY_NAME="go-pre-commit"
 CONFIG_FILE="$REPO_ROOT/.github/.env.shared"
 
@@ -46,11 +45,11 @@ BINARY_PATH=""
 
 # Search locations in order of preference
 SEARCH_PATHS=(
-    "$PRE_COMMIT_DIR/$BINARY_NAME"  # Built binary in pre-commit dir
     "$(command -v $BINARY_NAME 2>/dev/null)"  # In PATH
     "$(go env GOPATH 2>/dev/null)/bin/$BINARY_NAME"  # GOPATH/bin
     "./bin/$BINARY_NAME"  # Local bin directory
-    "$PRE_COMMIT_DIR/cmd/go-pre-commit/$BINARY_NAME"  # Development location
+    "./$BINARY_NAME"  # Root directory
+    "./cmd/go-pre-commit/$BINARY_NAME"  # Development location
 )
 
 for path in "${SEARCH_PATHS[@]}"; do
@@ -70,9 +69,9 @@ if [[ -z "$BINARY_PATH" ]]; then
     done
     echo ""
     echo "To fix this issue:"
-    echo "  1. Build the binary: cd $PRE_COMMIT_DIR && go build -o go-pre-commit ./cmd/go-pre-commit"
-    echo "  2. Or install to PATH: cd $PRE_COMMIT_DIR && go install ./cmd/go-pre-commit"
-    echo "  3. Or run: make install (if Makefile exists)"
+    echo "  1. Install to PATH: make install"
+    echo "  2. Or install manually: go install ./cmd/go-pre-commit"
+    echo "  3. Or build locally: make build"
     exit 1
 fi
 
@@ -261,7 +260,7 @@ func (i *Installer) handleExistingHook(hookPath string, force bool) error {
 
 // GenerateHookScript creates a dynamic hook script based on current environment
 func (i *Installer) GenerateHookScript() string {
-	return fmt.Sprintf(hookScriptTemplate, i.repoRoot, i.preCommitDir)
+	return fmt.Sprintf(hookScriptTemplate, i.repoRoot)
 }
 
 // verifyInstallation checks that the installation was successful

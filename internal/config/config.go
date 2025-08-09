@@ -85,7 +85,7 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		Directory: filepath.Dir(envPath) + "/pre-commit",
+		Directory: "", // No longer using directory-based approach
 	}
 
 	// Core settings
@@ -196,12 +196,7 @@ func (c *Config) Validate() error {
 		errors = append(errors, "PRE_COMMIT_SYSTEM_LOG_LEVEL must be one of: debug, info, warn, error")
 	}
 
-	// Validate directory exists (skip in test environments)
-	if c.Directory != "" && !isTestEnvironment() {
-		if _, err := os.Stat(c.Directory); os.IsNotExist(err) {
-			errors = append(errors, fmt.Sprintf("pre-commit directory does not exist: %s", c.Directory))
-		}
-	}
+	// Directory validation no longer needed - using PATH-based binary lookup
 
 	// Validate tool versions
 	if c.ToolVersions.Fumpt != "" && c.ToolVersions.Fumpt != "latest" {
@@ -254,15 +249,6 @@ func isValidVersion(version string) bool {
 		}
 	}
 	return false
-}
-
-// isTestEnvironment checks if we're running in a test environment
-func isTestEnvironment() bool {
-	// Check if we're running under go test
-	return strings.HasSuffix(os.Args[0], ".test") ||
-		strings.Contains(os.Args[0], "/_test/") ||
-		strings.Contains(os.Args[0], "\\test\\") ||
-		os.Getenv("GO_TESTING") == "true"
 }
 
 // GetConfigHelp returns helpful information about configuration options

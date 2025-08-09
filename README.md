@@ -81,6 +81,8 @@
 * [Benchmarks](#-benchmarks)
 * [Code Standards](#-code-standards)
 * [AI Compliance](#-ai-compliance)
+* [Sub-Agents Team](#-sub-agents-team)
+* [Custom Claude Commands](#-custom-claude-commands)
 * [Maintainers](#-maintainers)
 * [Contributing](#-contributing)
 * [License](#-license)
@@ -524,7 +526,7 @@ make test-race
 
 ## ⚡ Benchmarks
 
-Run the Go [benchmarks](template_benchmark_test.go):
+Run the Go [benchmarks](benchmark_test.go):
 
 ```bash script
 make bench
@@ -534,12 +536,21 @@ make bench
 
 ### Benchmark Results
 
-| Benchmark                           | Iterations | ns/op | B/op | allocs/op |
-|-------------------------------------|------------|------:|-----:|----------:|
-| [Greet](template_benchmark_test.go) | 21,179,739 | 56.59 |   40 |         2 |
+| Benchmark | Iterations | ns/op | B/op | allocs/op | Description |
+|-----------|------------|------:|-----:|----------:|-------------|
+| [PreCommitSystem_SmallProject](benchmark_test.go) | 89,523 | 13,555 | 15,390 | 73 | Small project (3 files) |
+| [PreCommitSystem_EndToEnd](benchmark_test.go) | 44,742 | 24,436 | 36,070 | 111 | Full system (8 files) |
+| [PreCommitSystem_LargeProject](benchmark_test.go) | 24,704 | 48,146 | 108,986 | 229 | Large project (25+ files) |
+| [Runner_New](internal/runner/runner_bench_test.go) | 4,086,028 | 293 | 592 | 10 | Runner creation |
+| [Runner_SingleCheck](internal/runner/runner_bench_test.go) | 187,984 | 6,415 | 7,312 | 33 | Single check execution |
+| [WhitespaceCheck_SmallFile](internal/checks/builtin/builtin_bench_test.go) | 6,148,348 | 195 | 128 | 2 | Whitespace check (small file) |
+| [WhitespaceCheck_Parallel](internal/checks/builtin/builtin_bench_test.go) | 14,334,333 | 85 | 128 | 2 | Parallel whitespace processing |
+| [Repository_GetAllFiles](internal/git/git_bench_test.go) | 315 | 3,776,237 | 69,746 | 210 | Git file enumeration |
+| [Runner_Performance_SmallCommit](internal/runner/performance_bench_test.go) | 58,266 | 20,899 | 16,990 | 112 | Typical small commit (1-3 files) |
 
-> These benchmarks reflect fast, allocation-free lookups for most retrieval functions, ensuring optimal performance in production environments.
-> Performance benchmarks for the core functions in this library, executed on an Apple M1 Max (ARM64).
+> These benchmarks demonstrate lightning-fast pre-commit processing with minimal memory overhead.
+> Performance results measured on Apple M1 Max (ARM64) showing microsecond-level execution times for individual checks and sub-second processing for complete commit workflows.
+> The system scales efficiently from small single-file changes to large multi-file commits while maintaining consistent low-latency performance.
 
 <br/>
 
@@ -557,6 +568,243 @@ This project documents expectations for AI assistants using a few dedicated file
 - [sweep.yaml](.github/sweep.yaml) — rules for [Sweep](https://github.com/sweepai/sweep), a tool for code review and pull request management.
 
 Edit `AGENTS.md` first when adjusting these policies, and keep the other files in sync within the same pull request.
+
+<br/>
+
+## 🤖 Sub-Agents Team
+
+This project includes a comprehensive team of **12 specialized AI sub-agents** designed to help manage the repository lifecycle. These agents work cohesively to maintain code quality, manage dependencies, orchestrate releases, and ensure the project adheres to its high standards.
+
+<details>
+<summary><strong><code>Available Sub-Agents (12 Specialists)</code></strong></summary>
+<br/>
+
+The sub-agents are located in `.claude/agents/` and can be invoked by Claude Code to handle specific tasks:
+
+| Agent | Specialization | Primary Responsibilities |
+|-------|---------------|-------------------------|
+| **go-standards-enforcer** | Go Standards Compliance | Enforces AGENTS.md coding standards, context-first design, interface patterns, and error handling |
+| **go-tester** | Testing & Coverage | Runs tests with testify, fixes failures, ensures 90%+ coverage, manages test suites |
+| **go-formatter** | Code Formatting | Runs fumpt, golangci-lint, fixes whitespace/EOF issues, maintains consistent style |
+| **hook-specialist** | Pre-commit Hooks | Manages hook installation, configuration via .env.shared, troubleshoots hook issues |
+| **ci-guardian** | CI/CD Pipeline | Monitors GitHub Actions, fixes workflow issues, optimizes pipeline performance |
+| **doc-maintainer** | Documentation | Updates README, maintains AGENTS.md compliance, ensures documentation consistency |
+| **dependency-auditor** | Security & Dependencies | Runs govulncheck/nancy/gitleaks, manages Go modules, handles vulnerability fixes |
+| **release-coordinator** | Release Management | Prepares releases following semver, updates CITATION.cff, manages goreleaser |
+| **code-reviewer** | Code Quality | Reviews changes for security, performance, maintainability, provides prioritized feedback |
+| **performance-optimizer** | Performance Tuning | Profiles code, runs benchmarks, optimizes hot paths, reduces allocations |
+| **makefile-expert** | Build System | Manages Makefile targets, fixes build issues, maintains .make includes |
+| **pr-orchestrator** | Pull Requests | Ensures PR conventions, coordinates validation, manages labels and CI checks |
+
+</details>
+
+<details>
+<summary><strong><code>Using Sub-Agents</code></strong></summary>
+<br/>
+
+Sub-agents can be invoked in several ways:
+
+#### Automatic Invocation
+Many agents are configured to run **PROACTIVELY** when Claude Code detects relevant changes:
+```
+# After modifying Go code, these agents may automatically activate:
+- go-standards-enforcer (checks compliance)
+- go-formatter (fixes formatting)
+- go-tester (runs tests)
+- code-reviewer (reviews changes)
+```
+
+#### Explicit Invocation
+You can explicitly request specific agents:
+```
+> Use the dependency-auditor to check for vulnerabilities
+> Have the performance-optimizer analyze the runner benchmarks
+> Ask the pr-orchestrator to prepare a pull request
+```
+
+#### Agent Collaboration
+Agents can invoke each other for complex tasks:
+```
+pr-orchestrator → code-reviewer → go-standards-enforcer
+                ↘ go-tester → go-formatter
+```
+
+</details>
+
+<details>
+<summary><strong><code>Common Workflows with Sub-Agents</code></strong></summary>
+<br/>
+
+#### 1. Adding a New Feature
+```bash
+# The pr-orchestrator coordinates the entire flow:
+1. Creates properly named branch (feat/feature-name)
+2. Invokes go-standards-enforcer for compliance
+3. Runs go-tester for test coverage
+4. Uses go-formatter for code style
+5. Calls code-reviewer for quality check
+6. Prepares PR with proper format
+```
+
+#### 2. Fixing CI Failures
+```bash
+# The ci-guardian takes the lead:
+1. Analyzes failing GitHub Actions
+2. Invokes go-tester for test failures
+3. Calls dependency-auditor for security scan issues
+4. Uses go-formatter for linting problems
+5. Fixes workflow configuration issues
+```
+
+#### 3. Preparing a Release
+```bash
+# The release-coordinator manages the process:
+1. Validates all tests pass (go-tester)
+2. Ensures security scans clean (dependency-auditor)
+3. Updates version in CITATION.cff
+4. Prepares changelog
+5. Coordinates with ci-guardian for release workflow
+```
+
+#### 4. Security Audit
+```bash
+# The dependency-auditor performs comprehensive scanning:
+1. Runs govulncheck for Go vulnerabilities
+2. Executes nancy for dependency issues
+3. Uses gitleaks for secret detection
+4. Updates dependencies safely
+5. Documents any exclusions
+```
+
+</details>
+
+<details>
+<summary><strong><code>Sub-Agent Configuration</code></strong></summary>
+<br/>
+
+Each agent is defined with:
+- **name**: Unique identifier
+- **description**: When the agent should be used (many include "use PROACTIVELY")
+- **tools**: Limited tool access for security and focus
+- **system prompt**: Detailed instructions following AGENTS.md standards
+
+Example agent structure:
+```yaml
+---
+name: agent-name
+description: Specialization and when to use PROACTIVELY
+tools: Read, Edit, Bash, Grep
+---
+[Detailed system prompt with specific responsibilities]
+```
+
+### Benefits of the Sub-Agent Team
+
+- **🚀 Parallel Execution**: Multiple agents can work simultaneously on different aspects
+- **🎯 Specialized Expertise**: Each agent deeply understands its domain
+- **🔒 Security**: Limited tool access per agent reduces risk
+- **📊 Consistency**: All agents follow AGENTS.md standards strictly
+- **♻️ Reusability**: Agents can be used across different scenarios
+- **🧠 Smart Collaboration**: Agents invoke each other strategically
+
+### Creating Custom Sub-Agents
+
+To add new sub-agents for your specific needs:
+
+1. Create a new file in `.claude/agents/`
+2. Define the agent's specialization and tools
+3. Write a detailed system prompt following existing patterns
+4. Test the agent with sample tasks
+
+For more information about sub-agents, see the [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code/sub-agents).
+
+</details>
+
+<br/>
+
+## ⚡ Custom Claude Commands
+
+This project includes **23 custom slash commands** that leverage our specialized sub-agents for efficient project management. These commands provide streamlined workflows for common development tasks.
+
+### 🎯 Quick Command Categories
+
+- **Core Commands** (6): `/fix`, `/test`, `/review`, `/docs`, `/clean`, `/validate`
+- **Workflow Commands** (5): `/pr`, `/ci`, `/explain`, `/prd`, `/refactor`
+- **Specialized Commands** (6): `/audit`, `/optimize`, `/release`, `/hooks`, `/build`, `/standards`
+- **Advanced Commands** (6): `/dev:feature`, `/dev:hotfix`, `/dev:debug`, `/go:bench`, `/go:deps`, `/go:profile`
+
+<details>
+<summary><strong><code>Example Command Usage</code></strong></summary>
+<br/>
+
+### Fix Issues Quickly
+```bash
+# Fix all test and linting issues in parallel
+/fix internal/runner
+
+# Create comprehensive tests
+/test ProcessCheck
+
+# Get thorough code review
+/review feat/new-feature
+```
+
+### Development Workflows
+```bash
+# Start a new feature
+/dev:feature parallel-execution
+
+# Emergency hotfix
+/dev:hotfix "race condition in runner"
+
+# Debug complex issues
+/dev:debug "timeout in CI"
+```
+
+### Performance & Security
+```bash
+# Security audit with all scanners
+/audit
+
+# Profile and optimize performance
+/go:profile cpu internal/runner
+/optimize ProcessCheck
+
+# Benchmark analysis
+/go:bench Runner
+```
+
+### Release Management
+```bash
+# Full validation before release
+/validate
+
+# Prepare release
+/release v1.2.3
+```
+
+</details>
+
+### 📚 Command Features
+
+- **⚡ Parallel Execution**: Commands like `/fix`, `/review`, and `/validate` run multiple agents simultaneously
+- **🧠 Intelligent Model Selection**: Uses Haiku for simple tasks, Sonnet for standard work, Opus for complex analysis
+- **🎯 Focused Scope**: All commands accept arguments to target specific files or packages
+- **🔄 Multi-Agent Coordination**: Most commands coordinate multiple specialized agents
+- **📊 Comprehensive Output**: Detailed reports with actionable feedback
+
+### 📖 Full Documentation
+
+For complete command reference, usage examples, and workflow patterns, see:
+
+**[📚 Commands Documentation](docs/USING_CLAUDE_COMMANDS.md)**
+
+This comprehensive guide includes:
+- Detailed descriptions of all 23 commands
+- Common workflow patterns
+- Performance optimization tips
+- Custom command creation guide
+- Troubleshooting help
 
 <br/>
 

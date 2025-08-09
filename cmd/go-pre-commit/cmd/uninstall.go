@@ -45,7 +45,7 @@ func runUninstall(_ *cobra.Command, _ []string) error {
 	}
 
 	// Create installer (also handles uninstallation)
-	installer := git.NewInstaller(repoRoot, ".github/pre-commit")
+	installer := git.NewInstaller(repoRoot, "")
 
 	// Uninstall each hook type
 	var uninstalled []string
