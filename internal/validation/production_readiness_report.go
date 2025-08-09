@@ -129,7 +129,7 @@ type ProductionReadinessValidator struct {
 // NewProductionReadinessValidator creates a new validator
 func NewProductionReadinessValidator() (*ProductionReadinessValidator, error) {
 	// Create temporary environment for validation
-	tempDir, err := os.MkdirTemp("", "gofortress-validation-*")
+	tempDir, err := os.MkdirTemp("", "go-pre-commit-validation-*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}

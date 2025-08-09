@@ -13,14 +13,14 @@ import (
 
 // hookScriptTemplate is the template for generating git hook scripts
 const hookScriptTemplate = `#!/bin/bash
-# GoFortress Pre-commit Hook
-# This hook is managed by GoFortress pre-commit system
+# Go Pre-commit Hook
+# This hook is managed by Go pre-commit system
 # Generated automatically - do not edit manually
 
 # Configuration
 REPO_ROOT="%s"
 PRE_COMMIT_DIR="%s"
-BINARY_NAME="gofortress-pre-commit"
+BINARY_NAME="go-pre-commit"
 CONFIG_FILE="$REPO_ROOT/.github/.env.shared"
 
 # CI Environment Detection
@@ -35,13 +35,13 @@ if [[ -f "$CONFIG_FILE" ]]; then
     # Source config to check if enabled
     if grep -q "^ENABLE_PRE_COMMIT_SYSTEM=false" "$CONFIG_FILE" 2>/dev/null; then
         if [[ "$CI_ENV" != "true" ]]; then
-            echo "GoFortress pre-commit system is disabled (ENABLE_PRE_COMMIT_SYSTEM=false)"
+            echo "Go pre-commit system is disabled (ENABLE_PRE_COMMIT_SYSTEM=false)"
         fi
         exit 0
     fi
 fi
 
-# Find the gofortress-pre-commit binary
+# Find the go-pre-commit binary
 BINARY_PATH=""
 
 # Search locations in order of preference
@@ -50,7 +50,7 @@ SEARCH_PATHS=(
     "$(command -v $BINARY_NAME 2>/dev/null)"  # In PATH
     "$(go env GOPATH 2>/dev/null)/bin/$BINARY_NAME"  # GOPATH/bin
     "./bin/$BINARY_NAME"  # Local bin directory
-    "$PRE_COMMIT_DIR/cmd/gofortress-pre-commit/$BINARY_NAME"  # Development location
+    "$PRE_COMMIT_DIR/cmd/go-pre-commit/$BINARY_NAME"  # Development location
 )
 
 for path in "${SEARCH_PATHS[@]}"; do
@@ -61,7 +61,7 @@ for path in "${SEARCH_PATHS[@]}"; do
 done
 
 if [[ -z "$BINARY_PATH" ]]; then
-    echo "Error: gofortress-pre-commit binary not found"
+    echo "Error: go-pre-commit binary not found"
     echo "Searched locations:"
     for path in "${SEARCH_PATHS[@]}"; do
         if [[ -n "$path" ]]; then
@@ -70,8 +70,8 @@ if [[ -z "$BINARY_PATH" ]]; then
     done
     echo ""
     echo "To fix this issue:"
-    echo "  1. Build the binary: cd $PRE_COMMIT_DIR && go build -o gofortress-pre-commit ./cmd/gofortress-pre-commit"
-    echo "  2. Or install to PATH: cd $PRE_COMMIT_DIR && go install ./cmd/gofortress-pre-commit"
+    echo "  1. Build the binary: cd $PRE_COMMIT_DIR && go build -o go-pre-commit ./cmd/go-pre-commit"
+    echo "  2. Or install to PATH: cd $PRE_COMMIT_DIR && go install ./cmd/go-pre-commit"
     echo "  3. Or run: make install (if Makefile exists)"
     exit 1
 fi
@@ -161,7 +161,7 @@ func (i *Installer) UninstallHook(hookType string) (bool, error) {
 	}
 
 	// Check if it's our hook
-	if !strings.Contains(string(content), "GoFortress Pre-commit Hook") {
+	if !strings.Contains(string(content), "Go Pre-commit Hook") {
 		return false, nil // Not our hook
 	}
 
@@ -188,7 +188,7 @@ func (i *Installer) IsHookInstalled(hookType string) bool {
 		return false
 	}
 
-	return strings.Contains(string(content), "GoFortress Pre-commit Hook")
+	return strings.Contains(string(content), "Go Pre-commit Hook")
 }
 
 // validateInstallation performs pre-installation validation
@@ -239,7 +239,7 @@ func (i *Installer) handleExistingHook(hookPath string, force bool) error {
 		}
 
 		// Check if it's our hook
-		if strings.Contains(string(content), "GoFortress Pre-commit Hook") {
+		if strings.Contains(string(content), "Go Pre-commit Hook") {
 			// It's our hook, update it (this is safe)
 			return nil
 		}
@@ -283,7 +283,7 @@ func (i *Installer) verifyInstallation(hookPath string) error {
 		return fmt.Errorf("failed to read installed hook: %w", err)
 	}
 
-	if !strings.Contains(string(content), "GoFortress Pre-commit Hook") {
+	if !strings.Contains(string(content), "Go Pre-commit Hook") {
 		return fmt.Errorf("%w", prerrors.ErrHookMarkerMissing)
 	}
 
@@ -346,16 +346,16 @@ func (i *Installer) GetInstallationStatus(hookType string) (*InstallationStatus,
 		return status, fmt.Errorf("failed to read hook file: %w", err)
 	}
 
-	status.IsOurHook = strings.Contains(string(content), "GoFortress Pre-commit Hook")
+	status.IsOurHook = strings.Contains(string(content), "Go Pre-commit Hook")
 	if status.IsOurHook {
 		status.Installed = true
-		status.Message = "GoFortress pre-commit hook installed and ready"
+		status.Message = "Go pre-commit hook installed and ready"
 		if !status.Executable {
 			status.Message += " (warning: not executable)"
 		}
 	} else {
 		status.Installed = false
-		status.Message = "Different hook installed (not GoFortress)"
+		status.Message = "Different hook installed (not Go pre-commit)"
 		status.ConflictingHook = true
 	}
 

@@ -44,14 +44,14 @@ func TestInstaller_InstallHook(t *testing.T) {
 	// Read the hook content
 	content, err := os.ReadFile(hookPath) // #nosec G304 -- test file path is controlled
 	require.NoError(t, err)
-	assert.Contains(t, string(content), "GoFortress Pre-commit Hook")
-	assert.Contains(t, string(content), "gofortress-pre-commit")
+	assert.Contains(t, string(content), "Go Pre-commit Hook")
+	assert.Contains(t, string(content), "go-pre-commit")
 
 	// Test installing again without force (should not error - already our hook)
 	err = installer.InstallHook("pre-commit", false)
 	require.NoError(t, err)
 
-	// Test with a non-GoFortress hook
+	// Test with a non-Go pre-commit hook
 	err = os.WriteFile(hookPath, []byte("#!/bin/bash\necho 'other hook'"), 0o600)
 	require.NoError(t, err)
 
@@ -66,7 +66,7 @@ func TestInstaller_InstallHook(t *testing.T) {
 	// Verify it was replaced
 	content, err = os.ReadFile(hookPath) // #nosec G304 -- test file path is controlled
 	require.NoError(t, err)
-	assert.Contains(t, string(content), "GoFortress Pre-commit Hook")
+	assert.Contains(t, string(content), "Go Pre-commit Hook")
 }
 
 func TestInstaller_UninstallHook(t *testing.T) {
@@ -89,7 +89,7 @@ func TestInstaller_UninstallHook(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, removed)
 
-	// Install a GoFortress hook
+	// Install a Go pre-commit hook
 	err = installer.InstallHook("pre-commit", false)
 	require.NoError(t, err)
 
@@ -102,11 +102,11 @@ func TestInstaller_UninstallHook(t *testing.T) {
 	_, err = os.Stat(hookPath)
 	assert.True(t, os.IsNotExist(err))
 
-	// Test with a non-GoFortress hook
+	// Test with a non-Go pre-commit hook
 	err = os.WriteFile(hookPath, []byte("#!/bin/bash\necho 'other hook'"), 0o600)
 	require.NoError(t, err)
 
-	// Should not remove non-GoFortress hook
+	// Should not remove non-Go pre-commit hook
 	removed, err = installer.UninstallHook("pre-commit")
 	require.NoError(t, err)
 	assert.False(t, removed)
@@ -134,7 +134,7 @@ func TestInstaller_IsHookInstalled(t *testing.T) {
 	installed := installer.IsHookInstalled("pre-commit")
 	assert.False(t, installed)
 
-	// Install a GoFortress hook
+	// Install a Go pre-commit hook
 	err = installer.InstallHook("pre-commit", false)
 	require.NoError(t, err)
 
@@ -142,7 +142,7 @@ func TestInstaller_IsHookInstalled(t *testing.T) {
 	installed = installer.IsHookInstalled("pre-commit")
 	assert.True(t, installed)
 
-	// Test with a non-GoFortress hook
+	// Test with a non-Go pre-commit hook
 	hookPath := filepath.Join(gitDir, "pre-commit")
 	err = os.WriteFile(hookPath, []byte("#!/bin/bash\necho 'other hook'"), 0o600)
 	require.NoError(t, err)
@@ -159,8 +159,8 @@ func TestHookScript(t *testing.T) {
 
 	// Verify the hook script is properly formatted
 	assert.True(t, strings.HasPrefix(hookScript, "#!/bin/bash"))
-	assert.Contains(t, hookScript, "GoFortress Pre-commit Hook")
-	assert.Contains(t, hookScript, "gofortress-pre-commit")
+	assert.Contains(t, hookScript, "Go Pre-commit Hook")
+	assert.Contains(t, hookScript, "go-pre-commit")
 	assert.Contains(t, hookScript, "exec")
 }
 
@@ -210,7 +210,7 @@ func TestInstaller_UninstallHook_ErrorCases(t *testing.T) {
 	hookPath := filepath.Join(gitDir, "pre-commit")
 
 	// Test error reading hook file (permission denied)
-	err = os.WriteFile(hookPath, []byte("#!/bin/bash\n# GoFortress Pre-commit Hook\necho test"), 0o000) // No read permissions
+	err = os.WriteFile(hookPath, []byte("#!/bin/bash\n# Go Pre-commit Hook\necho test"), 0o000) // No read permissions
 	require.NoError(t, err)
 
 	// This should fail on reading the file

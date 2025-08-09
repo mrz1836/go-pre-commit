@@ -144,7 +144,7 @@ func BenchmarkInstaller_InstallHook(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	installer := NewInstaller(tmpDir, "/tmp/gofortress")
+	installer := NewInstaller(tmpDir, "/tmp/go-pre-commit")
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -173,7 +173,7 @@ func BenchmarkInstaller_IsHookInstalled(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	installer := NewInstaller(tmpDir, "/tmp/gofortress")
+	installer := NewInstaller(tmpDir, "/tmp/go-pre-commit")
 
 	// Install a hook once
 	err = installer.InstallHook("pre-commit", false)

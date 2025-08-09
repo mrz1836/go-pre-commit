@@ -42,8 +42,8 @@ func New(opts Options) *Formatter {
 		f.err = os.Stderr
 	}
 
-	// Set up color configuration
-	color.NoColor = !f.colorEnabled
+	// Don't modify global color state to avoid race conditions
+	// Instead, we'll handle coloring in each method
 
 	return f
 }
@@ -64,7 +64,9 @@ func NewDefault() *Formatter {
 // Success prints a success message with green checkmark
 func (f *Formatter) Success(format string, args ...interface{}) {
 	if f.colorEnabled {
-		_, _ = color.New(color.FgGreen).Fprintf(f.out, "✓ "+format+"\n", args...)
+		c := color.New(color.FgGreen)
+		c.EnableColor()
+		_, _ = c.Fprintf(f.out, "✓ "+format+"\n", args...)
 	} else {
 		_, _ = fmt.Fprintf(f.out, "✓ "+format+"\n", args...)
 	}
@@ -73,7 +75,9 @@ func (f *Formatter) Success(format string, args ...interface{}) {
 // Error prints an error message with red X
 func (f *Formatter) Error(format string, args ...interface{}) {
 	if f.colorEnabled {
-		_, _ = color.New(color.FgRed).Fprintf(f.err, "✗ "+format+"\n", args...)
+		c := color.New(color.FgRed)
+		c.EnableColor()
+		_, _ = c.Fprintf(f.err, "✗ "+format+"\n", args...)
 	} else {
 		_, _ = fmt.Fprintf(f.err, "✗ "+format+"\n", args...)
 	}
@@ -82,7 +86,9 @@ func (f *Formatter) Error(format string, args ...interface{}) {
 // Warning prints a warning message with yellow warning symbol
 func (f *Formatter) Warning(format string, args ...interface{}) {
 	if f.colorEnabled {
-		_, _ = color.New(color.FgYellow).Fprintf(f.err, "⚠ "+format+"\n", args...)
+		c := color.New(color.FgYellow)
+		c.EnableColor()
+		_, _ = c.Fprintf(f.err, "⚠ "+format+"\n", args...)
 	} else {
 		_, _ = fmt.Fprintf(f.err, "⚠ "+format+"\n", args...)
 	}
@@ -91,7 +97,9 @@ func (f *Formatter) Warning(format string, args ...interface{}) {
 // Info prints an info message with blue info symbol
 func (f *Formatter) Info(format string, args ...interface{}) {
 	if f.colorEnabled {
-		_, _ = color.New(color.FgBlue).Fprintf(f.out, "ℹ "+format+"\n", args...)
+		c := color.New(color.FgBlue)
+		c.EnableColor()
+		_, _ = c.Fprintf(f.out, "ℹ "+format+"\n", args...)
 	} else {
 		_, _ = fmt.Fprintf(f.out, "ℹ "+format+"\n", args...)
 	}
@@ -100,7 +108,9 @@ func (f *Formatter) Info(format string, args ...interface{}) {
 // Progress prints a progress message with spinning indicator
 func (f *Formatter) Progress(format string, args ...interface{}) {
 	if f.colorEnabled {
-		_, _ = color.New(color.FgCyan).Fprintf(f.out, "⏳ "+format+"\n", args...)
+		c := color.New(color.FgCyan)
+		c.EnableColor()
+		_, _ = c.Fprintf(f.out, "⏳ "+format+"\n", args...)
 	} else {
 		_, _ = fmt.Fprintf(f.out, "⏳ "+format+"\n", args...)
 	}
@@ -109,8 +119,12 @@ func (f *Formatter) Progress(format string, args ...interface{}) {
 // Header prints a section header
 func (f *Formatter) Header(text string) {
 	if f.colorEnabled {
-		_, _ = color.New(color.FgCyan, color.Bold).Fprintf(f.out, "\n%s\n", text)
-		_, _ = color.New(color.FgCyan).Fprintf(f.out, "%s\n", strings.Repeat("─", len(text)))
+		c1 := color.New(color.FgCyan, color.Bold)
+		c1.EnableColor()
+		_, _ = c1.Fprintf(f.out, "\n%s\n", text)
+		c2 := color.New(color.FgCyan)
+		c2.EnableColor()
+		_, _ = c2.Fprintf(f.out, "%s\n", strings.Repeat("─", len(text)))
 	} else {
 		_, _ = fmt.Fprintf(f.out, "\n%s\n%s\n", text, strings.Repeat("─", len(text)))
 	}
@@ -119,7 +133,9 @@ func (f *Formatter) Header(text string) {
 // Subheader prints a subsection header
 func (f *Formatter) Subheader(text string) {
 	if f.colorEnabled {
-		_, _ = color.New(color.FgWhite, color.Bold).Fprintf(f.out, "\n%s:\n", text)
+		c := color.New(color.FgWhite, color.Bold)
+		c.EnableColor()
+		_, _ = c.Fprintf(f.out, "\n%s:\n", text)
 	} else {
 		_, _ = fmt.Fprintf(f.out, "\n%s:\n", text)
 	}
@@ -293,7 +309,9 @@ func (f *Formatter) FormatExecutionStats(passed, failed, skipped int, duration t
 
 	if passed > 0 {
 		if f.colorEnabled {
-			stats = append(stats, color.GreenString("%d passed", passed))
+			c := color.New(color.FgGreen)
+			c.EnableColor()
+			stats = append(stats, c.Sprintf("%d passed", passed))
 		} else {
 			stats = append(stats, fmt.Sprintf("%d passed", passed))
 		}
@@ -301,7 +319,9 @@ func (f *Formatter) FormatExecutionStats(passed, failed, skipped int, duration t
 
 	if failed > 0 {
 		if f.colorEnabled {
-			stats = append(stats, color.RedString("%d failed", failed))
+			c := color.New(color.FgRed)
+			c.EnableColor()
+			stats = append(stats, c.Sprintf("%d failed", failed))
 		} else {
 			stats = append(stats, fmt.Sprintf("%d failed", failed))
 		}
@@ -309,7 +329,9 @@ func (f *Formatter) FormatExecutionStats(passed, failed, skipped int, duration t
 
 	if skipped > 0 {
 		if f.colorEnabled {
-			stats = append(stats, color.YellowString("%d skipped", skipped))
+			c := color.New(color.FgYellow)
+			c.EnableColor()
+			stats = append(stats, c.Sprintf("%d skipped", skipped))
 		} else {
 			stats = append(stats, fmt.Sprintf("%d skipped", skipped))
 		}
@@ -329,7 +351,9 @@ func (f *Formatter) Highlight(text, highlight string) string {
 	if !f.colorEnabled {
 		return text
 	}
-	return strings.ReplaceAll(text, highlight, color.YellowString(highlight))
+	c := color.New(color.FgYellow)
+	c.EnableColor()
+	return strings.ReplaceAll(text, highlight, c.Sprint(highlight))
 }
 
 // CodeBlock formats text as a code block
@@ -337,7 +361,9 @@ func (f *Formatter) CodeBlock(text string) {
 	lines := strings.Split(text, "\n")
 	for _, line := range lines {
 		if f.colorEnabled {
-			_, _ = color.New(color.FgWhite, color.Faint).Fprintf(f.out, "    %s\n", line)
+			c := color.New(color.FgWhite, color.Faint)
+			c.EnableColor()
+			_, _ = c.Fprintf(f.out, "    %s\n", line)
 		} else {
 			_, _ = fmt.Fprintf(f.out, "    %s\n", line)
 		}
@@ -347,7 +373,9 @@ func (f *Formatter) CodeBlock(text string) {
 // SuggestAction prints an actionable suggestion
 func (f *Formatter) SuggestAction(action string) {
 	if f.colorEnabled {
-		_, _ = color.New(color.FgMagenta).Fprintf(f.out, "💡 %s\n", action)
+		c := color.New(color.FgMagenta)
+		c.EnableColor()
+		_, _ = c.Fprintf(f.out, "💡 %s\n", action)
 	} else {
 		_, _ = fmt.Fprintf(f.out, "💡 %s\n", action)
 	}
