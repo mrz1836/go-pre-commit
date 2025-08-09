@@ -136,15 +136,34 @@ func (sc *Context) cacheMakeTargetInfo(target string, info *MakeTargetInfo) {
 
 // extractTargetDescription tries to extract a description for a make target
 func (sc *Context) extractTargetDescription(ctx context.Context, repoRoot, target string) string {
+	// Check if the parent context is already canceled/timed out
+	if ctx.Err() != nil {
+		return ""
+	}
+
+	// If parent context has very little time left (less than 50ms), don't even try
+	if parentDeadline, ok := ctx.Deadline(); ok {
+		if time.Until(parentDeadline) < 50*time.Millisecond {
+			return ""
+		}
+	}
+
 	// Try to get help information
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	// Use the shorter of the parent context deadline or 2 seconds
+	deadline := 2 * time.Second
+	if parentDeadline, ok := ctx.Deadline(); ok {
+		if time.Until(parentDeadline) < deadline {
+			deadline = time.Until(parentDeadline)
+		}
+	}
+	helpCtx, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "make", "help")
+	cmd := exec.CommandContext(helpCtx, "make", "help")
 	cmd.Dir = repoRoot
 
 	output, err := cmd.Output()
-	if err == nil {
+	if err == nil && helpCtx.Err() == nil {
 		// Successfully got help output, try to parse it
 		lines := strings.Split(string(output), "\n")
 		for _, line := range lines {
@@ -183,6 +202,10 @@ func (sc *Context) extractTargetDescription(ctx context.Context, repoRoot, targe
 		}
 
 		if desc, exists := commonTargets[target]; exists {
+			// Check if the original context has timed out before using fallback
+			if ctx.Err() != nil {
+				return ""
+			}
 			return desc
 		}
 	}
