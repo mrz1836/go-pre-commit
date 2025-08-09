@@ -367,6 +367,11 @@ func getIntEnv(key string, defaultValue int) int {
 	if err != nil {
 		return defaultValue
 	}
+	// Validate that the value is within 32-bit signed integer range
+	// This prevents extremely large values that could cause issues
+	if i < -2147483648 || i > 2147483647 {
+		return defaultValue
+	}
 	return i
 }
 
