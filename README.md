@@ -75,8 +75,12 @@
 <br/>
 
 ## 🗂️ Table of Contents
-* [Installation](#-installation)
-* [Documentation](#-documentation)
+* [Quickstart](#-quickstart)
+* [Configuration](#-configuration)
+* [Workflow Process](#-workflow-process)
+* [Available Checks](#-available-checks)
+* [Starting a New Project](#-starting-a-new-project)
+* [Documentation](#-advanced-documentation)
 * [Examples & Tests](#-examples--tests)
 * [Benchmarks](#-benchmarks)
 * [Code Standards](#-code-standards)
@@ -233,13 +237,13 @@ go-pre-commit uninstall --hook-type pre-commit
 
 `go-pre-commit` includes these built-in checks:
 
-| Check | Description | Auto-fix | Configuration |
-|-------|-------------|----------|---------------|
-| **fumpt** | Formats Go code with stricter rules than `gofmt` | ✅ | Requires `make fumpt` target |
-| **lint** | Runs golangci-lint for comprehensive linting | ❌ | Requires `make lint` target |
-| **mod-tidy** | Ensures go.mod and go.sum are tidy | ✅ | Requires `make mod-tidy` target |
-| **whitespace** | Removes trailing whitespace | ✅ | Auto-stages changes if enabled |
-| **eof** | Ensures files end with a newline | ✅ | Auto-stages changes if enabled |
+| Check          | Description                                      | Auto-fix | Configuration                   |
+|----------------|--------------------------------------------------|----------|---------------------------------|
+| **fumpt**      | Formats Go code with stricter rules than `gofmt` | ✅        | Requires `make fumpt` target    |
+| **lint**       | Runs golangci-lint for comprehensive linting     | ❌        | Requires `make lint` target     |
+| **mod-tidy**   | Ensures go.mod and go.sum are tidy               | ✅        | Requires `make mod-tidy` target |
+| **whitespace** | Removes trailing whitespace                      | ✅        | Auto-stages changes if enabled  |
+| **eof**        | Ensures files end with a newline                 | ✅        | Auto-stages changes if enabled  |
 
 All checks run in parallel for maximum performance. Make targets are detected automatically from your Makefile.
 
@@ -440,7 +444,7 @@ test-ci-no-race       ## CI test suite without race detector
 test-ci               ## CI test runs tests with race detection and coverage (no lint - handled separately)
 test-cover-race       ## Runs unit tests with race detector and outputs coverage
 test-cover            ## Unit tests with coverage (no race)
-test-fuzz             ## Run fuzz tests only (no unit tests)
+test-fuzz             ## Run [fuzz tests](#-fuzz-tests) only (no unit tests)
 test-no-lint          ## Run only tests (no lint)
 test-parallel         ## Run tests in parallel (faster for large repos)
 test-race             ## Unit tests with race detector (no coverage)
@@ -509,7 +513,7 @@ This command ensures all dependencies are brought up to date in a single step, i
 
 ## 🧪 Examples & Tests
 
-All unit tests and [examples](examples) run via [GitHub Actions](https://github.com/mrz1836/go-pre-commit/actions) and use [Go version 1.24.x](https://go.dev/doc/go1.24). View the [configuration file](.github/workflows/fortress.yml).
+All unit tests and [fuzz tests](#-fuzz-tests) run via [GitHub Actions](https://github.com/mrz1836/go-pre-commit/actions) and use [Go version 1.24.x](https://go.dev/doc/go1.24). View the [configuration file](.github/workflows/fortress.yml).
 
 Run all tests (fast):
 
@@ -521,6 +525,22 @@ Run all tests with race detector (slower):
 ```bash script
 make test-race
 ```
+
+### 🔍 Fuzz Tests
+
+The project includes comprehensive fuzz tests for security-critical components:
+
+```bash script
+make test-fuzz
+```
+
+**Available Fuzz Tests:**
+- **[Config Parsing](internal/config/fuzz_test.go)** - Tests environment variable parsing with malformed inputs
+- **[Builtin Checks](internal/checks/builtin/fuzz_test.go)** - Tests whitespace/EOF checks with binary and malformed files
+- **[Git Operations](internal/git/fuzz_test.go)** - Tests file path parsing and repository operations
+- **[Runner Engine](internal/runner/fuzz_test.go)** - Tests check execution with edge case configurations
+
+Fuzz tests help ensure the system handles malformed inputs gracefully without crashes or security vulnerabilities.
 
 <br/>
 
@@ -536,17 +556,17 @@ make bench
 
 ### Benchmark Results
 
-| Benchmark | Iterations | ns/op | B/op | allocs/op | Description |
-|-----------|------------|------:|-----:|----------:|-------------|
-| [PreCommitSystem_SmallProject](benchmark_test.go) | 89,523 | 13,555 | 15,390 | 73 | Small project (3 files) |
-| [PreCommitSystem_EndToEnd](benchmark_test.go) | 44,742 | 24,436 | 36,070 | 111 | Full system (8 files) |
-| [PreCommitSystem_LargeProject](benchmark_test.go) | 24,704 | 48,146 | 108,986 | 229 | Large project (25+ files) |
-| [Runner_New](internal/runner/runner_bench_test.go) | 4,086,028 | 293 | 592 | 10 | Runner creation |
-| [Runner_SingleCheck](internal/runner/runner_bench_test.go) | 187,984 | 6,415 | 7,312 | 33 | Single check execution |
-| [WhitespaceCheck_SmallFile](internal/checks/builtin/builtin_bench_test.go) | 6,148,348 | 195 | 128 | 2 | Whitespace check (small file) |
-| [WhitespaceCheck_Parallel](internal/checks/builtin/builtin_bench_test.go) | 14,334,333 | 85 | 128 | 2 | Parallel whitespace processing |
-| [Repository_GetAllFiles](internal/git/git_bench_test.go) | 315 | 3,776,237 | 69,746 | 210 | Git file enumeration |
-| [Runner_Performance_SmallCommit](internal/runner/performance_bench_test.go) | 58,266 | 20,899 | 16,990 | 112 | Typical small commit (1-3 files) |
+| Benchmark                                                                   | Iterations |     ns/op |    B/op | allocs/op | Description                      |
+|-----------------------------------------------------------------------------|------------|----------:|--------:|----------:|----------------------------------|
+| [PreCommitSystem_SmallProject](benchmark_test.go)                           | 89,523     |    13,555 |  15,390 |        73 | Small project (3 files)          |
+| [PreCommitSystem_EndToEnd](benchmark_test.go)                               | 44,742     |    24,436 |  36,070 |       111 | Full system (8 files)            |
+| [PreCommitSystem_LargeProject](benchmark_test.go)                           | 24,704     |    48,146 | 108,986 |       229 | Large project (25+ files)        |
+| [Runner_New](internal/runner/runner_bench_test.go)                          | 4,086,028  |       293 |     592 |        10 | Runner creation                  |
+| [Runner_SingleCheck](internal/runner/runner_bench_test.go)                  | 187,984    |     6,415 |   7,312 |        33 | Single check execution           |
+| [WhitespaceCheck_SmallFile](internal/checks/builtin/builtin_bench_test.go)  | 6,148,348  |       195 |     128 |         2 | Whitespace check (small file)    |
+| [WhitespaceCheck_Parallel](internal/checks/builtin/builtin_bench_test.go)   | 14,334,333 |        85 |     128 |         2 | Parallel whitespace processing   |
+| [Repository_GetAllFiles](internal/git/git_bench_test.go)                    | 315        | 3,776,237 |  69,746 |       210 | Git file enumeration             |
+| [Runner_Performance_SmallCommit](internal/runner/performance_bench_test.go) | 58,266     |    20,899 |  16,990 |       112 | Typical small commit (1-3 files) |
 
 > These benchmarks demonstrate lightning-fast pre-commit processing with minimal memory overhead.
 > Performance results measured on Apple M1 Max (ARM64) showing microsecond-level execution times for individual checks and sub-second processing for complete commit workflows.
@@ -581,20 +601,20 @@ This project includes a comprehensive team of **12 specialized AI sub-agents** d
 
 The sub-agents are located in `.claude/agents/` and can be invoked by Claude Code to handle specific tasks:
 
-| Agent | Specialization | Primary Responsibilities |
-|-------|---------------|-------------------------|
+| Agent                     | Specialization          | Primary Responsibilities                                                                          |
+|---------------------------|-------------------------|---------------------------------------------------------------------------------------------------|
 | **go-standards-enforcer** | Go Standards Compliance | Enforces AGENTS.md coding standards, context-first design, interface patterns, and error handling |
-| **go-tester** | Testing & Coverage | Runs tests with testify, fixes failures, ensures 90%+ coverage, manages test suites |
-| **go-formatter** | Code Formatting | Runs fumpt, golangci-lint, fixes whitespace/EOF issues, maintains consistent style |
-| **hook-specialist** | Pre-commit Hooks | Manages hook installation, configuration via .env.shared, troubleshoots hook issues |
-| **ci-guardian** | CI/CD Pipeline | Monitors GitHub Actions, fixes workflow issues, optimizes pipeline performance |
-| **doc-maintainer** | Documentation | Updates README, maintains AGENTS.md compliance, ensures documentation consistency |
-| **dependency-auditor** | Security & Dependencies | Runs govulncheck/nancy/gitleaks, manages Go modules, handles vulnerability fixes |
-| **release-coordinator** | Release Management | Prepares releases following semver, updates CITATION.cff, manages goreleaser |
-| **code-reviewer** | Code Quality | Reviews changes for security, performance, maintainability, provides prioritized feedback |
-| **performance-optimizer** | Performance Tuning | Profiles code, runs benchmarks, optimizes hot paths, reduces allocations |
-| **makefile-expert** | Build System | Manages Makefile targets, fixes build issues, maintains .make includes |
-| **pr-orchestrator** | Pull Requests | Ensures PR conventions, coordinates validation, manages labels and CI checks |
+| **go-tester**             | Testing & Coverage      | Runs tests with testify, fixes failures, ensures 90%+ coverage, manages test suites               |
+| **go-formatter**          | Code Formatting         | Runs fumpt, golangci-lint, fixes whitespace/EOF issues, maintains consistent style                |
+| **hook-specialist**       | Pre-commit Hooks        | Manages hook installation, configuration via .env.shared, troubleshoots hook issues               |
+| **ci-guardian**           | CI/CD Pipeline          | Monitors GitHub Actions, fixes workflow issues, optimizes pipeline performance                    |
+| **doc-maintainer**        | Documentation           | Updates README, maintains AGENTS.md compliance, ensures documentation consistency                 |
+| **dependency-auditor**    | Security & Dependencies | Runs govulncheck/nancy/gitleaks, manages Go modules, handles vulnerability fixes                  |
+| **release-coordinator**   | Release Management      | Prepares releases following semver, updates CITATION.cff, manages goreleaser                      |
+| **code-reviewer**         | Code Quality            | Reviews changes for security, performance, maintainability, provides prioritized feedback         |
+| **performance-optimizer** | Performance Tuning      | Profiles code, runs benchmarks, optimizes hot paths, reduces allocations                          |
+| **makefile-expert**       | Build System            | Manages Makefile targets, fixes build issues, maintains .make includes                            |
+| **pr-orchestrator**       | Pull Requests           | Ensures PR conventions, coordinates validation, manages labels and CI checks                      |
 
 </details>
 
