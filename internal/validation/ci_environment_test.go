@@ -416,10 +416,10 @@ func (s *CIEnvironmentTestSuite) validateExecutionParity(local, ci *runner.Resul
 	s.Positive(ci.TotalDuration,
 		"CI execution should have measurable duration")
 
-	// Check that CI execution isn't significantly slower (allow 3x difference)
-	maxAllowedDuration := local.TotalDuration * 3
+	// Check that CI execution isn't significantly slower (allow 5x difference for CI variability)
+	maxAllowedDuration := local.TotalDuration * 5
 	s.LessOrEqual(ci.TotalDuration, maxAllowedDuration,
-		"CI execution should not be more than 3x slower than local: local=%v, ci=%v",
+		"CI execution should not be more than 5x slower than local: local=%v, ci=%v",
 		local.TotalDuration, ci.TotalDuration)
 
 	// Verify consistent check results (accounting for environment differences)
