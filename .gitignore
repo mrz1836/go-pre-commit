@@ -45,4 +45,4 @@ node_modules/
 # Binary executables
 /go-pre-commit
 /go-pre-commit.exe
-/cmd/go-pre-commit/go-pre-commit
+/go-pre-commit

@@ -87,24 +87,245 @@
 
 <br/>
 
-## 📦 Installation
+## 🚀 Quickstart
 
-**go-pre-commit** requires a [supported release of Go](https://golang.org/doc/devel/release.html#policy).
-```shell script
-go get -u github.com/mrz1836/go-pre-commit
+Get up and running with `go-pre-commit` in 30 seconds:
+
+### Install the binary
+
+```bash
+# Install from source (requires Go 1.24+)
+go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
+
+# Or clone and build locally
+git clone https://github.com/mrz1836/go-pre-commit.git
+cd go-pre-commit
+make install
+```
+
+### Set up in your project
+
+```bash
+# Navigate to your Go project
+cd your-go-project
+
+# Install the pre-commit hook
+go-pre-commit install
+
+# That's it! Your pre-commit hooks are now active
+```
+
+### Test it out
+
+```bash
+# Make a change and commit
+echo "test" >> test.go
+git add test.go
+git commit -m "Test commit"
+
+# The pre-commit system will automatically run checks:
+# ✓ Running fumpt formatter
+# ✓ Running golangci-lint
+# ✓ Running go mod tidy
+# ✓ Fixing trailing whitespace
+# ✓ Ensuring files end with newline
+```
+
+> **Good to know:** `go-pre-commit` ships with *zero* runtime dependencies.
+> It's a single Go binary that replaces Python-based pre-commit frameworks.
+
+<br/>
+
+## ⚙️ Configuration
+
+`go-pre-commit` uses environment variables from `.github/.env.shared` for configuration:
+
+```bash
+# Core settings
+ENABLE_PRE_COMMIT_SYSTEM=true              # Enable/disable the system
+PRE_COMMIT_SYSTEM_FAIL_FAST=false          # Stop on first failure
+PRE_COMMIT_SYSTEM_TIMEOUT_SECONDS=120      # Overall timeout
+PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=2       # Number of parallel workers
+
+# Individual checks
+PRE_COMMIT_SYSTEM_ENABLE_FUMPT=true        # Format with fumpt
+PRE_COMMIT_SYSTEM_ENABLE_LINT=true         # Run golangci-lint
+PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=true     # Run go mod tidy
+PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true   # Fix trailing whitespace
+PRE_COMMIT_SYSTEM_ENABLE_EOF=true          # Ensure files end with newline
+
+# Auto-staging (automatically stage fixed files)
+PRE_COMMIT_SYSTEM_WHITESPACE_AUTO_STAGE=true
+PRE_COMMIT_SYSTEM_EOF_AUTO_STAGE=true
 ```
 
 <br/>
 
-## 📚 Documentation
+## 🔄 Workflow Process
 
-- **API Reference** – Dive into the godocs at [pkg.go.dev/github.com/mrz1836/go-pre-commit](https://pkg.go.dev/github.com/mrz1836/go-pre-commit)
-- **Usage Examples** – Browse practical patterns either the [examples directory](examples) or view the [example functions](template_example_test.go)
-- **Benchmarks** – Check the latest numbers in the [benchmark results](#benchmark-results)
-- **Test Suite** – Review both the [unit tests](template_test.go) and [fuzz tests](template_fuzz_test.go) (powered by [`testify`](https://github.com/stretchr/testify))
+### Installing hooks
 
-> **Good to know:** `go-pre-commit` ships with *zero* runtime dependencies.  
-> The only external package we use is `testify`—and that's strictly for tests.
+```bash
+# Install default pre-commit hook
+go-pre-commit install
+
+# Install with specific hook types
+go-pre-commit install --hook-type pre-commit --hook-type pre-push
+
+# Force reinstall (overwrites existing hooks)
+go-pre-commit install --force
+```
+
+### Running checks manually
+
+```bash
+# Run all checks on staged files
+go-pre-commit run
+
+# Run specific checks
+go-pre-commit run --checks fumpt,lint
+
+# Run on all files (not just staged)
+go-pre-commit run --all-files
+
+# Skip specific checks
+go-pre-commit run --skip lint,mod-tidy
+```
+
+### Checking status
+
+```bash
+# View installation status and configuration
+go-pre-commit status
+
+# Shows:
+# - Installation status
+# - Enabled checks
+# - Configuration location
+# - Current settings
+```
+
+### Updating go-pre-commit
+
+```bash
+# Update to latest version
+go update github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
+
+# Verify version
+go-pre-commit --version
+```
+
+### Uninstalling
+
+```bash
+# Remove all installed hooks
+go-pre-commit uninstall
+
+# Remove specific hook types
+go-pre-commit uninstall --hook-type pre-commit
+```
+
+<br/>
+
+## 🎯 Available Checks
+
+`go-pre-commit` includes these built-in checks:
+
+| Check | Description | Auto-fix | Configuration |
+|-------|-------------|----------|---------------|
+| **fumpt** | Formats Go code with stricter rules than `gofmt` | ✅ | Requires `make fumpt` target |
+| **lint** | Runs golangci-lint for comprehensive linting | ❌ | Requires `make lint` target |
+| **mod-tidy** | Ensures go.mod and go.sum are tidy | ✅ | Requires `make mod-tidy` target |
+| **whitespace** | Removes trailing whitespace | ✅ | Auto-stages changes if enabled |
+| **eof** | Ensures files end with a newline | ✅ | Auto-stages changes if enabled |
+
+All checks run in parallel for maximum performance. Make targets are detected automatically from your Makefile.
+
+<br/>
+
+## 🏗️ Starting a New Project
+
+Setting up `go-pre-commit` in a new Go project:
+
+### 1. Initialize your Go project
+
+```bash
+mkdir my-awesome-project
+cd my-awesome-project
+go mod init github.com/username/my-awesome-project
+```
+
+### 2. Create the configuration
+
+```bash
+# Create the .github directory
+mkdir -p .github
+
+# Download the example configuration
+curl -o .github/.env.shared https://raw.githubusercontent.com/mrz1836/go-pre-commit/master/.github/.env.shared
+
+# Or create a minimal configuration
+cat > .github/.env.shared << 'EOF'
+ENABLE_PRE_COMMIT_SYSTEM=true
+PRE_COMMIT_SYSTEM_ENABLE_FUMPT=true
+PRE_COMMIT_SYSTEM_ENABLE_LINT=true
+PRE_COMMIT_SYSTEM_ENABLE_MOD_TIDY=true
+PRE_COMMIT_SYSTEM_ENABLE_WHITESPACE=true
+PRE_COMMIT_SYSTEM_ENABLE_EOF=true
+EOF
+```
+
+### 3. Create a Makefile with required targets
+
+```bash
+cat > Makefile << 'EOF'
+.PHONY: fumpt lint mod-tidy
+
+fumpt:
+	@go run mvdan.cc/gofumpt@latest -w .
+
+lint:
+	@golangci-lint run
+
+mod-tidy:
+	@go mod tidy
+EOF
+```
+
+### 4. Install go-pre-commit
+
+```bash
+# Install the tool
+go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
+
+# Set up hooks in your repository
+go-pre-commit install
+
+# Verify installation
+go-pre-commit status
+```
+
+### 5. Test your setup
+
+```bash
+# Create a test file with issues
+echo -e "package main\n\nfunc main() {  \n}" > main.go
+
+# Try to commit
+git add .
+git commit -m "Initial commit"
+
+# Watch go-pre-commit automatically fix issues!
+```
+
+<br/>
+
+## 📚 Advanced Documentation
+
+- **Performance** – Parallel execution with configurable workers for blazing-fast checks
+- **CI Integration** – Seamlessly integrates with GitHub Actions via shared configuration
+- **Make Compatibility** – Leverages existing Makefile targets for consistency
+- **Environment Config** – All settings in `.github/.env.shared` for team synchronization
 
 <br/>
 
@@ -251,7 +472,7 @@ This magical file controls everything from:
 - **🤖 Auto-merge behaviors** (how aggressive should the bots be?)
 - **🏷️ PR management rules** (size labels, auto-assignment, welcome messages)
 
-> **Pro tip:** Want to disable code coverage? Just flip `ENABLE_CODE_COVERAGE=false` in [.env.shared](.github/.env.shared) and push. No YAML archaeology required! 
+> **Pro tip:** Want to disable code coverage? Just flip `ENABLE_CODE_COVERAGE=false` in [.env.shared](.github/.env.shared) and push. No YAML archaeology required!
 
 <br/>
 
