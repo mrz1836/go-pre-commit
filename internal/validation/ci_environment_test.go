@@ -3,6 +3,7 @@ package validation
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,6 +14,8 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
 )
+
+var errCIGitRootNotFound = errors.New("git root not found")
 
 // CIEnvironmentTestSuite validates parity between local and CI execution
 type CIEnvironmentTestSuite struct {
@@ -25,9 +28,8 @@ type CIEnvironmentTestSuite struct {
 
 // SetupSuite initializes the test environment
 func (s *CIEnvironmentTestSuite) SetupSuite() {
-	var err error
-	s.originalWD, err = os.Getwd()
-	s.Require().NoError(err)
+	// Robust working directory capture for CI environments
+	s.originalWD = s.getSafeWorkingDirectory()
 
 	// Create temporary directory structure
 	s.tempDir = s.T().TempDir()
@@ -65,6 +67,57 @@ PRE_COMMIT_SYSTEM_PARALLEL_WORKERS=2
 func (s *CIEnvironmentTestSuite) TearDownSuite() {
 	// Restore original working directory
 	_ = os.Chdir(s.originalWD)
+}
+
+// getSafeWorkingDirectory attempts to get current working directory with fallbacks for CI
+func (s *CIEnvironmentTestSuite) getSafeWorkingDirectory() string {
+	// First attempt: standard os.Getwd()
+	if wd, err := os.Getwd(); err == nil {
+		// Verify the directory actually exists and is accessible
+		if _, statErr := os.Stat(wd); statErr == nil {
+			return wd
+		}
+	}
+
+	// Fallback 1: Try to find git repository root
+	if gitRoot, err := s.findGitRoot(); err == nil {
+		// Verify git root exists and is accessible
+		if _, statErr := os.Stat(gitRoot); statErr == nil {
+			return gitRoot
+		}
+	}
+
+	// Fallback 2: Use current user's home directory
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		return homeDir
+	}
+
+	// Final fallback: Use temp directory
+	return os.TempDir()
+}
+
+// findGitRoot attempts to find the git repository root
+func (s *CIEnvironmentTestSuite) findGitRoot() (string, error) {
+	// Start from current executable's directory if possible
+	if exePath, err := os.Executable(); err == nil {
+		dir := filepath.Dir(exePath)
+		for dir != filepath.Dir(dir) { // Stop at root
+			if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+				return dir, nil
+			}
+			dir = filepath.Dir(dir)
+		}
+	}
+
+	// Try common project paths relative to GOPATH or GOMOD
+	if goPath := os.Getenv("GOPATH"); goPath != "" {
+		projectPath := filepath.Join(goPath, "src", "github.com", "mrz1836", "go-pre-commit")
+		if _, err := os.Stat(projectPath); err == nil {
+			return projectPath, nil
+		}
+	}
+
+	return "", errCIGitRootNotFound
 }
 
 // initGitRepo initializes a git repository in the temp directory
