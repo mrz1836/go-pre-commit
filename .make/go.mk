@@ -231,15 +231,11 @@ test-ci-no-race: ## CI test suite without race detector
 	@echo "Running CI tests without race detector..."
 	@$(MAKE) test-cover
 
-#.PHONY: uninstall
-#uninstall: ## Uninstall the Go binary
-#	@echo "Uninstalling binary..."
-#	@test -n "$(BINARY_NAME)"
-#	@test -n "$(GIT_DOMAIN)"
-#	@test -n "$(REPO_OWNER)"
-#	@test -n "$(REPO_NAME)"
-#	@go clean -i $(GIT_DOMAIN)/$(REPO_OWNER)/$(REPO_NAME)
-#	@rm -rf $$GOPATH/bin/$(BINARY_NAME)
+## uninstall: Remove the binary from GOPATH/bin
+uninstall:
+	@echo "Uninstalling $(BINARY_NAME)..."
+	@rm -f $$(go env GOPATH)/bin/$(BINARY_NAME)
+	@echo "Uninstalled $(BINARY_NAME)"
 
 .PHONY: update
 update: ## Update dependencies
