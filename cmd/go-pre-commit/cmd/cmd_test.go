@@ -10,9 +10,20 @@ import (
 )
 
 func TestRootCommand(t *testing.T) {
+	// Create CLI app and command builder
+	app := NewCLIApp("test", "test-commit", "test-date")
+	builder := NewCommandBuilder(app)
+	rootCmd := builder.BuildRootCmd()
+
 	// Test root command has expected properties
 	assert.Equal(t, "go-pre-commit", rootCmd.Use)
 	assert.Contains(t, rootCmd.Short, "Go Pre-commit System")
+
+	// Build full command tree for testing subcommands
+	rootCmd.AddCommand(builder.BuildInstallCmd())
+	rootCmd.AddCommand(builder.BuildRunCmd())
+	rootCmd.AddCommand(builder.BuildUninstallCmd())
+	rootCmd.AddCommand(builder.BuildStatusCmd())
 
 	// Test subcommands are registered
 	commands := rootCmd.Commands()
@@ -24,6 +35,7 @@ func TestRootCommand(t *testing.T) {
 	assert.True(t, cmdMap["install"])
 	assert.True(t, cmdMap["run"])
 	assert.True(t, cmdMap["uninstall"])
+	assert.True(t, cmdMap["status"])
 }
 
 func TestExecute_Version(t *testing.T) {
@@ -92,6 +104,11 @@ func TestExecute_Help(t *testing.T) {
 }
 
 func TestInstallCommand(t *testing.T) {
+	// Create CLI app and command builder
+	app := NewCLIApp("test", "test-commit", "test-date")
+	builder := NewCommandBuilder(app)
+	installCmd := builder.BuildInstallCmd()
+
 	// Test install command properties
 	assert.Equal(t, "install", installCmd.Use)
 	assert.Contains(t, installCmd.Short, "Install")
@@ -105,6 +122,11 @@ func TestInstallCommand(t *testing.T) {
 }
 
 func TestRunCommand(t *testing.T) {
+	// Create CLI app and command builder
+	app := NewCLIApp("test", "test-commit", "test-date")
+	builder := NewCommandBuilder(app)
+	runCmd := builder.BuildRunCmd()
+
 	// Test run command properties
 	assert.Equal(t, "run [check-name] [flags] [files...]", runCmd.Use)
 	assert.Contains(t, runCmd.Short, "Run pre-commit checks")
@@ -118,6 +140,11 @@ func TestRunCommand(t *testing.T) {
 }
 
 func TestUninstallCommand(t *testing.T) {
+	// Create CLI app and command builder
+	app := NewCLIApp("test", "test-commit", "test-date")
+	builder := NewCommandBuilder(app)
+	uninstallCmd := builder.BuildUninstallCmd()
+
 	// Test uninstall command properties
 	assert.Equal(t, "uninstall", uninstallCmd.Use)
 	assert.Contains(t, uninstallCmd.Short, "Uninstall")

@@ -15,27 +15,26 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/runner"
 )
 
-//nolint:gochecknoglobals // Required by cobra
-var (
-	allFiles            bool
-	files               []string
-	skipChecks          []string
-	onlyChecks          []string
-	parallel            int
-	failFast            bool
-	showVersion         bool
-	gracefulDegradation bool
-	showProgress        bool
-	quiet               bool
-)
+// RunConfig holds configuration for the run command
+type RunConfig struct {
+	AllFiles            bool
+	Files               []string
+	SkipChecks          []string
+	OnlyChecks          []string
+	Parallel            int
+	FailFast            bool
+	ShowVersion         bool
+	GracefulDegradation bool
+	ShowProgress        bool
+	Quiet               bool
+}
 
-// runCmd represents the run command
-//
-//nolint:gochecknoglobals // Required by cobra
-var runCmd = &cobra.Command{
-	Use:   "run [check-name] [flags] [files...]",
-	Short: "Run pre-commit checks",
-	Long: `Run pre-commit checks on your code.
+// BuildRunCmd creates the run command
+func (cb *CommandBuilder) BuildRunCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "run [check-name] [flags] [files...]",
+		Short: "Run pre-commit checks",
+		Long: `Run pre-commit checks on your code.
 
 By default, runs all enabled checks on files staged for commit.
 You can specify individual checks to run, or provide specific files to check.
@@ -46,7 +45,7 @@ Available checks:
   mod-tidy   - Ensure go.mod and go.sum are tidy
   whitespace - Fix trailing whitespace
   eof        - Ensure files end with newline`,
-	Example: `  # Run all checks on staged files
+		Example: `  # Run all checks on staged files
   go-pre-commit run
 
   # Run specific check on staged files
@@ -63,24 +62,81 @@ Available checks:
 
   # Run only specific checks
   go-pre-commit run --only whitespace,eof`,
-	RunE: runChecks,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get flags and create config
+			config := RunConfig{}
+			var err error
+
+			config.AllFiles, err = cmd.Flags().GetBool("all-files")
+			if err != nil {
+				return err
+			}
+
+			config.Files, err = cmd.Flags().GetStringSlice("files")
+			if err != nil {
+				return err
+			}
+
+			config.SkipChecks, err = cmd.Flags().GetStringSlice("skip")
+			if err != nil {
+				return err
+			}
+
+			config.OnlyChecks, err = cmd.Flags().GetStringSlice("only")
+			if err != nil {
+				return err
+			}
+
+			config.Parallel, err = cmd.Flags().GetInt("parallel")
+			if err != nil {
+				return err
+			}
+
+			config.FailFast, err = cmd.Flags().GetBool("fail-fast")
+			if err != nil {
+				return err
+			}
+
+			config.ShowVersion, err = cmd.Flags().GetBool("show-checks")
+			if err != nil {
+				return err
+			}
+
+			config.GracefulDegradation, err = cmd.Flags().GetBool("graceful")
+			if err != nil {
+				return err
+			}
+
+			config.ShowProgress, err = cmd.Flags().GetBool("progress")
+			if err != nil {
+				return err
+			}
+
+			config.Quiet, err = cmd.Flags().GetBool("quiet")
+			if err != nil {
+				return err
+			}
+
+			return cb.runChecksWithConfig(config, cmd, args)
+		},
+	}
+
+	// Add flags
+	cmd.Flags().BoolP("all-files", "a", false, "Run on all files in the repository")
+	cmd.Flags().StringSliceP("files", "f", nil, "Specific files to check")
+	cmd.Flags().StringSlice("skip", nil, "Skip specific checks")
+	cmd.Flags().StringSlice("only", nil, "Run only specific checks")
+	cmd.Flags().IntP("parallel", "p", 0, "Number of parallel workers (0 = auto)")
+	cmd.Flags().Bool("fail-fast", false, "Stop on first check failure")
+	cmd.Flags().Bool("show-checks", false, "Show available checks and exit")
+	cmd.Flags().Bool("graceful", false, "Skip checks that can't run instead of failing")
+	cmd.Flags().Bool("progress", true, "Show progress indicators during execution")
+	cmd.Flags().BoolP("quiet", "q", false, "Suppress progress messages, show only errors and results")
+
+	return cmd
 }
 
-//nolint:gochecknoinits // Required by cobra
-func init() {
-	runCmd.Flags().BoolVarP(&allFiles, "all-files", "a", false, "Run on all files in the repository")
-	runCmd.Flags().StringSliceVarP(&files, "files", "f", nil, "Specific files to check")
-	runCmd.Flags().StringSliceVar(&skipChecks, "skip", nil, "Skip specific checks")
-	runCmd.Flags().StringSliceVar(&onlyChecks, "only", nil, "Run only specific checks")
-	runCmd.Flags().IntVarP(&parallel, "parallel", "p", 0, "Number of parallel workers (0 = auto)")
-	runCmd.Flags().BoolVar(&failFast, "fail-fast", false, "Stop on first check failure")
-	runCmd.Flags().BoolVar(&showVersion, "show-checks", false, "Show available checks and exit")
-	runCmd.Flags().BoolVar(&gracefulDegradation, "graceful", false, "Skip checks that can't run instead of failing")
-	runCmd.Flags().BoolVar(&showProgress, "progress", true, "Show progress indicators during execution")
-	runCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress progress messages, show only errors and results")
-}
-
-func runChecks(_ *cobra.Command, args []string) error {
+func (cb *CommandBuilder) runChecksWithConfig(runConfig RunConfig, _ *cobra.Command, args []string) error {
 	// Load configuration first
 	cfg, err := config.Load()
 	if err != nil {
@@ -92,7 +148,7 @@ func runChecks(_ *cobra.Command, args []string) error {
 
 	// Create output formatter with config-based color settings
 	formatter := output.New(output.Options{
-		ColorEnabled: cfg.UI.ColorOutput && !noColor,
+		ColorEnabled: cfg.UI.ColorOutput && !cb.app.config.NoColor,
 	})
 
 	// Check if pre-commit system is enabled
@@ -109,16 +165,16 @@ func runChecks(_ *cobra.Command, args []string) error {
 	}
 
 	// If show-checks flag is set, display available checks and exit
-	if showVersion {
+	if runConfig.ShowVersion {
 		return showAvailableChecks(cfg, formatter)
 	}
 
 	// Determine which files to check
 	var filesToCheck []string
-	if len(files) > 0 {
+	if len(runConfig.Files) > 0 {
 		// Specific files provided
-		filesToCheck = files
-	} else if allFiles {
+		filesToCheck = runConfig.Files
+	} else if runConfig.AllFiles {
 		// All files in repository
 		repo := git.NewRepository(repoRoot)
 		filesToCheck, err = repo.GetAllFiles()
@@ -147,13 +203,13 @@ func runChecks(_ *cobra.Command, args []string) error {
 	// Configure runner options
 	opts := runner.Options{
 		Files:               filesToCheck,
-		Parallel:            parallel,
-		FailFast:            failFast,
-		GracefulDegradation: gracefulDegradation,
+		Parallel:            runConfig.Parallel,
+		FailFast:            runConfig.FailFast,
+		GracefulDegradation: runConfig.GracefulDegradation,
 	}
 
 	// Set up progress callback if progress is enabled and not in quiet mode
-	if showProgress && !quiet {
+	if runConfig.ShowProgress && !runConfig.Quiet {
 		opts.ProgressCallback = func(checkName, status string) {
 			switch status {
 			case "running":
@@ -172,21 +228,21 @@ func runChecks(_ *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		// Specific check requested as positional argument
 		opts.OnlyChecks = []string{args[0]}
-	} else if len(onlyChecks) > 0 {
+	} else if len(runConfig.OnlyChecks) > 0 {
 		// --only flag
-		opts.OnlyChecks = onlyChecks
-	} else if len(skipChecks) > 0 {
+		opts.OnlyChecks = runConfig.OnlyChecks
+	} else if len(runConfig.SkipChecks) > 0 {
 		// --skip flag
-		opts.SkipChecks = skipChecks
+		opts.SkipChecks = runConfig.SkipChecks
 	}
 
 	// Show initial information (unless in quiet mode)
-	if verbose && !quiet {
+	if cb.app.config.Verbose && !runConfig.Quiet {
 		formatter.Info("Running checks on %s", formatter.FormatFileList(filesToCheck, 3))
 		if opts.Parallel > 0 {
 			formatter.Info("Using %d parallel workers", opts.Parallel)
 		}
-		if gracefulDegradation {
+		if runConfig.GracefulDegradation {
 			formatter.Info("Graceful degradation enabled - missing tools will be skipped")
 		}
 	}
@@ -199,7 +255,7 @@ func runChecks(_ *cobra.Command, args []string) error {
 	}
 
 	// Display results
-	displayEnhancedResults(formatter, results, quiet)
+	displayEnhancedResults(formatter, results, runConfig.Quiet, cb.app.config.Verbose)
 
 	// Return error if any checks failed (unless they were gracefully skipped)
 	if results.Failed > 0 {
@@ -311,7 +367,7 @@ func showAvailableChecks(cfg *config.Config, formatter *output.Formatter) error 
 	return nil
 }
 
-func displayEnhancedResults(formatter *output.Formatter, results *runner.Results, quietMode bool) {
+func displayEnhancedResults(formatter *output.Formatter, results *runner.Results, quietMode, verboseMode bool) {
 	// In quiet mode, skip the header and only show failures
 	if !quietMode {
 		formatter.Header("Check Results")
@@ -333,7 +389,7 @@ func displayEnhancedResults(formatter *output.Formatter, results *runner.Results
 				} else {
 					// Normal success
 					formatter.Success("%s completed successfully", result.Name)
-					if verbose {
+					if verboseMode {
 						formatter.Detail("Duration: %s", formatter.Duration(result.Duration))
 						if len(result.Files) > 0 {
 							formatter.Detail("Files: %s", formatter.FormatFileList(result.Files, 3))
@@ -348,7 +404,7 @@ func displayEnhancedResults(formatter *output.Formatter, results *runner.Results
 			// Failed check
 			formatter.Error("%s failed", result.Name)
 
-			if verbose {
+			if verboseMode {
 				formatter.Detail("Duration: %s", formatter.Duration(result.Duration))
 				if len(result.Files) > 0 {
 					formatter.Detail("Files: %s", formatter.FormatFileList(result.Files, 3))
@@ -369,10 +425,10 @@ func displayEnhancedResults(formatter *output.Formatter, results *runner.Results
 					for _, line := range errorLines {
 						formatter.Detail("  %s", line)
 					}
-					if !verbose && len(errorLines) >= 10 {
+					if !verboseMode && len(errorLines) >= 10 {
 						formatter.Detail("  ... (run with --verbose for full output)")
 					}
-				} else if verbose {
+				} else if verboseMode {
 					// Fall back to full output in verbose mode
 					formatter.Subheader("Command Output")
 					formatter.CodeBlock(result.Output)
@@ -441,16 +497,4 @@ func displayEnhancedResults(formatter *output.Formatter, results *runner.Results
 	}
 }
 
-// resetRunFlags resets run command flags to their defaults for testing
-func resetRunFlags() {
-	allFiles = false
-	files = nil
-	skipChecks = nil
-	onlyChecks = nil
-	parallel = 0
-	failFast = false
-	showVersion = false
-	gracefulDegradation = false
-	showProgress = false
-	quiet = false
-}
+// resetRunFlags is no longer needed - flags are handled through dependency injection

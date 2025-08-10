@@ -10,13 +10,12 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/output"
 )
 
-// statusCmd represents the status command
-//
-//nolint:gochecknoglobals // Required by cobra
-var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Show installation status of git hooks",
-	Long: `Show the current installation status of Go pre-commit hooks.
+// BuildStatusCmd creates the status command
+func (cb *CommandBuilder) BuildStatusCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "status",
+		Short: "Show installation status of git hooks",
+		Long: `Show the current installation status of Go pre-commit hooks.
 
 This command displays:
   - Which hooks are installed
@@ -24,15 +23,16 @@ This command displays:
   - File permissions and last modified time
   - Configuration status
   - Any conflicts or issues`,
-	Example: `  # Show status of all hook types
+		Example: `  # Show status of all hook types
   go-pre-commit status
 
   # Show verbose status information
   go-pre-commit status --verbose`,
-	RunE: runStatus,
+		RunE: cb.runStatus,
+	}
 }
 
-func runStatus(_ *cobra.Command, _ []string) error {
+func (cb *CommandBuilder) runStatus(_ *cobra.Command, _ []string) error {
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
@@ -47,7 +47,7 @@ func runStatus(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to find git repository: %w", err)
 	}
 
-	if verbose {
+	if cb.app.config.Verbose {
 		printInfo("Repository root: %s", repoRoot)
 		printInfo("Pre-commit directory: %s", cfg.Directory)
 		printInfo("System enabled: %t", cfg.Enabled)
@@ -80,7 +80,7 @@ func runStatus(_ *cobra.Command, _ []string) error {
 		}
 
 		if !status.Installed && !status.ConflictingHook {
-			if verbose {
+			if cb.app.config.Verbose {
 				printDetail("  %s: Not installed", hookType)
 			}
 			continue
@@ -96,12 +96,12 @@ func runStatus(_ *cobra.Command, _ []string) error {
 			}
 		} else if status.ConflictingHook {
 			printWarning("  ⚠ %s: %s", hookType, status.Message)
-			if verbose {
+			if cb.app.config.Verbose {
 				printDetail("    Use --force to overwrite existing hook")
 			}
 		}
 
-		if verbose && (status.Installed || status.ConflictingHook) {
+		if cb.app.config.Verbose && (status.Installed || status.ConflictingHook) {
 			printDetail("    Path: %s", status.HookPath)
 			printDetail("    Permissions: %s", status.FileMode)
 			printDetail("    Modified: %s", status.ModTime.Format("2006-01-02 15:04:05"))
@@ -114,7 +114,7 @@ func runStatus(_ *cobra.Command, _ []string) error {
 	}
 
 	// Configuration status
-	if verbose {
+	if cb.app.config.Verbose {
 		printSubheader("Configuration Status")
 		printDetail("  Checks enabled:")
 		printDetail("    fumpt: %t", cfg.Checks.Fumpt)

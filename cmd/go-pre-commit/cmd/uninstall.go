@@ -8,39 +8,43 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/git"
 )
 
-// uninstallCmd represents the uninstall command
-//
-//nolint:gochecknoglobals // Required by cobra
-var uninstallCmd = &cobra.Command{
-	Use:   "uninstall",
-	Short: "Uninstall git pre-commit hooks",
-	Long: `Uninstall the Go pre-commit system hooks from your git repository.
+// BuildUninstallCmd creates the uninstall command
+func (cb *CommandBuilder) BuildUninstallCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "uninstall",
+		Short: "Uninstall git pre-commit hooks",
+		Long: `Uninstall the Go pre-commit system hooks from your git repository.
 
 This command will:
   - Remove .git/hooks/pre-commit (or other specified hook types)
   - Only remove hooks that were installed by Go pre-commit system
   - Preserve any hooks not created by this tool`,
-	Example: `  # Uninstall pre-commit hook
+		Example: `  # Uninstall pre-commit hook
   go-pre-commit uninstall
 
   # Uninstall multiple hook types
   go-pre-commit uninstall --hook-type pre-commit --hook-type pre-push`,
-	RunE: runUninstall,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			hookTypes, err := cmd.Flags().GetStringSlice("hook-type")
+			if err != nil {
+				return err
+			}
+			return cb.runUninstallWithHooks(hookTypes, cmd, args)
+		},
+	}
+
+	cmd.Flags().StringSlice("hook-type", []string{"pre-commit"}, "Hook types to uninstall")
+	return cmd
 }
 
-//nolint:gochecknoinits // Required by cobra
-func init() {
-	uninstallCmd.Flags().StringSliceVar(&hookTypes, "hook-type", []string{"pre-commit"}, "Hook types to uninstall")
-}
-
-func runUninstall(_ *cobra.Command, _ []string) error {
+func (cb *CommandBuilder) runUninstallWithHooks(hookTypes []string, _ *cobra.Command, _ []string) error {
 	// Get the repository root
 	repoRoot, err := git.FindRepositoryRoot()
 	if err != nil {
 		return fmt.Errorf("failed to find git repository: %w", err)
 	}
 
-	if verbose {
+	if cb.app.config.Verbose {
 		printInfo("Repository root: %s", repoRoot)
 	}
 
@@ -52,7 +56,7 @@ func runUninstall(_ *cobra.Command, _ []string) error {
 	var notFound []string
 
 	for _, hookType := range hookTypes {
-		if verbose {
+		if cb.app.config.Verbose {
 			printInfo("Uninstalling %s hook...", hookType)
 		}
 

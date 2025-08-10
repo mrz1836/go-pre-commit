@@ -16,7 +16,7 @@ func TestPrintSuccess(t *testing.T) {
 	os.Stdout = w
 
 	// Test with color disabled
-	noColor = true
+	color.NoColor = true
 	printSuccess("Test %s", "message")
 
 	_ = w.Close()
@@ -36,7 +36,7 @@ func TestPrintError(t *testing.T) {
 	os.Stderr = w
 
 	// Test with color disabled
-	noColor = true
+	color.NoColor = true
 	printError("Error: %s", "test error")
 
 	_ = w.Close()
@@ -56,7 +56,7 @@ func TestPrintWarning(t *testing.T) {
 	os.Stderr = w
 
 	// Test with color disabled
-	noColor = true
+	color.NoColor = true
 	printWarning("Warning: %s", "test warning")
 
 	_ = w.Close()
@@ -76,7 +76,7 @@ func TestPrintInfo(t *testing.T) {
 	os.Stdout = w
 
 	// Test with color disabled
-	noColor = true
+	color.NoColor = true
 	printInfo("Info: %s", "test info")
 
 	_ = w.Close()
@@ -97,11 +97,11 @@ func TestColorHandling(_ *testing.T) {
 	}()
 
 	// Test with color enabled
-	noColor = false
+	color.NoColor = false
 	// This should set color.NoColor to false (color enabled)
 	// In actual execution, this happens in init() but we can't test that directly
 
 	// Test with color disabled
-	noColor = true
+	color.NoColor = true
 	// This should set color.NoColor to true (color disabled)
 }

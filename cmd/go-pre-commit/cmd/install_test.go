@@ -3,6 +3,7 @@ package cmd
 import (
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -11,40 +12,50 @@ func TestInstallCmd_ParseFlags(t *testing.T) {
 	tests := []struct {
 		name     string
 		args     []string
-		validate func(t *testing.T)
+		validate func(t *testing.T, cmd *cobra.Command)
 	}{
 		{
 			name: "force flag",
-			args: []string{"install", "--force"},
-			validate: func(t *testing.T) {
+			args: []string{"--force"},
+			validate: func(t *testing.T, cmd *cobra.Command) {
+				force, err := cmd.Flags().GetBool("force")
+				require.NoError(t, err)
 				assert.True(t, force)
 			},
 		},
 		{
 			name: "force flag short",
-			args: []string{"install", "-f"},
-			validate: func(t *testing.T) {
+			args: []string{"-f"},
+			validate: func(t *testing.T, cmd *cobra.Command) {
+				force, err := cmd.Flags().GetBool("force")
+				require.NoError(t, err)
 				assert.True(t, force)
 			},
 		},
 		{
 			name: "hook-type flag single",
-			args: []string{"install", "--hook-type", "pre-push"},
-			validate: func(t *testing.T) {
+			args: []string{"--hook-type", "pre-push"},
+			validate: func(t *testing.T, cmd *cobra.Command) {
+				hookTypes, err := cmd.Flags().GetStringSlice("hook-type")
+				require.NoError(t, err)
 				assert.Equal(t, []string{"pre-push"}, hookTypes)
 			},
 		},
 		{
 			name: "hook-type flag multiple",
-			args: []string{"install", "--hook-type", "pre-commit", "--hook-type", "pre-push"},
-			validate: func(t *testing.T) {
+			args: []string{"--hook-type", "pre-commit", "--hook-type", "pre-push"},
+			validate: func(t *testing.T, cmd *cobra.Command) {
+				hookTypes, err := cmd.Flags().GetStringSlice("hook-type")
+				require.NoError(t, err)
 				assert.Equal(t, []string{"pre-commit", "pre-push"}, hookTypes)
 			},
 		},
 		{
 			name: "default hook type",
-			args: []string{"install"},
-			validate: func(t *testing.T) {
+			args: []string{},
+			validate: func(t *testing.T, cmd *cobra.Command) {
+				hookTypes, err := cmd.Flags().GetStringSlice("hook-type")
+				require.NoError(t, err)
 				assert.Equal(t, []string{"pre-commit"}, hookTypes)
 			},
 		},
@@ -52,36 +63,28 @@ func TestInstallCmd_ParseFlags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset flags
-			force = false
-			// For tests with explicit hook-type flags, start with empty slice
-			// For default test, use the default value
-			if tt.name == "default hook type" {
-				hookTypes = []string{"pre-commit"}
-			} else {
-				hookTypes = []string{}
-			}
+			// Create fresh CLI app and command builder for each test case
+			app := NewCLIApp("test", "test-commit", "test-date")
+			builder := NewCommandBuilder(app)
+			installCmd := builder.BuildInstallCmd()
 
-			// Parse command properly through execute to handle subcommand flags
-			rootCmd.SetArgs(tt.args)
-			cmd, err := rootCmd.ExecuteC()
-			if err != nil {
-				// For testing flag parsing, we expect parse errors but not execution errors
-				// Since we can't actually run install without proper git repo setup
-				require.Contains(t, err.Error(), "failed to load configuration")
-			}
-			assert.Equal(t, "install", cmd.Name())
+			// Parse the flags
+			err := installCmd.ParseFlags(tt.args)
+			require.NoError(t, err)
 
 			// Validate
-			tt.validate(t)
+			tt.validate(t, installCmd)
 		})
 	}
 }
 
 func TestInstallCmd_CommandStructure(t *testing.T) {
-	// Verify command exists and has correct structure
-	cmd, _, err := rootCmd.Find([]string{"install"})
-	require.NoError(t, err)
+	// Create CLI app and command builder
+	app := NewCLIApp("test", "test-commit", "test-date")
+	builder := NewCommandBuilder(app)
+	cmd := builder.BuildInstallCmd()
+
+	// Verify command has correct structure
 	assert.Equal(t, "install", cmd.Name())
 	assert.Contains(t, cmd.Short, "Install")
 
