@@ -948,6 +948,13 @@ func TestFumptCheckDirectErrorScenarios(t *testing.T) {
 				}
 			}
 
+			// Skip timeout test if gofumpt is not available (CI environments)
+			if tt.name == "timeout in direct gofumpt" {
+				if _, lookupErr := exec.LookPath("gofumpt"); lookupErr != nil {
+					t.Skip("gofumpt is not available, cannot test timeout scenario")
+				}
+			}
+
 			files := []string{"test.go"}
 			if tt.name == "timeout in direct gofumpt" {
 				files = []string{"large.go"}
@@ -1901,6 +1908,11 @@ func TestCheckUncommittedChangesErrorPaths(t *testing.T) {
 // Test specific error paths that are hard to cover otherwise
 func TestSpecificErrorPaths(t *testing.T) {
 	t.Run("fumpt context cancellation", func(t *testing.T) {
+		// Skip if gofumpt is not available (CI environments)
+		if _, lookupErr := exec.LookPath("gofumpt"); lookupErr != nil {
+			t.Skip("gofumpt is not available, cannot test context cancellation")
+		}
+
 		tmpDir := t.TempDir()
 		oldDir, err := os.Getwd()
 		require.NoError(t, err)
@@ -1926,6 +1938,11 @@ func TestSpecificErrorPaths(t *testing.T) {
 	})
 
 	t.Run("lint context cancellation", func(t *testing.T) {
+		// Skip if golangci-lint is not available (CI environments)
+		if _, lookupErr := exec.LookPath("golangci-lint"); lookupErr != nil {
+			t.Skip("golangci-lint is not available, cannot test context cancellation")
+		}
+
 		tmpDir := t.TempDir()
 		oldDir, err := os.Getwd()
 		require.NoError(t, err)
