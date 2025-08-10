@@ -149,7 +149,7 @@ func (c *LintCheck) runMakeLint(ctx context.Context) error {
 			(strings.Contains(output, ".go:") && strings.Contains(output, ":")) {
 			// This looks like linting issues, not a tool failure
 			// Extract and format specific lint errors for better visibility
-			formattedOutput := formatLintErrors(output)
+			formattedOutput := FormatLintErrors(output)
 			// For lint errors, return the formatted output as the error message
 			return &prerrors.CheckError{
 				Err:        prerrors.ErrLintingIssues,
@@ -230,7 +230,7 @@ func (c *LintCheck) runDirectLint(ctx context.Context, files []string) error {
 		if strings.Contains(output, ".go:") && strings.Contains(output, ":") {
 			// This looks like linting issues, not a tool failure
 			// Extract and format specific lint errors for better visibility
-			formattedOutput := formatLintErrors(output)
+			formattedOutput := FormatLintErrors(output)
 			// For lint errors, return the formatted output as the error message
 			return &prerrors.CheckError{
 				Err:        prerrors.ErrLintingIssues,
@@ -252,8 +252,9 @@ func (c *LintCheck) runDirectLint(ctx context.Context, files []string) error {
 	return nil
 }
 
-// formatLintErrors extracts and formats specific lint violations for clearer display
-func formatLintErrors(output string) string {
+// FormatLintErrors extracts and formats specific lint violations for clearer display
+// Exported for testing purposes
+func FormatLintErrors(output string) string {
 	var result strings.Builder
 	lines := strings.Split(output, "\n")
 	errorCount := 0
@@ -271,7 +272,7 @@ func formatLintErrors(output string) string {
 		// Example: internal/git/files.go:89:2: ineffectual assignment to err (ineffassign)
 		if strings.Contains(line, ".go:") && strings.Contains(line, ":") {
 			// Clean up ANSI codes if present
-			cleanLine := stripANSIColors(line)
+			cleanLine := StripANSIColors(line)
 
 			// Avoid duplicate errors
 			if !seenErrors[cleanLine] {
@@ -295,8 +296,9 @@ func formatLintErrors(output string) string {
 	return output
 }
 
-// stripANSIColors removes ANSI color codes from a string
-func stripANSIColors(s string) string {
+// StripANSIColors removes ANSI color codes from a string
+// Exported for testing purposes
+func StripANSIColors(s string) string {
 	// Remove ANSI escape sequences
 	ansiRegex := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	return ansiRegex.ReplaceAllString(s, "")
