@@ -8,12 +8,21 @@ import (
 	"github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/cmd"
 )
 
-// Build variables - set by ldflags during build
-var (
-	version   = "dev"
-	commit    = "none"    //nolint:gochecknoglobals // Required for ldflags injection at build time
-	buildDate = "unknown" //nolint:gochecknoglobals // Required for ldflags injection at build time
-)
+// BuildInfo holds build-time information that gets injected via ldflags
+type BuildInfo struct {
+	Version   string
+	Commit    string
+	BuildDate string
+}
+
+// getBuildInfo returns build information from generated version functions
+func getBuildInfo() BuildInfo {
+	return BuildInfo{
+		Version:   getBuildVersion(),
+		Commit:    getBuildCommit(),
+		BuildDate: getBuildBuildDate(),
+	}
+}
 
 func main() {
 	os.Exit(run())
@@ -22,8 +31,11 @@ func main() {
 // run executes the main application logic and returns the exit code.
 // This function is separated from main() to enable testing.
 func run() int {
+	// Get build information
+	buildInfo := getBuildInfo()
+
 	// Create CLI application with dependency injection
-	app := cmd.NewCLIApp(version, commit, buildDate)
+	app := cmd.NewCLIApp(buildInfo.Version, buildInfo.Commit, buildInfo.BuildDate)
 	builder := cmd.NewCommandBuilder(app)
 
 	// Execute the root command
