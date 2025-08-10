@@ -13,8 +13,6 @@ import (
 	precommiterrors "github.com/mrz1836/go-pre-commit/internal/errors"
 )
 
-var errConfigGitRootNotFound = errors.New("git root not found")
-
 // ConfigValidationTestSuite validates configuration loading under various scenarios
 type ConfigValidationTestSuite struct {
 	suite.Suite
@@ -119,7 +117,7 @@ func (s *ConfigValidationTestSuite) findGitRoot() (string, error) {
 		}
 	}
 
-	return "", errConfigGitRootNotFound
+	return "", os.ErrNotExist
 }
 
 // TearDownTest cleans up after each test

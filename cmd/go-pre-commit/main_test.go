@@ -17,8 +17,6 @@ import (
 	"github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/cmd"
 )
 
-var errCommandExited = errors.New("command exited")
-
 func TestMain(t *testing.T) {
 	// Test that the binary can be built and executed
 	// This test verifies the main entry point works
@@ -139,7 +137,7 @@ func TestMainFunction(t *testing.T) {
 					if r := recover(); r != nil {
 						// Main calls os.Exit(1) on error, which we can't intercept
 						// So we expect a panic in test environment
-						cmdErr = fmt.Errorf("%w: %v", errCommandExited, r)
+						cmdErr = os.ErrProcessDone
 					}
 				}()
 

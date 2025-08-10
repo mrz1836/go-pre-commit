@@ -2,7 +2,6 @@ package validation
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,8 +15,6 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
 )
-
-var errParallelGitRootNotFound = errors.New("git root not found")
 
 // ParallelSafetyTestSuite validates thread safety and parallel execution safety
 type ParallelSafetyTestSuite struct {
@@ -122,7 +119,7 @@ func (s *ParallelSafetyTestSuite) findGitRoot() (string, error) {
 		}
 	}
 
-	return "", errParallelGitRootNotFound
+	return "", os.ErrNotExist
 }
 
 // initGitRepo initializes a git repository in the temp directory

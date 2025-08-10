@@ -3,7 +3,6 @@ package validation
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,8 +13,6 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
 )
-
-var errCIGitRootNotFound = errors.New("git root not found")
 
 // CIEnvironmentTestSuite validates parity between local and CI execution
 type CIEnvironmentTestSuite struct {
@@ -117,7 +114,7 @@ func (s *CIEnvironmentTestSuite) findGitRoot() (string, error) {
 		}
 	}
 
-	return "", errCIGitRootNotFound
+	return "", os.ErrNotExist // Use a static error
 }
 
 // initGitRepo initializes a git repository in the temp directory

@@ -2,7 +2,6 @@ package validation
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,8 +12,6 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
 )
-
-var errSkipGitRootNotFound = errors.New("git root not found")
 
 // SkipFunctionalityTestSuite validates SKIP environment variable functionality
 type SkipFunctionalityTestSuite struct {
@@ -123,7 +120,7 @@ func (s *SkipFunctionalityTestSuite) findGitRoot() (string, error) {
 		}
 	}
 
-	return "", errSkipGitRootNotFound
+	return "", os.ErrNotExist
 }
 
 // TearDownTest cleans up environment variables after each test

@@ -2,7 +2,6 @@ package validation
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,8 +14,6 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
 )
-
-var errGitRootNotFound = errors.New("git root not found")
 
 // ProductionScenariosTestSuite validates behavior under realistic production conditions
 type ProductionScenariosTestSuite struct {
@@ -120,7 +117,7 @@ func (s *ProductionScenariosTestSuite) findGitRoot() (string, error) {
 		}
 	}
 
-	return "", errGitRootNotFound
+	return "", os.ErrNotExist
 }
 
 // initGitRepo initializes a git repository in the temp directory

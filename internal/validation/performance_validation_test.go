@@ -2,7 +2,6 @@ package validation
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,8 +14,6 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
 )
-
-var errPerformanceGitRootNotFound = errors.New("git root not found")
 
 // PerformanceValidationTestSuite validates that the system meets the <2s performance target
 type PerformanceValidationTestSuite struct {
@@ -120,7 +117,7 @@ func (s *PerformanceValidationTestSuite) findGitRoot() (string, error) {
 		}
 	}
 
-	return "", errPerformanceGitRootNotFound
+	return "", os.ErrNotExist
 }
 
 // initGitRepo initializes a git repository in the temp directory
