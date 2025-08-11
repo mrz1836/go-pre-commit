@@ -218,6 +218,25 @@ VALID_KEY=valid_value
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
+			// Clean environment variables before each subtest
+			envVarsToClean := []string{
+				"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+				"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
+				"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
+				"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+				"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
+				"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
+				"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+				"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
+				"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
+				"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
+				"GO_PRE_COMMIT_EXCLUDE_PATTERNS", "GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE",
+				"GO_PRE_COMMIT_EOF_AUTO_STAGE", "GO_PRE_COMMIT_COLOR_OUTPUT",
+			}
+			for _, envVar := range envVarsToClean {
+				s.Require().NoError(os.Unsetenv(envVar))
+			}
+
 			// Create .github directory
 			githubDir := filepath.Join(s.tempDir, ".github")
 			s.Require().NoError(os.MkdirAll(githubDir, 0o750))
