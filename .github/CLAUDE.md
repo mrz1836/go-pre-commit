@@ -16,6 +16,7 @@ This is **go-pre-commit**: a lightning-fast, Go-native git pre-commit framework 
 - `go-pre-commit install` - Install hooks in repository
 - `go-pre-commit run` - Run checks on staged files
 - `go-pre-commit status` - Show configuration and installation status
+- `go-pre-commit upgrade` - Upgrade to the latest version
 - `go-pre-commit uninstall` - Remove installed hooks
 
 ### 📚 Documentation Hierarchy

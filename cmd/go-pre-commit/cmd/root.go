@@ -89,6 +89,7 @@ func (cb *CommandBuilder) Execute() error {
 	rootCmd.AddCommand(cb.BuildRunCmd())
 	rootCmd.AddCommand(cb.BuildUninstallCmd())
 	rootCmd.AddCommand(cb.BuildStatusCmd())
+	rootCmd.AddCommand(cb.BuildUpgradeCmd())
 
 	return rootCmd.Execute()
 }

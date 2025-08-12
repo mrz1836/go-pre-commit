@@ -99,17 +99,17 @@ loc: ## Total lines of code table
 release: ## Run production release (requires github_token)
 	@echo "Running release..."
 	@test -n "$(github_token)"
-	@GITHUB_TOKEN=$(github_token) goreleaser --rm-dist
+	@GITHUB_TOKEN=$(github_token) goreleaser release --clean
 
 .PHONY: release-test
 release-test: ## Run release dry-run (no publish)
 	@echo "Running test release..."
-	@goreleaser --skip-publish --rm-dist
+	@goreleaser release --skip=publish --clean
 
 .PHONY: release-snap
 release-snap: ## Build snapshot binaries
 	@echo "Building release snapshot..."
-	@goreleaser --snapshot --skip-publish --rm-dist
+	@goreleaser release --snapshot --clean
 
 .PHONY: tag
 tag: ## Create and push a new tag (use version=X.Y.Z)

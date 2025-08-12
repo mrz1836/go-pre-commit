@@ -19,13 +19,44 @@ changelog:
 # Builder
 # ---------------------------
 builds:
-  - env:
+  - id: go-pre-commit
+    main: ./cmd/go-pre-commit
+    binary: go-pre-commit
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
-      #- windows # Disabled for now
       - darwin
-    skip: true
+      #- windows # Disabled for now
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.Version={{.Version}}
+      - -X main.Commit={{.Commit}}
+      - -X main.BuildDate={{.Date}}
+
+# ---------------------------
+# Archives
+# ---------------------------
+archives:
+  - id: go-pre-commit
+    name_template: >-
+      {{- .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    files:
+      - LICENSE
+      - README.md
+
+# ---------------------------
+# Checksum
+# ---------------------------
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
 
 # ---------------------------
 # Github Release

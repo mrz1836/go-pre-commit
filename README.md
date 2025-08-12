@@ -214,8 +214,17 @@ go-pre-commit status
 ### Updating go-pre-commit
 
 ```bash
-# Update to latest version
-go update github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
+# Check for available updates
+go-pre-commit upgrade --check
+
+# Upgrade to the latest version
+go-pre-commit upgrade
+
+# Force upgrade even if already on latest
+go-pre-commit upgrade --force
+
+# Upgrade and reinstall hooks
+go-pre-commit upgrade --reinstall
 
 # Verify version
 go-pre-commit --version

@@ -19,14 +19,17 @@ VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell date -u '+%Y-%m-%d_%H:%M:%S_UTC' 2>/dev/null || echo "unknown")
 
-LDFLAGS := -ldflags="-s -w"
+LDFLAGS := -ldflags="-s -w \
+	-X main.Version=$(VERSION) \
+	-X main.Commit=$(COMMIT) \
+	-X main.BuildDate=$(BUILD_DATE)"
 BUILD_FLAGS := -trimpath
 
 ## build: Build the pre-commit binary
 build:
-	@echo "Building $(BINARY_NAME)..."
+	@echo "Building $(BINARY_NAME) v$(VERSION)..."
 	@$(GO) build $(BUILD_FLAGS) $(LDFLAGS) -o $(BINARY_PATH) ./cmd/$(BINARY_NAME)
-	@echo "Binary built: $(BINARY_PATH)"
+	@echo "Binary built: $(BINARY_PATH) (v$(VERSION))"
 
 ## update-version: Update version number (usage: make update-version version=1.0.1)
 .PHONY: update-version
