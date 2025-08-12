@@ -15,12 +15,12 @@ type BuildInfo struct {
 	BuildDate string
 }
 
-// getBuildInfo returns build information from generated version functions
+// getBuildInfo returns build information from version constants
 func getBuildInfo() BuildInfo {
 	return BuildInfo{
-		Version:   getBuildVersion(),
-		Commit:    getBuildCommit(),
-		BuildDate: getBuildBuildDate(),
+		Version:   Version,
+		Commit:    Commit,
+		BuildDate: BuildDate,
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -339,10 +340,21 @@ func TestVersionInfo(t *testing.T) {
 
 	// No need to change directory - tests should run from where they are
 
-	// Build a test binary
+	// Build a test binary from the current package
 	ctx := context.Background()
-	testBinary := "./test-version-binary"
-	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", testBinary, "./cmd/go-pre-commit")
+	testBinary := filepath.Join(t.TempDir(), "test-version-binary")
+
+	// Determine the correct build path based on current working directory
+	var buildPath string
+	if strings.Contains(originalWD, "/cmd/go-pre-commit") {
+		// Running from within the cmd/go-pre-commit directory
+		buildPath = "."
+	} else {
+		// Running from project root
+		buildPath = "./cmd/go-pre-commit"
+	}
+
+	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", testBinary, buildPath) //nolint:gosec // Safe: buildPath is controlled in test
 
 	// Add debug output for build failures
 	var stdout, stderr bytes.Buffer
@@ -359,14 +371,10 @@ func TestVersionInfo(t *testing.T) {
 	}
 	require.NoError(t, err)
 
-	defer func() {
-		if removeErr := os.Remove(testBinary); removeErr != nil {
-			t.Logf("Failed to remove test binary: %v", removeErr)
-		}
-	}()
+	// No need to defer cleanup - test binary is in temp dir which gets cleaned up automatically
 
 	// Run with version flag and no-color flag
-	testCmd := exec.CommandContext(ctx, testBinary, "--no-color", "--version")
+	testCmd := exec.CommandContext(ctx, testBinary, "--no-color", "--version") //nolint:gosec // Safe: testBinary is our own built binary
 	output, err := testCmd.Output()
 	require.NoError(t, err)
 
@@ -376,10 +384,10 @@ func TestVersionInfo(t *testing.T) {
 	// Check that version command works and outputs version information
 	assert.Contains(t, outputStr, "go-pre-commit")
 	assert.Contains(t, outputStr, "version")
-	// The default version values should be present
-	assert.Contains(t, outputStr, "dev")
-	assert.Contains(t, outputStr, "none")
-	assert.Contains(t, outputStr, "unknown")
+	// The version values from version.go should be present
+	assert.Contains(t, outputStr, Version)   // Use the actual version constant
+	assert.Contains(t, outputStr, Commit)    // Use the actual commit constant
+	assert.Contains(t, outputStr, BuildDate) // Use the actual build date constant
 }
 
 // Test that main calls os.Exit(1) on error - using subprocess
@@ -404,8 +412,19 @@ func TestMainExitOnError(t *testing.T) {
 
 	// Build a test binary
 	ctx := context.Background()
-	testBinary := "./test-exit-binary"
-	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", testBinary, "./cmd/go-pre-commit")
+	testBinary := filepath.Join(t.TempDir(), "test-exit-binary")
+
+	// Determine the correct build path based on current working directory
+	var buildPath string
+	if strings.Contains(originalWD, "/cmd/go-pre-commit") {
+		// Running from within the cmd/go-pre-commit directory
+		buildPath = "."
+	} else {
+		// Running from project root
+		buildPath = "./cmd/go-pre-commit"
+	}
+
+	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", testBinary, buildPath) //nolint:gosec // Safe: buildPath is controlled in test
 
 	// Add debug output for build failures
 	var stdout, stderr bytes.Buffer
@@ -422,14 +441,10 @@ func TestMainExitOnError(t *testing.T) {
 	}
 	require.NoError(t, err)
 
-	defer func() {
-		if removeErr := os.Remove(testBinary); removeErr != nil {
-			t.Logf("Failed to remove test binary: %v", removeErr)
-		}
-	}()
+	// No need to defer cleanup - test binary is in temp dir which gets cleaned up automatically
 
 	// Run with invalid command and no-color flag
-	testCmd := exec.CommandContext(ctx, testBinary, "--no-color", "invalid-command")
+	testCmd := exec.CommandContext(ctx, testBinary, "--no-color", "invalid-command") //nolint:gosec // Safe: testBinary is our own built binary
 	err = testCmd.Run()
 
 	// Should exit with status 1

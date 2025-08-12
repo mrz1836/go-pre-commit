@@ -86,7 +86,7 @@ func TestBuildRootCmdProperties(t *testing.T) {
 	// Test persistent flags
 	verboseFlag := cmd.PersistentFlags().Lookup("verbose")
 	require.NotNil(t, verboseFlag)
-	assert.Equal(t, "v", verboseFlag.Shorthand)
+	assert.Empty(t, verboseFlag.Shorthand) // No shorthand for verbose anymore
 	assert.Equal(t, "false", verboseFlag.DefValue)
 
 	noColorFlag := cmd.PersistentFlags().Lookup("no-color")
@@ -124,12 +124,6 @@ func TestBuildRootCmdPersistentPreRun(t *testing.T) {
 			args:            []string{"--verbose", "--no-color"},
 			expectedVerbose: true,
 			expectedNoColor: true,
-		},
-		{
-			name:            "short verbose flag",
-			args:            []string{"-v"},
-			expectedVerbose: true,
-			expectedNoColor: false,
 		},
 	}
 

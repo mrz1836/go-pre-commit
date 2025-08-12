@@ -74,7 +74,7 @@ Key features:
 `)
 
 	// Add persistent flags
-	cmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
+	cmd.PersistentFlags().Bool("verbose", false, "Enable verbose output")
 	cmd.PersistentFlags().Bool("no-color", false, "Disable colored output")
 
 	return cmd
