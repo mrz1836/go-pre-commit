@@ -384,10 +384,11 @@ func TestVersionInfo(t *testing.T) {
 	// Check that version command works and outputs version information
 	assert.Contains(t, outputStr, "go-pre-commit")
 	assert.Contains(t, outputStr, "version")
-	// The version values from version.go should be present
-	assert.Contains(t, outputStr, Version)   // Use the actual version constant
-	assert.Contains(t, outputStr, Commit)    // Use the actual commit constant
-	assert.Contains(t, outputStr, BuildDate) // Use the actual build date constant
+	// The version should contain some value (may be from BuildInfo or ldflags)
+	// We can't predict exact values since they depend on build context
+	assert.Regexp(t, `version \S+`, outputStr) // Should have some version
+	assert.Regexp(t, `commit: \S+`, outputStr) // Should have some commit
+	assert.Regexp(t, `built: \S+`, outputStr)  // Should have some build date
 }
 
 // Test that main calls os.Exit(1) on error - using subprocess

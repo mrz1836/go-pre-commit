@@ -79,11 +79,20 @@ func CompareVersions(v1, v2 string) int {
 	v1 = strings.TrimPrefix(v1, "v")
 	v2 = strings.TrimPrefix(v2, "v")
 
-	// Handle development versions
-	if v1 == "dev" || v1 == "" {
-		return -1 // dev is always considered older
+	// Handle development versions and commit hashes
+	// Check if v1 is a development version or commit hash
+	isV1Dev := v1 == "dev" || v1 == "" || isCommitHash(v1)
+	// Check if v2 is a development version or commit hash
+	isV2Dev := v2 == "dev" || v2 == "" || isCommitHash(v2)
+
+	if isV1Dev && isV2Dev {
+		// Both are dev/commit versions, consider them equal
+		return 0
 	}
-	if v2 == "dev" || v2 == "" {
+	if isV1Dev {
+		return -1 // dev/commit is always considered older than a release
+	}
+	if isV2Dev {
 		return 1
 	}
 
@@ -152,4 +161,21 @@ func NormalizeVersion(version string) string {
 	}
 
 	return version
+}
+
+// isCommitHash checks if a string looks like a git commit hash
+func isCommitHash(s string) bool {
+	// Commit hashes are typically 7-40 hex characters
+	if len(s) < 7 || len(s) > 40 {
+		return false
+	}
+
+	// Check if all characters are valid hex
+	for _, c := range s {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') {
+			return false
+		}
+	}
+
+	return true
 }

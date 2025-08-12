@@ -78,7 +78,7 @@ func TestCompareVersions(t *testing.T) {
 			name:     "dev version compared to dev",
 			v1:       "dev",
 			v2:       "dev",
-			expected: -1, // Both dev versions
+			expected: 0, // Both dev versions are equal
 		},
 		{
 			name:     "version with suffix",

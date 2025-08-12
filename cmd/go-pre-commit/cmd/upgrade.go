@@ -86,14 +86,12 @@ This command will:
 func (cb *CommandBuilder) runUpgradeWithConfig(config UpgradeConfig) error {
 	currentVersion := cb.app.version
 
-	// Handle development version
-	if currentVersion == "dev" || currentVersion == "" {
-		if !config.Force {
-			printWarning("Current version is 'dev' - this appears to be a development build")
+	// Handle development version or commit hash
+	if currentVersion == "dev" || currentVersion == "" || isLikelyCommitHash(currentVersion) {
+		if !config.Force && !config.CheckOnly {
+			printWarning("Current version appears to be a development build (%s)", currentVersion)
 			printInfo("Use --force to upgrade anyway")
-			if !config.CheckOnly {
-				return ErrDevVersionNoForce
-			}
+			return ErrDevVersionNoForce
 		}
 	}
 
@@ -314,4 +312,24 @@ func GetBinaryLocation() (string, error) {
 		return exec.LookPath("go-pre-commit.exe")
 	}
 	return exec.LookPath("go-pre-commit")
+}
+
+// isLikelyCommitHash checks if a version string looks like a commit hash
+func isLikelyCommitHash(version string) bool {
+	// Remove any -dirty suffix
+	version = strings.TrimSuffix(version, "-dirty")
+
+	// Commit hashes are typically 7-40 hex characters
+	if len(version) < 7 || len(version) > 40 {
+		return false
+	}
+
+	// Check if all characters are valid hex
+	for _, c := range version {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') {
+			return false
+		}
+	}
+
+	return true
 }

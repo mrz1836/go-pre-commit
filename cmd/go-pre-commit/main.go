@@ -4,6 +4,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/cmd"
 )
@@ -17,10 +18,17 @@ type BuildInfo struct {
 
 // getBuildInfo returns build information from version constants
 func getBuildInfo() BuildInfo {
+	version := GetVersion()
+
+	// Add modified suffix if there are uncommitted changes
+	if IsModified() && !strings.HasSuffix(version, "-dirty") {
+		version += "-dirty"
+	}
+
 	return BuildInfo{
-		Version:   Version,
-		Commit:    Commit,
-		BuildDate: BuildDate,
+		Version:   version,
+		Commit:    GetCommit(),
+		BuildDate: GetBuildDate(),
 	}
 }
 
