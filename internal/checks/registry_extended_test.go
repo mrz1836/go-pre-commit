@@ -115,12 +115,16 @@ func TestNewRegistryWithConfig(t *testing.T) {
 			name: "config with custom timeouts",
 			config: &config.Config{
 				CheckTimeouts: struct {
-					Fumpt      int
-					Lint       int
-					ModTidy    int
-					Whitespace int
-					EOF        int
+					Fmt         int
+					Fumpt       int
+					Goimports   int
+					Lint        int
+					ModTidy     int
+					Whitespace  int
+					EOF         int
+					AIDetection int
 				}{
+					Fmt:        60,
 					Fumpt:      60,
 					Lint:       120,
 					ModTidy:    45,
@@ -146,12 +150,16 @@ func TestNewRegistryWithConfig(t *testing.T) {
 			name: "config with zero timeouts uses defaults",
 			config: &config.Config{
 				CheckTimeouts: struct {
-					Fumpt      int
-					Lint       int
-					ModTidy    int
-					Whitespace int
-					EOF        int
+					Fmt         int
+					Fumpt       int
+					Goimports   int
+					Lint        int
+					ModTidy     int
+					Whitespace  int
+					EOF         int
+					AIDetection int
 				}{
+					Fmt:        0,
 					Fumpt:      0,
 					Lint:       0,
 					ModTidy:    0,

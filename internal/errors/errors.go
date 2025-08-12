@@ -23,6 +23,9 @@ var (
 	// ErrToolNotFound is returned when a required tool is not available
 	ErrToolNotFound = errors.New("required tool not found")
 
+	// ErrFmtIssues is returned when go fmt finds formatting issues
+	ErrFmtIssues = errors.New("formatting issues found")
+
 	// ErrLintingIssues is returned when linting finds issues
 	ErrLintingIssues = errors.New("linting issues found")
 
@@ -34,6 +37,9 @@ var (
 
 	// ErrEOFIssues is returned when EOF issues are found
 	ErrEOFIssues = errors.New("EOF issues found")
+
+	// ErrAIAttributionFound is returned when AI attribution is detected
+	ErrAIAttributionFound = errors.New("AI attribution detected")
 
 	// ErrMakeTargetNotFound is returned when a make target is not available
 	ErrMakeTargetNotFound = errors.New("make target not found")

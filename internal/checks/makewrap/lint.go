@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -76,14 +77,16 @@ func (c *LintCheck) Run(ctx context.Context, files []string) error {
 		return nil
 	}
 
-	// Check if make lint is available
-	if c.sharedCtx.HasMakeTarget(ctx, "lint") {
-		// Run make lint with timeout
-		return c.runMakeLint(ctx)
+	// Prefer direct golangci-lint execution for pure Go implementation
+	err := c.runDirectLint(ctx, files)
+
+	// Only fall back to make if direct execution failed and make target exists
+	if err != nil && c.sharedCtx.HasMakeTarget(ctx, "lint") {
+		// Try make lint as fallback
+		err = c.runMakeLint(ctx)
 	}
 
-	// Fall back to direct golangci-lint if available
-	return c.runDirectLint(ctx, files)
+	return err
 }
 
 // FilterFiles filters to only Go files
@@ -173,12 +176,24 @@ func (c *LintCheck) runMakeLint(ctx context.Context) error {
 
 // runDirectLint runs golangci-lint directly on files
 func (c *LintCheck) runDirectLint(ctx context.Context, files []string) error {
-	// Check if golangci-lint is available
+	// Check if golangci-lint is available, install if not
 	if _, err := exec.LookPath("golangci-lint"); err != nil {
-		return prerrors.NewToolNotFoundError(
-			"golangci-lint",
-			"Install golangci-lint: 'go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest'",
-		)
+		// Try to install golangci-lint using the official install script
+		// This is the preferred installation method as it handles platform specifics
+		if installErr := c.installGolangciLint(ctx); installErr != nil {
+			return prerrors.NewToolNotFoundError(
+				"golangci-lint",
+				fmt.Sprintf("Failed to auto-install golangci-lint: %v\nTry manually: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin", installErr),
+			)
+		}
+
+		// Verify installation succeeded
+		if _, err := exec.LookPath("golangci-lint"); err != nil {
+			return prerrors.NewToolNotFoundError(
+				"golangci-lint",
+				"golangci-lint was installed but not found in PATH. Ensure $(go env GOPATH)/bin is in your PATH",
+			)
+		}
 	}
 
 	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
@@ -302,4 +317,38 @@ func StripANSIColors(s string) string {
 	// Remove ANSI escape sequences
 	ansiRegex := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	return ansiRegex.ReplaceAllString(s, "")
+}
+
+// installGolangciLint installs golangci-lint using the official installation script
+func (c *LintCheck) installGolangciLint(ctx context.Context) error {
+	// Get GOPATH to determine installation directory
+	goCmd := exec.CommandContext(ctx, "go", "env", "GOPATH")
+	gopathBytes, err := goCmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to get GOPATH: %w", err)
+	}
+	gopath := strings.TrimSpace(string(gopathBytes))
+	if gopath == "" {
+		// Fallback to default GOPATH
+		gopath = filepath.Join(os.Getenv("HOME"), "go")
+	}
+
+	installDir := filepath.Join(gopath, "bin")
+
+	// Download and run the installation script
+	// Using sh -c to pipe the curl output to sh
+	installScript := fmt.Sprintf(
+		"curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b %s",
+		installDir,
+	)
+
+	cmd := exec.CommandContext(ctx, "sh", "-c", installScript) //nolint:gosec // installScript is constructed from constants and validated paths
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("installation failed: %w (stderr: %s)", err, stderr.String())
+	}
+
+	return nil
 }

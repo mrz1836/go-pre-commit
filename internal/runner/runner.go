@@ -283,16 +283,22 @@ func (r *Runner) determineChecks(opts Options) ([]checks.Check, error) {
 // isCheckEnabled checks if a check is enabled in the configuration
 func (r *Runner) isCheckEnabled(name string) bool {
 	switch name {
+	case "ai_detection":
+		return r.config.Checks.AIDetection
+	case "eof":
+		return r.config.Checks.EOF
+	case "fmt":
+		return r.config.Checks.Fmt
 	case "fumpt":
 		return r.config.Checks.Fumpt
+	case "goimports":
+		return r.config.Checks.Goimports
 	case "lint":
 		return r.config.Checks.Lint
 	case "mod-tidy":
 		return r.config.Checks.ModTidy
 	case "whitespace":
 		return r.config.Checks.Whitespace
-	case "eof":
-		return r.config.Checks.EOF
 	default:
 		return false
 	}
@@ -349,7 +355,7 @@ func (r *Runner) parseSkipValue(value string) []string {
 
 	// Handle special values
 	if strings.ToLower(value) == "all" {
-		return []string{"fumpt", "lint", "mod-tidy", "whitespace", "eof"}
+		return []string{"fmt", "fumpt", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"}
 	}
 
 	// Split by comma and clean up
@@ -370,11 +376,14 @@ func (r *Runner) deduplicateAndValidateSkips(skips []string) []string {
 	result := make([]string, 0, len(skips))
 
 	validChecks := map[string]bool{
-		"fumpt":      true,
-		"lint":       true,
-		"mod-tidy":   true,
-		"whitespace": true,
-		"eof":        true,
+		"fmt":          true,
+		"fumpt":        true,
+		"goimports":    true,
+		"lint":         true,
+		"mod-tidy":     true,
+		"whitespace":   true,
+		"eof":          true,
+		"ai_detection": true,
 	}
 
 	for _, skip := range skips {

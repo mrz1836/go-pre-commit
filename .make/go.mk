@@ -51,11 +51,22 @@ coverage: ## Show test coverage
 	@echo "Generating coverage report..."
 	@go test -coverprofile=coverage.out ./... $(TAGS) && go tool cover -func=coverage.out
 
+.PHONY: fmt
+fmt: ## Run go fmt to format Go code
+	@echo "Running go fmt..."
+	@go fmt ./...
+
 .PHONY: fumpt
 fumpt: ## Run fumpt to format Go code
 	@echo "Running fumpt..."
 	@go install mvdan.cc/gofumpt@latest
 	@gofumpt -w -extra .
+
+.PHONY: goimports
+goimports: ## Format Go code and manage imports
+	@echo "Running goimports..."
+	@go install golang.org/x/tools/cmd/goimports@latest
+	@goimports -w .
 
 .PHONY: generate
 generate: ## Run go generate in the base of the repo

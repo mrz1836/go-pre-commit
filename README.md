@@ -130,6 +130,7 @@ git add test.go
 git commit -m "Test commit"
 
 # The pre-commit system will automatically run checks:
+# ✓ Checking for AI attribution
 # ✓ Running fumpt formatter
 # ✓ Running golangci-lint
 # ✓ Running go mod tidy
@@ -137,8 +138,9 @@ git commit -m "Test commit"
 # ✓ Ensuring files end with newline
 ```
 
-> **Good to know:** `go-pre-commit` ships with *zero* runtime dependencies.
+> **Good to know:** `go-pre-commit` is a pure Go solution with *zero* external dependencies.
 > It's a single Go binary that replaces Python-based pre-commit frameworks.
+> All formatting and linting tools are automatically installed when needed - no Makefile required!
 
 <br/>
 
@@ -154,15 +156,22 @@ GO_PRE_COMMIT_TIMEOUT_SECONDS=120      # Overall timeout
 GO_PRE_COMMIT_PARALLEL_WORKERS=2       # Number of parallel workers
 
 # Individual checks
-GO_PRE_COMMIT_ENABLE_FUMPT=true        # Format with fumpt
-GO_PRE_COMMIT_ENABLE_LINT=true         # Run golangci-lint
-GO_PRE_COMMIT_ENABLE_MOD_TIDY=true     # Run go mod tidy
-GO_PRE_COMMIT_ENABLE_WHITESPACE=true   # Fix trailing whitespace
-GO_PRE_COMMIT_ENABLE_EOF=true          # Ensure files end with newline
+GO_PRE_COMMIT_ENABLE_AI_DETECTION=true  # Detect AI attribution in code and commits
+GO_PRE_COMMIT_ENABLE_EOF=true           # Ensure files end with newline
+GO_PRE_COMMIT_ENABLE_FMT=true           # Format with go fmt
+GO_PRE_COMMIT_ENABLE_FUMPT=true         # Format with fumpt
+GO_PRE_COMMIT_ENABLE_GOIMPORTS=true     # Format and manage imports
+GO_PRE_COMMIT_ENABLE_LINT=true          # Run golangci-lint
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=true      # Run go mod tidy
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true    # Fix trailing whitespace
 
-# Auto-staging (automatically stage fixed files)
-GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true
+# Auto-staging and auto-fix (automatically stage/fix issues)
+GO_PRE_COMMIT_AI_DETECTION_AUTO_FIX=false  # Auto-fix AI attribution (disabled by default)
 GO_PRE_COMMIT_EOF_AUTO_STAGE=true
+GO_PRE_COMMIT_FMT_AUTO_STAGE=true
+GO_PRE_COMMIT_FUMPT_AUTO_STAGE=true
+GO_PRE_COMMIT_GOIMPORTS_AUTO_STAGE=true
+GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true
 ```
 
 <br/>
@@ -246,15 +255,18 @@ go-pre-commit uninstall --hook-type pre-commit
 
 `go-pre-commit` includes these built-in checks:
 
-| Check          | Description                                      | Auto-fix | Configuration                   |
-|----------------|--------------------------------------------------|----------|---------------------------------|
-| **fumpt**      | Formats Go code with stricter rules than `gofmt` | ✅        | Requires `make fumpt` target    |
-| **lint**       | Runs golangci-lint for comprehensive linting     | ❌        | Requires `make lint` target     |
-| **mod-tidy**   | Ensures go.mod and go.sum are tidy               | ✅        | Requires `make mod-tidy` target |
-| **whitespace** | Removes trailing whitespace                      | ✅        | Auto-stages changes if enabled  |
-| **eof**        | Ensures files end with a newline                 | ✅        | Auto-stages changes if enabled  |
+| Check            | Description                                      | Auto-fix | Configuration                   |
+|------------------|--------------------------------------------------|----------|---------------------------------|
+| **ai_detection** | Detects AI attribution in code and commit messages | ✅     | Auto-fix disabled by default    |
+| **eof**          | Ensures files end with a newline                 | ✅        | Auto-stages changes if enabled  |
+| **fmt**          | Formats Go code with standard `go fmt`           | ✅        | Pure Go - no dependencies       |
+| **fumpt**        | Formats Go code with stricter rules than `gofmt` | ✅        | Auto-installs if needed         |
+| **goimports**    | Formats code and manages imports automatically   | ✅        | Auto-installs if needed         |
+| **lint**         | Runs golangci-lint for comprehensive linting     | ❌        | Auto-installs if needed         |
+| **mod-tidy**     | Ensures go.mod and go.sum are tidy               | ✅        | Pure Go - no dependencies       |
+| **whitespace**   | Removes trailing whitespace                      | ✅        | Auto-stages changes if enabled  |
 
-All checks run in parallel for maximum performance. Make targets are detected automatically from your Makefile.
+All checks run in parallel for maximum performance. All checks work out-of-the-box with pure Go - no Makefile required! Tools are automatically installed when needed.
 
 <br/>
 
@@ -282,28 +294,36 @@ curl -o .github/.env.shared https://raw.githubusercontent.com/mrz1836/go-pre-com
 # Or create a minimal configuration
 cat > .github/.env.shared << 'EOF'
 ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_ENABLE_AI_DETECTION=true
+GO_PRE_COMMIT_ENABLE_EOF=true
+GO_PRE_COMMIT_ENABLE_FMT=true
 GO_PRE_COMMIT_ENABLE_FUMPT=true
+GO_PRE_COMMIT_ENABLE_GOIMPORTS=true
 GO_PRE_COMMIT_ENABLE_LINT=true
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
 GO_PRE_COMMIT_ENABLE_WHITESPACE=true
-GO_PRE_COMMIT_ENABLE_EOF=true
+GO_PRE_COMMIT_AI_DETECTION_AUTO_FIX=false
 EOF
 ```
 
-### 3. Create a Makefile with required targets
+### 3. (Optional) Create a Makefile for custom workflows
+
+Since `go-pre-commit` now runs all checks with pure Go, a Makefile is optional! The pre-commit hooks will automatically install any needed tools (fumpt, goimports, golangci-lint) on first use.
+
+If you want to use a Makefile for other tasks or custom workflows, you can still create one:
 
 ```bash
 cat > Makefile << 'EOF'
-.PHONY: fumpt lint mod-tidy
+.PHONY: test build clean
 
-fumpt:
-	@go run mvdan.cc/gofumpt@latest -w .
+test:
+	@go test ./...
 
-lint:
-	@golangci-lint run
+build:
+	@go build ./...
 
-mod-tidy:
-	@go mod tidy
+clean:
+	@go clean ./...
 EOF
 ```
 

@@ -33,17 +33,24 @@ func TestNewWhitespaceCheckWithConfig(t *testing.T) {
 			name: "config with auto-stage disabled",
 			config: &config.Config{
 				CheckTimeouts: struct {
-					Fumpt      int
-					Lint       int
-					ModTidy    int
-					Whitespace int
-					EOF        int
+					Fmt         int
+					Fumpt       int
+					Goimports   int
+					Lint        int
+					ModTidy     int
+					Whitespace  int
+					EOF         int
+					AIDetection int
 				}{
 					Whitespace: 60,
 				},
 				CheckBehaviors: struct {
+					FmtAutoStage        bool
+					FumptAutoStage      bool
+					GoimportsAutoStage  bool
 					WhitespaceAutoStage bool
 					EOFAutoStage        bool
+					AIDetectionAutoFix  bool
 				}{
 					WhitespaceAutoStage: false,
 				},
@@ -55,17 +62,24 @@ func TestNewWhitespaceCheckWithConfig(t *testing.T) {
 			name: "config with auto-stage enabled",
 			config: &config.Config{
 				CheckTimeouts: struct {
-					Fumpt      int
-					Lint       int
-					ModTidy    int
-					Whitespace int
-					EOF        int
+					Fmt         int
+					Fumpt       int
+					Goimports   int
+					Lint        int
+					ModTidy     int
+					Whitespace  int
+					EOF         int
+					AIDetection int
 				}{
 					Whitespace: 90,
 				},
 				CheckBehaviors: struct {
+					FmtAutoStage        bool
+					FumptAutoStage      bool
+					GoimportsAutoStage  bool
 					WhitespaceAutoStage bool
 					EOFAutoStage        bool
+					AIDetectionAutoFix  bool
 				}{
 					WhitespaceAutoStage: true,
 				},
@@ -111,17 +125,24 @@ func TestWhitespaceCheck_Run_WithAutoStage(t *testing.T) {
 	cfg := &config.Config{
 		Directory: filepath.Join(".", "pre-commit"), // Current directory structure
 		CheckTimeouts: struct {
-			Fumpt      int
-			Lint       int
-			ModTidy    int
-			Whitespace int
-			EOF        int
+			Fmt         int
+			Fumpt       int
+			Goimports   int
+			Lint        int
+			ModTidy     int
+			Whitespace  int
+			EOF         int
+			AIDetection int
 		}{
 			Whitespace: 30,
 		},
 		CheckBehaviors: struct {
+			FmtAutoStage        bool
+			FumptAutoStage      bool
+			GoimportsAutoStage  bool
 			WhitespaceAutoStage bool
 			EOFAutoStage        bool
+			AIDetectionAutoFix  bool
 		}{
 			WhitespaceAutoStage: true,
 		},
@@ -174,17 +195,24 @@ func TestWhitespaceCheck_Run_AutoStageError(t *testing.T) {
 	cfg := &config.Config{
 		Directory: "/invalid/directory/pre-commit",
 		CheckTimeouts: struct {
-			Fumpt      int
-			Lint       int
-			ModTidy    int
-			Whitespace int
-			EOF        int
+			Fmt         int
+			Fumpt       int
+			Goimports   int
+			Lint        int
+			ModTidy     int
+			Whitespace  int
+			EOF         int
+			AIDetection int
 		}{
 			Whitespace: 30,
 		},
 		CheckBehaviors: struct {
+			FmtAutoStage        bool
+			FumptAutoStage      bool
+			GoimportsAutoStage  bool
 			WhitespaceAutoStage bool
 			EOFAutoStage        bool
+			AIDetectionAutoFix  bool
 		}{
 			WhitespaceAutoStage: true,
 		},
@@ -256,8 +284,12 @@ func TestWhitespaceCheck_AutoStageFields(t *testing.T) {
 	// Test that new constructor can enable auto-staging
 	cfg := &config.Config{
 		CheckBehaviors: struct {
+			FmtAutoStage        bool
+			FumptAutoStage      bool
+			GoimportsAutoStage  bool
 			WhitespaceAutoStage bool
 			EOFAutoStage        bool
+			AIDetectionAutoFix  bool
 		}{
 			WhitespaceAutoStage: true,
 		},

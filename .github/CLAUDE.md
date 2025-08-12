@@ -2,15 +2,17 @@
 
 ## 🤖 Welcome, Claude
 
-This is **go-pre-commit**: a lightning-fast, Go-native git pre-commit framework that replaces Python-based alternatives with a single binary. Zero runtime dependencies, parallel execution, and environment-based configuration make it ideal for Go projects.
+This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framework that replaces Python-based alternatives with a single binary. Zero runtime dependencies, automatic tool installation, parallel execution, and environment-based configuration make it ideal for Go projects.
 
 ### 🎯 Project Overview
 
 **What it does:**
 - Provides git pre-commit hooks as a single Go binary
-- Runs checks in parallel: `fumpt`, `lint`, `mod-tidy`, `whitespace`, `eof`
+- Runs checks in parallel: `ai_detection`, `fumpt`, `lint`, `mod-tidy`, `whitespace`, `eof`, `fmt`, `goimports`
+- **Pure Go implementation** - all checks run directly without Make dependencies
+- **Auto-installs tools** - fumpt, goimports, and golangci-lint are installed automatically when needed
 - Configures via `.github/.env.shared` (no YAML files)
-- Integrates seamlessly with existing Makefile targets
+- Works with or without Makefile (backward compatible)
 
 **Key commands:**
 - `go-pre-commit install` - Install hooks in repository
@@ -38,7 +40,7 @@ This is **go-pre-commit**: a lightning-fast, Go-native git pre-commit framework 
   └── main.go          # Entry point
 /internal/             # Core packages
   ├── checks/          # Check implementations
-  │   ├── builtin/     # Built-in checks (whitespace, eof)
+  │   ├── builtin/     # Built-in checks (ai_detection, whitespace, eof)
   │   └── makewrap/    # Make-based checks (fumpt, lint, mod-tidy)
   ├── config/          # Configuration loader
   ├── git/             # Git operations and hook management
@@ -51,16 +53,17 @@ This is **go-pre-commit**: a lightning-fast, Go-native git pre-commit framework 
 - **Go version:** 1.24+ (check `go.mod`)
 - **Dependencies:** Minimal - Cobra, testify, color, godotenv
 - **Configuration:** All settings in `.github/.env.shared`
-- **Make targets required:** `fumpt`, `lint`, `mod-tidy`
+- **Make targets:** Optional - checks work without Makefile
 
 ### ✅ Quick Checklist for Claude
 
 1. **Study `AGENTS.md`**
    Make sure every automated change or suggestion respects those rules.
 
-2. **Understand the check system**
-   - Checks implement the `Check` interface in `internal/checks/`
-   - Make-based checks wrap existing Makefile targets
+2. **Understand the pure Go check system**
+   - All checks in `makewrap/` now prefer direct tool execution
+   - Tools are auto-installed when not found
+   - Make targets are used only as fallback for backward compatibility
    - Built-in checks operate directly on files
 
 3. **Follow branch‑prefix and commit‑message standards**
@@ -93,6 +96,14 @@ This is **go-pre-commit**: a lightning-fast, Go-native git pre-commit framework 
 - All CI configuration via `.github/.env.shared`
 - GoReleaser handles releases (`.goreleaser.yml`)
 - Pre-commit checks run automatically in CI
+
+### 🎯 Pure Go Benefits
+
+- **Zero Make dependency** - Works on any system with Go installed
+- **Automatic tool installation** - No manual setup required
+- **Faster execution** - No Make overhead
+- **Better portability** - Works in more environments
+- **Backward compatible** - Still supports Make targets if present
 
 If you encounter conflicting guidance elsewhere, `AGENTS.md` wins.
 Questions or ambiguities? Open a discussion or ping @mrz1836 instead of guessing.

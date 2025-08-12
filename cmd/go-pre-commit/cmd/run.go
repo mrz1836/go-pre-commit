@@ -40,11 +40,14 @@ By default, runs all enabled checks on files staged for commit.
 You can specify individual checks to run, or provide specific files to check.
 
 Available checks:
-  fumpt      - Format code with gofumpt
-  lint       - Run golangci-lint
-  mod-tidy   - Ensure go.mod and go.sum are tidy
-  whitespace - Fix trailing whitespace
-  eof        - Ensure files end with newline`,
+  ai_detection - Detect AI attribution in code and commit messages
+  eof          - Ensure files end with newline
+  fmt          - Format code with go fmt
+  fumpt        - Format code with gofumpt
+  goimports    - Format code and manage imports
+  lint         - Run golangci-lint
+  mod-tidy     - Ensure go.mod and go.sum are tidy
+  whitespace   - Fix trailing whitespace`,
 		Example: `  # Run all checks on staged files
   go-pre-commit run
 
@@ -349,11 +352,14 @@ func showAvailableChecks(cfg *config.Config, formatter *output.Formatter) error 
 		description string
 		enabled     bool
 	}{
+		{"ai_detection", "Detect AI attribution in code and commit messages", cfg.Checks.AIDetection},
+		{"eof", "Ensure files end with newline", cfg.Checks.EOF},
+		{"fmt", "Format code with go fmt", cfg.Checks.Fmt},
 		{"fumpt", "Format code with gofumpt", cfg.Checks.Fumpt},
+		{"goimports", "Format code and manage imports", cfg.Checks.Goimports},
 		{"lint", "Run golangci-lint", cfg.Checks.Lint},
 		{"mod-tidy", "Ensure go.mod and go.sum are tidy", cfg.Checks.ModTidy},
 		{"whitespace", "Fix trailing whitespace", cfg.Checks.Whitespace},
-		{"eof", "Ensure files end with newline", cfg.Checks.EOF},
 	}
 
 	for _, check := range checks {

@@ -83,13 +83,16 @@ func (c *ModTidyCheck) Run(ctx context.Context, files []string) error {
 		return nil
 	}
 
-	// Check if make mod-tidy is available
-	if c.sharedCtx.HasMakeTarget(ctx, "mod-tidy") {
-		return c.runMakeModTidy(ctx)
+	// Prefer direct go mod tidy execution for pure Go implementation
+	err := c.runDirectModTidy(ctx)
+
+	// Only fall back to make if direct execution failed and make target exists
+	if err != nil && c.sharedCtx.HasMakeTarget(ctx, "mod-tidy") {
+		// Try make mod-tidy as fallback
+		err = c.runMakeModTidy(ctx)
 	}
 
-	// Fall back to direct go mod tidy
-	return c.runDirectModTidy(ctx)
+	return err
 }
 
 // FilterFiles filters to only go.mod and go.sum files or when .go files change

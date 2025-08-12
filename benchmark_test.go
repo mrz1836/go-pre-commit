@@ -1,3 +1,4 @@
+// Package main provides benchmarking tests for go-pre-commit performance analysis
 package main
 
 import (
