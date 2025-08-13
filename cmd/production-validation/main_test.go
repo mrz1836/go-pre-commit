@@ -30,7 +30,7 @@ func TestMain_CommandLineArgs(t *testing.T) {
 	// Build the binary for testing
 	ctx := context.Background()
 	binaryPath := filepath.Join(t.TempDir(), "production-validation-test")
-	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", binaryPath, ".") // #nosec G204 - test code with trusted input
+	buildCmd := exec.CommandContext(ctx, "go", "build", "-race=false", "-o", binaryPath, ".") // #nosec G204 - test code with trusted input
 	err := buildCmd.Run()
 	require.NoError(t, err, "Failed to build binary")
 
@@ -463,7 +463,7 @@ func TestMain_VerboseOutput(t *testing.T) {
 	// Build test binary
 	ctx := context.Background()
 	binaryPath := filepath.Join(t.TempDir(), "production-validation-verbose")
-	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", binaryPath, ".") // #nosec G204 - test code with trusted input
+	buildCmd := exec.CommandContext(ctx, "go", "build", "-race=false", "-o", binaryPath, ".") // #nosec G204 - test code with trusted input
 	err := buildCmd.Run()
 	require.NoError(t, err)
 
@@ -514,7 +514,7 @@ func TestMain_Integration(t *testing.T) {
 	// Build and run the actual binary
 	ctx := context.Background()
 	binaryPath := filepath.Join(t.TempDir(), "production-validation-integration")
-	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", binaryPath, ".") // #nosec G204 - test code with trusted input
+	buildCmd := exec.CommandContext(ctx, "go", "build", "-race=false", "-o", binaryPath, ".") // #nosec G204 - test code with trusted input
 	err := buildCmd.Run()
 	require.NoError(t, err)
 

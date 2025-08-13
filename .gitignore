@@ -48,3 +48,4 @@ node_modules/
 /go-pre-commit
 /cmd/go-pre-commit/go-pre-commit
 /cmd/go-pre-commit/go-pre-commit-test
+/cmd/production-validation/production-validation-test
