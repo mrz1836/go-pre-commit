@@ -85,11 +85,6 @@ func TestFumptCheck_Run_NoMake(t *testing.T) {
 }
 
 func TestFumptCheck_Run_NoTarget(t *testing.T) {
-	// Skip if make is not available
-	if _, err := exec.LookPath("make"); err != nil {
-		t.Skip("skipping test since make not available")
-	}
-
 	// Create a temporary directory with Makefile but no fumpt target
 	tmpDir := t.TempDir()
 	oldDir, err := os.Getwd()
@@ -327,11 +322,6 @@ func (s *FumptCheckTestSuite) TestNewFumptCheckWithConfig() {
 }
 
 func (s *FumptCheckTestSuite) TestRunMakeFumpt() {
-	// Skip if make is not available
-	if _, err := exec.LookPath("make"); err != nil {
-		s.T().Skip("make not available")
-	}
-
 	// Create a Makefile that doesn't require gofumpt to be installed
 	makefileContent := `fumpt:
 	@echo "Running fumpt check"
@@ -448,11 +438,6 @@ func (s *LintCheckTestSuite) TestNewLintCheckWithConfig() {
 }
 
 func (s *LintCheckTestSuite) TestRunMakeLint() {
-	// Skip if make is not available
-	if _, err := exec.LookPath("make"); err != nil {
-		s.T().Skip("make not available")
-	}
-
 	// Create a Makefile that doesn't require golangci-lint to be installed
 	makefileContent := `lint:
 	@echo "Running lint check"
@@ -606,11 +591,6 @@ func (s *ModTidyCheckTestSuite) TestFilterFilesNoGoFiles() {
 }
 
 func (s *ModTidyCheckTestSuite) TestRunMakeModTidy() {
-	// Skip if make is not available
-	if _, err := exec.LookPath("make"); err != nil {
-		s.T().Skip("make not available")
-	}
-
 	// Create a basic Go module
 	goMod := testGoModContent
 	err := os.WriteFile("go.mod", []byte(goMod), 0o600)
@@ -847,11 +827,6 @@ func TestFumptCheckMakeErrorScenarios(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Skip if make is not available
-			if _, err := exec.LookPath("make"); err != nil {
-				t.Skip("make not available")
-			}
-
 			tmpDir := t.TempDir()
 			oldDir, err := os.Getwd()
 			require.NoError(t, err)
@@ -992,11 +967,6 @@ func TestLintCheckMakeErrorScenarios(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Skip if make is not available
-			if _, err := exec.LookPath("make"); err != nil {
-				t.Skip("make not available")
-			}
-
 			tmpDir := t.TempDir()
 			oldDir, err := os.Getwd()
 			require.NoError(t, err)
@@ -1132,11 +1102,6 @@ func TestModTidyCheckMakeErrorScenarios(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Skip if make is not available
-			if _, err := exec.LookPath("make"); err != nil {
-				t.Skip("make not available")
-			}
-
 			tmpDir := t.TempDir()
 			oldDir, err := os.Getwd()
 			require.NoError(t, err)
@@ -1605,10 +1570,6 @@ func TestRepositoryRootFailures(t *testing.T) {
 // Additional integration tests to improve coverage of internal functions
 func TestLintCheckWithColoredOutput(t *testing.T) {
 	// Test that exercises formatLintErrors and stripANSIColors functions
-	// Skip if make is not available
-	if _, err := exec.LookPath("make"); err != nil {
-		t.Skip("make not available")
-	}
 
 	tmpDir := t.TempDir()
 	oldDir, err := os.Getwd()
@@ -1995,10 +1956,6 @@ func TestSpecificErrorPaths(t *testing.T) {
 
 // Test to trigger specific make error paths
 func TestMakeErrorPaths(t *testing.T) {
-	if _, err := exec.LookPath("make"); err != nil {
-		t.Skip("make not available")
-	}
-
 	t.Run("fumpt make target not found with specific error", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		oldDir, err := os.Getwd()
