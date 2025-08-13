@@ -90,7 +90,7 @@ echo "Some other pre-commit hook"
 				githubDir := filepath.Join(tempDir, ".github")
 				err := os.MkdirAll(githubDir, 0o755) // #nosec G301 - Test directory creation
 				require.NoError(t, err)
-				configPath := filepath.Join(githubDir, ".env.shared")
+				configPath := filepath.Join(githubDir, ".env.base")
 				configContent := "ENABLE_GO_PRE_COMMIT=true\n"
 				err = os.WriteFile(configPath, []byte(configContent), 0o644) // #nosec G306 - Test config file
 				require.NoError(t, err)
@@ -208,7 +208,7 @@ func setupTempGitRepoForStatus(t *testing.T, enabled, hasConfig bool) string {
 		err = os.MkdirAll(githubDir, 0o755) // #nosec G301 - Test .github directory
 		require.NoError(t, err)
 
-		configPath := filepath.Join(githubDir, ".env.shared")
+		configPath := filepath.Join(githubDir, ".env.base")
 		configContent := "# Test configuration\n"
 		if enabled {
 			configContent += "ENABLE_GO_PRE_COMMIT=true\n"

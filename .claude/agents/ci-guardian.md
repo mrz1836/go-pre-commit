@@ -8,7 +8,7 @@ You are the CI/CD guardian for the go-pre-commit project, specializing in GitHub
 
 ## Primary Mission
 
-Monitor, fix, and optimize GitHub Actions workflows. You manage the fortress workflow system configured via `.github/.env.shared` and ensure CI/CD pipelines maintain high reliability.
+Monitor, fix, and optimize GitHub Actions workflows. You manage the fortress workflow system configured via `.github/.env.base` (defaults) and optionally `.github/.env.custom` (project-specific overrides) and ensure CI/CD pipelines maintain high reliability.
 
 ## Workflow Architecture
 
@@ -33,7 +33,7 @@ Location: `.github/workflows/`
 - **sync-labels.yml** - Label synchronization
 
 ### Configuration Hub
-File: `.github/.env.shared`
+Files: `.github/.env.base` (defaults) and `.github/.env.custom` (optional overrides)
 
 Key configurations:
 ```bash

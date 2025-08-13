@@ -12,7 +12,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 - **Pure Go implementation** - all checks run directly without Make dependencies
 - **Auto-installs tools** - fumpt, goimports, and golangci-lint are installed automatically when needed
 - **Plugin system** - Extend with custom checks in any language (Shell, Python, Go, Docker, etc.)
-- Configures via `.github/.env.shared` (no YAML files)
+- Configures via `.github/.env.base` (default configuration) and optionally `.github/.env.custom` (project-specific overrides) - no YAML files
 - Works with or without Makefile (backward compatible)
 
 **Key commands:**
@@ -59,7 +59,10 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 
 - **Go version:** 1.24+ (check `go.mod`)
 - **Dependencies:** Minimal - Cobra, testify, color, godotenv
-- **Configuration:** All settings in `.github/.env.shared`
+- **Configuration:** 
+  - `.env.base` contains default configuration that works for most projects
+  - `.env.custom` (optional) contains project-specific overrides
+  - Custom values override base values when both files are present
 - **Make targets:** Optional - checks work without Makefile
 
 ### ✅ Quick Checklist for Claude
@@ -88,7 +91,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
    ```
 
 6. **Environment configuration**
-   All settings controlled via `GO_PRE_COMMIT_*` variables in `.github/.env.shared`
+   All settings controlled via `GO_PRE_COMMIT_*` variables in `.github/.env.base` (defaults) and `.github/.env.custom` (optional project-specific overrides)
 
 ### 🧪 Testing Notes
 
@@ -100,7 +103,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 ### 🚀 CI/CD Integration
 
 - GitHub Actions workflows in `.github/workflows/`
-- All CI configuration via `.github/.env.shared`
+- All CI configuration via `.github/.env.base` (defaults) and `.github/.env.custom` (optional overrides)
 - GoReleaser handles releases (`.goreleaser.yml`)
 - Pre-commit checks run automatically in CI
 
@@ -120,7 +123,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 - **Communication**: JSON over stdin/stdout protocol
 - **Examples**: See `/examples/` for Shell, Python, Go, and Docker plugins
 - **CLI commands**: `go-pre-commit plugin list/add/remove/validate/info`
-- **Configuration**: Enable with `GO_PRE_COMMIT_ENABLE_PLUGINS=true`
+- **Configuration**: Enable with `GO_PRE_COMMIT_ENABLE_PLUGINS=true` in .env.custom or .env.base
 
 If you encounter conflicting guidance elsewhere, `AGENTS.md` wins.
 Questions or ambiguities? Open a discussion or ping @mrz1836 instead of guessing.

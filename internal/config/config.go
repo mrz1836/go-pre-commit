@@ -89,17 +89,25 @@ type Config struct {
 	}
 }
 
-// Load reads configuration from .github/.env.shared
+// Load reads configuration from .github/.env.base and .github/.env.custom
 func Load() (*Config, error) {
-	// Find .env.shared file
-	envPath, err := findEnvFile()
+	// Find .env.base file (required)
+	basePath, err := findBaseEnvFile()
 	if err != nil {
-		return nil, fmt.Errorf("failed to find .env.shared: %w", err)
+		return nil, fmt.Errorf("failed to find .env.base: %w", err)
 	}
 
-	// Load environment file
-	if err := godotenv.Load(envPath); err != nil {
-		return nil, fmt.Errorf("failed to load %s: %w", envPath, err)
+	// Load base environment file
+	if err := godotenv.Load(basePath); err != nil {
+		return nil, fmt.Errorf("failed to load %s: %w", basePath, err)
+	}
+
+	// Load custom environment file if it exists (overrides base)
+	customPath := findCustomEnvFile(basePath)
+	if customPath != "" {
+		if err := godotenv.Overload(customPath); err != nil {
+			return nil, fmt.Errorf("failed to load %s: %w", customPath, err)
+		}
 	}
 
 	cfg := &Config{
@@ -344,7 +352,7 @@ Git Settings:
 UI Settings:
   GO_PRE_COMMIT_COLOR_OUTPUT=true           Enable colored output
 
-Example .github/.env.shared:
+Example .github/.env.base:
   # Enable the system
   ENABLE_GO_PRE_COMMIT=true
 
@@ -360,24 +368,31 @@ Example .github/.env.shared:
 
   # Exclude patterns
   GO_PRE_COMMIT_EXCLUDE_PATTERNS="vendor/,node_modules/,.git/,*.tmp,*.log"
+
+Example .github/.env.custom (optional overrides):
+  # Override timeout for your project
+  GO_PRE_COMMIT_LINT_TIMEOUT=180
+
+  # Disable specific checks
+  GO_PRE_COMMIT_ENABLE_AI_DETECTION=false
 `
 }
 
-// findEnvFile locates the .github/.env.shared file
-func findEnvFile() (string, error) {
+// findBaseEnvFile locates the .github/.env.base file
+func findBaseEnvFile() (string, error) {
 	// First, check if we're already in the right place
-	if _, err := os.Stat(".github/.env.shared"); err == nil {
-		return ".github/.env.shared", nil
+	if _, err := os.Stat(".github/.env.base"); err == nil {
+		return ".github/.env.base", nil
 	}
 
-	// Walk up the directory tree looking for .github/.env.shared
+	// Walk up the directory tree looking for .github/.env.base
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("failed to get current directory: %w", err)
 	}
 
 	for {
-		envPath := filepath.Join(cwd, ".github", ".env.shared")
+		envPath := filepath.Join(cwd, ".github", ".env.base")
 		if _, err := os.Stat(envPath); err == nil {
 			return envPath, nil
 		}
@@ -391,6 +406,16 @@ func findEnvFile() (string, error) {
 	}
 
 	return "", prerrors.ErrEnvFileNotFound
+}
+
+// findCustomEnvFile locates the .github/.env.custom file in the same directory as the base file
+func findCustomEnvFile(basePath string) string {
+	baseDir := filepath.Dir(basePath)
+	customPath := filepath.Join(baseDir, ".env.custom")
+	if _, err := os.Stat(customPath); err == nil {
+		return customPath
+	}
+	return ""
 }
 
 // Helper functions for environment variable parsing

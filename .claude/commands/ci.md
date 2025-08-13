@@ -37,6 +37,6 @@ Use the **ci-guardian agent** to:
 5. **Verify fixes**:
    - Test locally when possible
    - Validate workflow syntax
-   - Check environment variables in .env.shared
+   - Check environment variables in .env.base and .env.custom
 
 Provide specific fixes for identified issues.

@@ -18,7 +18,7 @@ Use the **doc-maintainer agent** to:
 1. **Update README.md** if new features or configuration changes
 2. **Update code comments** for modified functions (godoc style)
 3. **Verify documentation accuracy** - does the documented feature still exist?
-4. **Update configuration docs** if .env.shared or Makefile changed
+4. **Update configuration docs** if .env.base/.env.custom or Makefile changed
 5. **Ensure markdown formatting** follows AGENTS.md standards
 6. **Update examples** to match current implementation
 

@@ -14,8 +14,8 @@ var (
 	// ErrNoChecksToRun is returned when no checks are configured to run
 	ErrNoChecksToRun = errors.New("no checks to run")
 
-	// ErrEnvFileNotFound is returned when .env.shared cannot be found
-	ErrEnvFileNotFound = errors.New(".github/.env.shared not found in any parent directory")
+	// ErrEnvFileNotFound is returned when .env.base cannot be found
+	ErrEnvFileNotFound = errors.New(".github/.env.base not found in any parent directory")
 
 	// ErrRepositoryRootNotFound is returned when git repository root cannot be determined
 	ErrRepositoryRootNotFound = errors.New("unable to determine repository root")

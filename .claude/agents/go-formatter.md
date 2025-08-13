@@ -160,8 +160,8 @@ npx prettier "**/*.{yml,yaml}" --write \
 
 ## Environment Configuration
 
-Check `.github/.env.shared` for:
-- `GO_PRE_COMMIT_ENABLE_FUMPT=true`
+Check configuration files for:
+- `GO_PRE_COMMIT_ENABLE_FUMPT=true` (in .env.base or .env.custom)
 - `GO_PRE_COMMIT_ENABLE_LINT=true`
 - `GO_PRE_COMMIT_ENABLE_WHITESPACE=true`
 - `GO_PRE_COMMIT_ENABLE_EOF=true`

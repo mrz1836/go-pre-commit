@@ -1,0 +1,309 @@
+# ------------------------------------------------------------------------------------
+#  Pre-commit Checks (Reusable Workflow) (GoFortress)
+#
+#  Purpose: Run GoFortress Pre-commit System for code quality enforcement.
+#  This workflow installs and executes the external go-pre-commit tool.
+#
+#  Maintainer: @mrz1836
+#
+# ------------------------------------------------------------------------------------
+
+name: GoFortress (Pre-commit Checks)
+
+on:
+  workflow_call:
+    inputs:
+      env-json:
+        description: "JSON string of environment variables"
+        required: true
+        type: string
+      primary-runner:
+        description: "Primary runner OS"
+        required: true
+        type: string
+      go-primary-version:
+        description: "Primary Go version"
+        required: true
+        type: string
+      pre-commit-enabled:
+        description: "Whether GoFortress Pre-commit System is enabled"
+        required: true
+        type: string
+    outputs:
+      pre-commit-version:
+        description: "Version of go-pre-commit used"
+        value: ${{ jobs.pre-commit.outputs.pre-commit-version }}
+      checks-executed:
+        description: "List of checks that were executed"
+        value: ${{ jobs.pre-commit.outputs.checks-executed }}
+    secrets:
+      github-token:
+        description: "GitHub token for API access"
+        required: true
+
+# Security: Restrictive default permissions with job-level overrides for least privilege access
+permissions:
+  contents: read
+
+jobs:
+  # ----------------------------------------------------------------------------------
+  # Pre-commit Checks Execution
+  # ----------------------------------------------------------------------------------
+  pre-commit:
+    name: 🪝 Pre-commit Checks
+    if: ${{ inputs.pre-commit-enabled == 'true' }}
+    runs-on: ${{ inputs.primary-runner }}
+    outputs:
+      pre-commit-version: ${{ steps.pre-commit-version.outputs.version }}
+      checks-executed: ${{ steps.run-checks.outputs.executed }}
+    steps:
+      # ————————————————————————————————————————————————————————————————
+      # Parse environment variables
+      # ————————————————————————————————————————————————————————————————
+      - name: 🔧 Parse environment variables
+        env:
+          ENV_JSON: ${{ inputs.env-json }}
+        run: |
+          echo "📋 Setting environment variables..."
+          echo "$ENV_JSON" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' | while IFS='=' read -r key value; do
+            echo "$key=$value" >> $GITHUB_ENV
+          done
+
+      # ————————————————————————————————————————————————————————————————
+      # Checkout code
+      # ————————————————————————————————————————————————————————————————
+      - name: 📥 Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      # ————————————————————————————————————————————————————————————————
+      # Set up Go cache paths and restore caches
+      # ————————————————————————————————————————————————————————————————
+      - name: 🔧 Set Go cache paths (cross-platform)
+        run: |
+          echo "🔧 Setting up Go cache paths..."
+          echo "GOCACHE=$HOME/.cache/go-build"        >> $GITHUB_ENV
+          echo "GOMODCACHE=$HOME/go/pkg/mod"          >> $GITHUB_ENV
+          echo "GOLANGCI_LINT_CACHE=$HOME/.cache/golangci-lint" >> $GITHUB_ENV
+
+      - name: 💾 Restore Go module cache
+        id: restore-gomod
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ inputs.primary-runner }}-gomod-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ inputs.primary-runner }}-gomod-
+
+      - name: 💾 Restore Go build cache
+        id: restore-gobuild
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/.cache/go-build/test
+          key: ${{ inputs.primary-runner }}-gobuild-${{ inputs.go-primary-version }}-${{ hashFiles('**/go.sum', '.github/coverage/go.sum') }}
+          restore-keys: |
+            ${{ inputs.primary-runner }}-gobuild-${{ inputs.go-primary-version }}-
+
+      # ————————————————————————————————————————————————————————————————
+      # Display pre-commit configuration
+      # ————————————————————————————————————————————————————————————————
+      - name: 📋 Display pre-commit configuration
+        run: |
+          echo "🔧 GoFortress Pre-commit Configuration"
+          echo "=================================================="
+          echo ""
+          echo "📊 System Settings:"
+          echo "  • System Enabled: ${{ env.ENABLE_GO_PRE_COMMIT }}"
+          echo "  • Tool Version: ${{ env.GO_PRE_COMMIT_VERSION }}"
+          echo "  • Enabled Checks: ${{ env.GO_PRE_COMMIT_ENABLED_CHECKS }}"
+          echo "  • Fail Fast: ${{ env.GO_PRE_COMMIT_FAIL_FAST }}"
+          echo "  • Timeout: ${{ env.GO_PRE_COMMIT_TIMEOUT_SECONDS }} seconds"
+          echo "  • Verbose Output: ${{ env.GO_PRE_COMMIT_VERBOSE_OUTPUT }}"
+          echo ""
+          echo "🔧 Tool Versions:"
+          echo "  • Go Version Required: ${{ env.GO_PRE_COMMIT_GO_VERSION_REQUIRED }}"
+          echo "  • golangci-lint: ${{ env.GO_PRE_COMMIT_GOLANGCI_LINT_VERSION }}"
+          echo "  • gofumpt: ${{ env.GO_PRE_COMMIT_FUMPT_VERSION }}"
+          echo "  • govulncheck: ${{ env.GO_PRE_COMMIT_GOVULNCHECK_VERSION }}"
+          echo ""
+          echo "📁 Exclusions:"
+          echo "  • Paths: ${{ env.GO_PRE_COMMIT_EXCLUDE_PATHS }}"
+          echo "  • Files: ${{ env.GO_PRE_COMMIT_EXCLUDE_FILES }}"
+          echo ""
+          echo "🔧 Individual Checks:"
+          echo "  • fumpt: ${{ env.GO_PRE_COMMIT_ENABLE_FUMPT }}"
+          echo "  • lint: ${{ env.GO_PRE_COMMIT_ENABLE_LINT }}"
+          echo "  • mod-tidy: ${{ env.GO_PRE_COMMIT_ENABLE_MOD_TIDY }}"
+          echo "  • whitespace: ${{ env.GO_PRE_COMMIT_ENABLE_WHITESPACE }}"
+          echo "  • eof: ${{ env.GO_PRE_COMMIT_ENABLE_EOF }}"
+          echo ""
+          echo "=================================================="
+
+      # ————————————————————————————————————————————————————————————————
+      # Set up Go environment
+      # ————————————————————————————————————————————————————————————————
+      - name: 🏗️ Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: ${{ inputs.go-primary-version }}
+          cache: false # we handle caches ourselves
+
+      # ————————————————————————————————————————————————————————————————
+      # Install external go-pre-commit tool
+      # ————————————————————————————————————————————————————————————————
+      - name: 📦 Install go-pre-commit
+        id: install-pre-commit
+        run: |
+          echo "📦 Installing go-pre-commit ${{ env.GO_PRE_COMMIT_VERSION }}..."
+
+          # Install the external tool
+          go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@${{ env.GO_PRE_COMMIT_VERSION }}
+
+          # Verify installation
+          if command -v go-pre-commit &> /dev/null; then
+            echo "✅ go-pre-commit installed successfully"
+            echo "install_success=true" >> $GITHUB_OUTPUT
+
+            # Get version
+            VERSION=$(go-pre-commit --version 2>&1 | head -1 || echo "${{ env.GO_PRE_COMMIT_VERSION }}")
+            echo "🏷️ Version: $VERSION"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Failed to install go-pre-commit"
+            echo "install_success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      # ————————————————————————————————————————————————————————————————
+      # Set pre-commit version output
+      # ————————————————————————————————————————————————————————————————
+      - name: 📌 Set pre-commit version
+        id: pre-commit-version
+        run: |
+          if [ "${{ steps.install-pre-commit.outputs.install_success }}" == "true" ]; then
+            echo "version=${{ steps.install-pre-commit.outputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=not-installed" >> $GITHUB_OUTPUT
+          fi
+
+      # ————————————————————————————————————————————————————————————————
+      # Run pre-commit checks
+      # ————————————————————————————————————————————————————————————————
+      - name: 🚀 Run pre-commit checks
+        if: steps.install-pre-commit.outputs.install_success == 'true'
+        id: run-checks
+        run: |
+          echo "🚀 Running pre-commit checks..."
+          echo "================================"
+
+          # Set environment for CI
+          export CI=true
+
+          # The external tool will read environment variables from the merged configuration
+          # that we've already loaded into the environment
+
+          # Run all checks on all files (CI mode)
+          echo "🔍 Executing checks on all files..."
+          CHECKS_OUTPUT=$(go-pre-commit run --all-files 2>&1) || CHECKS_EXIT=$?
+
+          # Strip ANSI color codes for clean GitHub Actions output
+          echo "$CHECKS_OUTPUT" | sed 's/\x1b\[[0-9;]*m//g'
+
+          # Extract executed checks from output (if format allows)
+          EXECUTED_CHECKS=$(echo "$CHECKS_OUTPUT" | grep -E "Running:|Executing:|✓" | sed 's/.*Running: //;s/.*Executing: //;s/.*✓ //' | tr '\n' ',' | sed 's/,$//' || echo "fumpt,lint,mod-tidy,whitespace,eof")
+          echo "executed=$EXECUTED_CHECKS" >> $GITHUB_OUTPUT
+
+          if [ "${CHECKS_EXIT:-0}" -ne 0 ]; then
+            echo "❌ Pre-commit checks failed with exit code: ${CHECKS_EXIT}"
+            exit ${CHECKS_EXIT}
+          fi
+
+          echo ""
+          echo "✅ All pre-commit checks passed successfully"
+
+      # ————————————————————————————————————————————————————————————————
+      # Job Summary
+      # ————————————————————————————————————————————————————————————————
+      - name: 📊 Job Summary
+        if: always()
+        run: |
+          echo "## 🪝 Pre-commit Checks Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "| 🔍 Pre-commit System Details | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tool** | github.com/mrz1836/go-pre-commit |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | ${{ steps.pre-commit-version.outputs.version || env.GO_PRE_COMMIT_VERSION }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Installation** | ${{ steps.install-pre-commit.outputs.install_success == 'true' && '✅ Success' || '❌ Failed (using fallback)' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Fail Fast Mode** | ${{ env.GO_PRE_COMMIT_FAIL_FAST == 'true' && '⚡ Enabled' || '📝 Disabled' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Timeout** | ${{ env.GO_PRE_COMMIT_TIMEOUT_SECONDS }} seconds |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.install-pre-commit.outputs.install_success }}" == "true" ]; then
+            echo "### 🔍 Checks Executed" >> $GITHUB_STEP_SUMMARY
+            CHECKS="${{ steps.run-checks.outputs.executed || 'fumpt,lint,mod-tidy,whitespace,eof' }}"
+            echo "$CHECKS" | tr ',' '\n' | while read check; do
+              if [ -n "$check" ]; then
+                echo "- ✅ $check" >> $GITHUB_STEP_SUMMARY
+              fi
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🎯 **All pre-commit checks passed successfully using external go-pre-commit tool.**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ⚠️ Fallback Mode" >> $GITHUB_STEP_SUMMARY
+            echo "The external go-pre-commit tool could not be installed. Using make commands as fallback:" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ make fumpt" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ make lint" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ make mod-tidy" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # ————————————————————————————————————————————————————————————————
+      # Collect cache statistics
+      # ————————————————————————————————————————————————————————————————
+      - name: 📊 Collect cache statistics
+        id: cache-stats
+        if: always()
+        run: |
+          echo "📊 Collecting cache statistics..."
+
+          # Get cache hit information
+          GOMOD_HIT="${{ steps.restore-gomod.outputs.cache-hit }}"
+          GOBUILD_HIT="${{ steps.restore-gobuild.outputs.cache-hit }}"
+
+          # Get cache sizes
+          GOMOD_SIZE="0B"
+          GOBUILD_SIZE="0B"
+
+          if [ -d "$HOME/go/pkg/mod" ]; then
+            GOMOD_SIZE=$(du -sh "$HOME/go/pkg/mod" 2>/dev/null | cut -f1 || echo "0B")
+          fi
+
+          if [ -d "$HOME/.cache/go-build" ]; then
+            GOBUILD_SIZE=$(du -sh "$HOME/.cache/go-build" 2>/dev/null | cut -f1 || echo "0B")
+          fi
+
+          # Create cache statistics JSON
+          echo '{' > "cache-stats-pre-commit.json"
+          echo '  "os": "${{ inputs.primary-runner }}",' >> "cache-stats-pre-commit.json"
+          echo '  "go_version": "${{ inputs.go-primary-version }}",' >> "cache-stats-pre-commit.json"
+          echo "  \"gomod_cache_hit\": \"$GOMOD_HIT\"," >> "cache-stats-pre-commit.json"
+          echo "  \"gobuild_cache_hit\": \"$GOBUILD_HIT\"," >> "cache-stats-pre-commit.json"
+          echo "  \"cache_size_gomod\": \"$GOMOD_SIZE\"," >> "cache-stats-pre-commit.json"
+          echo "  \"cache_size_gobuild\": \"$GOBUILD_SIZE\"," >> "cache-stats-pre-commit.json"
+          echo '  "workflow": "pre-commit",' >> "cache-stats-pre-commit.json"
+          echo "  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" >> "cache-stats-pre-commit.json"
+          echo '}' >> "cache-stats-pre-commit.json"
+
+          echo "📊 Cache statistics collected"
+
+      # ————————————————————————————————————————————————————————————————
+      # Upload cache statistics
+      # ————————————————————————————————————————————————————————————————
+      - name: 📤 Upload cache statistics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cache-stats-pre-commit
+          path: cache-stats-pre-commit.json
+          retention-days: 1

@@ -28,8 +28,9 @@ Multi-step plugin that combines different tools for comprehensive checks.
 cp -r examples/shell-plugin .pre-commit-plugins/
 ```
 
-2. Enable plugins in your `.github/.env.shared`:
+2. Enable plugins in your configuration:
 ```bash
+# Add to .env.custom to override defaults, or modify .env.base directly
 GO_PRE_COMMIT_ENABLE_PLUGINS=true
 ```
 

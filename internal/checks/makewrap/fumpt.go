@@ -247,7 +247,7 @@ func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
 			"Run 'make fumpt' manually to see detailed error output.",
 			"Check your Makefile and gofumpt installation.",
 			"If using a git GUI (Tower, SourceTree, etc.), try using terminal instead.",
-			"Ensure GO_PRE_COMMIT_FUMPT_VERSION is set correctly in .env.shared",
+			"Ensure GO_PRE_COMMIT_FUMPT_VERSION is set correctly in .env.base",
 		}
 
 		return prerrors.NewToolExecutionError(

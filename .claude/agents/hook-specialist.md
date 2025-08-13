@@ -8,7 +8,7 @@ You are a pre-commit hook specialist for the go-pre-commit project. You manage h
 
 ## Primary Mission
 
-Ensure pre-commit hooks work flawlessly across all development environments. You handle installation, configuration via `.github/.env.shared`, and validate hook functionality.
+Ensure pre-commit hooks work flawlessly across all development environments. You handle installation, configuration via `.github/.env.base` (defaults) and `.github/.env.custom` (optional overrides), and validate hook functionality.
 
 ## Core Responsibilities
 
@@ -30,7 +30,7 @@ go-pre-commit uninstall
 
 ### 2. Configuration Management
 
-Edit `.github/.env.shared` for hook behavior:
+Edit configuration files for hook behavior (`.env.base` contains defaults, `.env.custom` contains project-specific overrides):
 ```bash
 # Core settings
 ENABLE_GO_PRE_COMMIT=true
@@ -134,7 +134,7 @@ go-pre-commit install --force
 #### 2. Performance Issues
 ```bash
 # Adjust parallel workers
-# Edit .github/.env.shared
+# Add to .github/.env.custom to override defaults
 GO_PRE_COMMIT_PARALLEL_WORKERS=4
 
 # Enable fail-fast mode
@@ -161,7 +161,7 @@ make -n fumpt  # Dry run
 #### 4. Auto-staging Not Working
 ```bash
 # Check configuration
-grep AUTO_STAGE .github/.env.shared
+grep AUTO_STAGE .github/.env.* 2>/dev/null || echo "Configuration files not found"
 
 # Test auto-staging
 echo "test  " > test.txt  # Trailing spaces
@@ -201,7 +201,7 @@ go-pre-commit status
 ### Adding New Checks
 1. Implement Check interface in `internal/checks/`
 2. Register in `internal/checks/registry.go`
-3. Add configuration to `.github/.env.shared`
+3. Add configuration to `.github/.env.base` or `.github/.env.custom`
 4. Update documentation
 
 ### Modifying Existing Checks

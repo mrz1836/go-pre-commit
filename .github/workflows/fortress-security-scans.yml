@@ -48,6 +48,7 @@ on:
         description: "Gitleaks license key"
         required: false
 
+# Security: Restrictive default permissions with job-level overrides for least privilege access
 permissions:
   contents: read
 
@@ -311,6 +312,7 @@ jobs:
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "true"
           GITLEAKS_ENABLE_SUMMARY: "true"
           GITLEAKS_VERSION: ${{ env.GITLEAKS_VERSION }}
+          GITLEAKS_CONFIG: ${{ env.GITLEAKS_CONFIG_FILE }}
 
       - name: 📊 Job Summary
         if: steps.repo-check.outputs.is_same_repo == 'true'

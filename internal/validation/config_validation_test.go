@@ -150,15 +150,15 @@ func (s *ConfigValidationTestSuite) TearDownTest() {
 	}
 }
 
-// TestMissingConfigFile validates behavior when .env.shared is missing
+// TestMissingConfigFile validates behavior when .env.base is missing
 func (s *ConfigValidationTestSuite) TestMissingConfigFile() {
-	// Ensure no .env.shared file exists
+	// Ensure no .env.base file exists
 	_, err := config.Load()
 
 	// Should return a specific error about missing env file
 	s.Require().Error(err)
 	s.True(errors.Is(err, precommiterrors.ErrEnvFileNotFound) ||
-		strings.Contains(err.Error(), ".env.shared"))
+		strings.Contains(err.Error(), ".env.base"))
 }
 
 // TestInvalidConfigFile validates behavior with malformed config files
@@ -241,8 +241,8 @@ VALID_KEY=valid_value
 			githubDir := filepath.Join(s.tempDir, ".github")
 			s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
-			// Create .env.shared file with test content
-			envFile := filepath.Join(githubDir, ".env.shared")
+			// Create .env.base file with test content
+			envFile := filepath.Join(githubDir, ".env.base")
 			s.Require().NoError(os.WriteFile(envFile, []byte(tc.content), 0o600))
 
 			// Try to load configuration
@@ -263,11 +263,11 @@ VALID_KEY=valid_value
 
 // TestEnvironmentVariablePrecedence validates environment variable precedence
 func (s *ConfigValidationTestSuite) TestEnvironmentVariablePrecedence() {
-	// Create base .env.shared file
+	// Create base .env.base file
 	githubDir := filepath.Join(s.tempDir, ".github")
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
-	envFile := filepath.Join(githubDir, ".env.shared")
+	envFile := filepath.Join(githubDir, ".env.base")
 	baseConfig := `ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=info
 GO_PRE_COMMIT_TIMEOUT_SECONDS=120
@@ -375,11 +375,11 @@ func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 		}
 	}()
 
-	// Create minimal .env.shared file with only required setting
+	// Create minimal .env.base file with only required setting
 	githubDir := filepath.Join(s.tempDir, ".github")
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
-	envFile := filepath.Join(githubDir, ".env.shared")
+	envFile := filepath.Join(githubDir, ".env.base")
 	minimalConfig := `ENABLE_GO_PRE_COMMIT=true
 `
 	s.Require().NoError(os.WriteFile(envFile, []byte(minimalConfig), 0o600))
@@ -388,7 +388,7 @@ func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 	currentDir, err := os.Getwd()
 	s.Require().NoError(err)
 
-	// Create a completely isolated directory that has no parent .env.shared files
+	// Create a completely isolated directory that has no parent .env.base files
 	isolatedDir := filepath.Join(os.TempDir(), "config-test-isolated")
 	s.Require().NoError(os.MkdirAll(isolatedDir, 0o750))
 	defer func() { _ = os.RemoveAll(isolatedDir) }()
@@ -396,7 +396,7 @@ func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 	// Copy our test config to the isolated directory
 	isolatedGithubDir := filepath.Join(isolatedDir, ".github")
 	s.Require().NoError(os.MkdirAll(isolatedGithubDir, 0o750))
-	isolatedEnvFile := filepath.Join(isolatedGithubDir, ".env.shared")
+	isolatedEnvFile := filepath.Join(isolatedGithubDir, ".env.base")
 	s.Require().NoError(os.WriteFile(isolatedEnvFile, []byte(minimalConfig), 0o600))
 
 	s.Require().NoError(os.Chdir(isolatedDir))
@@ -559,8 +559,8 @@ GO_PRE_COMMIT_PARALLEL_WORKERS=-1
 			githubDir := filepath.Join(s.tempDir, ".github")
 			s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
-			// Create .env.shared file with test content
-			envFile := filepath.Join(githubDir, ".env.shared")
+			// Create .env.base file with test content
+			envFile := filepath.Join(githubDir, ".env.base")
 			s.Require().NoError(os.WriteFile(envFile, []byte(tc.config), 0o600))
 
 			// Try to load configuration
@@ -626,8 +626,8 @@ GO_PRE_COMMIT_LINT_TIMEOUT=90
 			githubDir := filepath.Join(s.tempDir, ".github")
 			s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
-			// Create .env.shared file with test content
-			envFile := filepath.Join(githubDir, ".env.shared")
+			// Create .env.base file with test content
+			envFile := filepath.Join(githubDir, ".env.base")
 			s.Require().NoError(os.WriteFile(envFile, []byte(tc.config), 0o600))
 
 			// Load configuration
@@ -692,11 +692,11 @@ func (s *ConfigValidationTestSuite) TestConfigurationDirectoryDetection() {
 	nestedDir := filepath.Join(isolatedDir, "deep", "nested", "directory")
 	s.Require().NoError(os.MkdirAll(nestedDir, 0o750))
 
-	// Create .github/.env.shared at the isolated root
+	// Create .github/.env.base at the isolated root
 	githubDir := filepath.Join(isolatedDir, ".github")
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
-	envFile := filepath.Join(githubDir, ".env.shared")
+	envFile := filepath.Join(githubDir, ".env.base")
 	testConfig := `ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=debug
 `
@@ -705,9 +705,9 @@ GO_PRE_COMMIT_LOG_LEVEL=debug
 	// Change to nested directory
 	s.Require().NoError(os.Chdir(nestedDir))
 
-	// Configuration loading should find the .env.shared file by walking up
+	// Configuration loading should find the .env.base file by walking up
 	cfg, err := config.Load()
-	s.Require().NoError(err, "Should find .env.shared file by walking up directories")
+	s.Require().NoError(err, "Should find .env.base file by walking up directories")
 	s.NotNil(cfg, "Configuration should be loaded")
 	s.Equal("debug", cfg.LogLevel, "Should load configured log level")
 }
@@ -719,7 +719,7 @@ func (s *ConfigValidationTestSuite) TestConfigurationHelp() {
 	// Validate that help contains key information
 	s.Contains(help, "ENABLE_GO_PRE_COMMIT", "Help should document main enable flag")
 	s.Contains(help, "GO_PRE_COMMIT_LOG_LEVEL", "Help should document log level")
-	s.Contains(help, "Example .github/.env.shared", "Help should include example")
+	s.Contains(help, "Example .github/.env.base", "Help should include example")
 	s.Contains(help, "Core Settings", "Help should have sections")
 	s.Contains(help, "Check Configuration", "Help should document checks")
 	s.Contains(help, "Performance Settings", "Help should document performance")

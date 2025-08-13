@@ -38,8 +38,8 @@ func (s *ParallelSafetyTestSuite) SetupSuite() {
 	githubDir := filepath.Join(s.tempDir, ".github")
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
-	// Create comprehensive .env.shared file for parallel testing
-	s.envFile = filepath.Join(githubDir, ".env.shared")
+	// Create comprehensive .env.base file for parallel testing
+	s.envFile = filepath.Join(githubDir, ".env.base")
 	envContent := `# Test environment configuration for parallel safety testing
 ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=info
@@ -728,7 +728,7 @@ func (s *ParallelSafetyTestSuite) TestParallelExecutionUnderLoad() {
 func (s *ParallelSafetyTestSuite) TestParallelExecutionErrorHandling() {
 	// Create configuration with very short timeouts to trigger errors
 	githubDir := filepath.Join(s.tempDir, ".github")
-	envFile := filepath.Join(githubDir, ".env.shared")
+	envFile := filepath.Join(githubDir, ".env.base")
 	shortTimeoutConfig := `ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=info
 GO_PRE_COMMIT_ENABLE_WHITESPACE=true

@@ -187,7 +187,7 @@ func (s *ConfigTestSuite) createEnvFile(content string) {
 	err := os.MkdirAll(githubDir, 0o750)
 	s.Require().NoError(err)
 
-	envFile := filepath.Join(githubDir, ".env.shared")
+	envFile := filepath.Join(githubDir, ".env.base")
 	err = os.WriteFile(envFile, []byte(content), 0o600)
 	s.Require().NoError(err)
 }
@@ -317,13 +317,13 @@ GO_PRE_COMMIT_EXCLUDE_PATTERNS=vendor/ , node_modules/ , .git/
 	s.Equal([]string{"vendor/", "node_modules/", ".git/"}, cfg.Git.ExcludePatterns)
 }
 
-// TestLoadMissingEnvFile tests behavior when .env.shared file is not found
+// TestLoadMissingEnvFile tests behavior when .env.base file is not found
 func (s *ConfigTestSuite) TestLoadMissingEnvFile() {
-	// Don't create .env.shared file
+	// Don't create .env.base file
 	cfg, err := Load()
 	s.Require().Error(err)
 	s.Nil(cfg)
-	s.Contains(err.Error(), "failed to find .env.shared")
+	s.Contains(err.Error(), "failed to find .env.base")
 }
 
 // TestLoadCorruptedEnvFile tests behavior with corrupted env file
@@ -333,7 +333,7 @@ func (s *ConfigTestSuite) TestLoadCorruptedEnvFile() {
 	err := os.MkdirAll(githubDir, 0o750)
 	s.Require().NoError(err)
 
-	envPath := filepath.Join(githubDir, ".env.shared")
+	envPath := filepath.Join(githubDir, ".env.base")
 	err = os.Mkdir(envPath, 0o750) // Create directory instead of file
 	s.Require().NoError(err)
 
@@ -372,9 +372,9 @@ func (s *ConfigTestSuite) TestFindEnvFileInCurrentDirectory() {
 	s.createEnvFile(envContent)
 
 	// Should find env file in current directory
-	envPath, err := findEnvFile()
+	envPath, err := findBaseEnvFile()
 	s.Require().NoError(err)
-	s.Equal(".github/.env.shared", envPath)
+	s.Equal(".github/.env.base", envPath)
 }
 
 // TestConfigStructInitialization tests that all config fields are properly initialized
@@ -498,12 +498,12 @@ func TestGetStringEnvEdgeCases(t *testing.T) {
 	}
 }
 
-// TestFindEnvFileErrors tests error conditions in findEnvFile
-func TestFindEnvFileErrors(t *testing.T) {
+// TestFindBaseEnvFileErrors tests error conditions in findBaseEnvFile
+func TestFindBaseEnvFileErrors(t *testing.T) {
 	// Test when we can't get current working directory
 	// This is hard to test directly, but we can test the search logic
 
-	// Create temp directory structure without .github/.env.shared
+	// Create temp directory structure without .github/.env.base
 	tmpDir := t.TempDir()
 	oldDir, err := os.Getwd()
 	require.NoError(t, err)
@@ -516,8 +516,8 @@ func TestFindEnvFileErrors(t *testing.T) {
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
 
-	// Should return error when no .env.shared found
-	_, err = findEnvFile()
+	// Should return error when no .env.base found
+	_, err = findBaseEnvFile()
 	assert.Error(t, err)
 }
 
@@ -549,7 +549,7 @@ func TestLoadIntegrationWithRealProject(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// Create .env.shared file
+	// Create .env.base file
 	envContent := `# Project configuration
 ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=debug
@@ -559,7 +559,7 @@ GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
 GO_PRE_COMMIT_ENABLE_WHITESPACE=true
 GO_PRE_COMMIT_ENABLE_EOF=true
 `
-	envFile := filepath.Join(tmpDir, ".github", ".env.shared")
+	envFile := filepath.Join(tmpDir, ".github", ".env.base")
 	err = os.WriteFile(envFile, []byte(envContent), 0o600)
 	require.NoError(t, err)
 

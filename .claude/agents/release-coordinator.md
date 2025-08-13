@@ -257,7 +257,7 @@ Files that need version updates:
 - `CITATION.cff` - version field
 - `README.md` - installation examples
 - `go.mod` - Go version requirement
-- `.github/.env.shared` - tool versions
+- `.github/.env.base` (defaults) and `.github/.env.custom` (overrides) - tool versions
 
 ### Compatibility Matrix
 ```markdown

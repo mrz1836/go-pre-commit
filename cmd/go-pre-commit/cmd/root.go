@@ -55,7 +55,7 @@ of code quality checks with zero Python dependencies.
 Key features:
   - Lightning fast parallel execution
   - Zero runtime dependencies (single binary)
-  - Environment-based configuration via .github/.env.shared
+  - Environment-based configuration via .github/.env.base
   - Seamless CI/CD integration
   - Native make command compatibility`,
 		SilenceUsage:  true,
@@ -125,11 +125,11 @@ func (cb *CommandBuilder) initConfig() {
 
 	// Set up paths relative to repository root
 	// The binary should be run from the repository root or have access to .github/
-	if _, err := os.Stat(".github/.env.shared"); os.IsNotExist(err) {
+	if _, err := os.Stat(".github/.env.base"); os.IsNotExist(err) {
 		// Try to find the repository root
 		cwd, _ := os.Getwd()
 		for cwd != "/" && cwd != "" {
-			if _, err := os.Stat(filepath.Join(cwd, ".github/.env.shared")); err == nil {
+			if _, err := os.Stat(filepath.Join(cwd, ".github/.env.base")); err == nil {
 				_ = os.Chdir(cwd)
 				break
 			}

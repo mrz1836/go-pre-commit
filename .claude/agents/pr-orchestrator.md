@@ -197,7 +197,7 @@ Special handling for dependency updates:
 # Check Dependabot PR
 gh pr view --json author,labels
 
-# Validate based on .env.shared settings:
+# Validate based on configuration settings (.env.base and .env.custom):
 # DEPENDABOT_AUTO_MERGE_PATCH=true
 # DEPENDABOT_AUTO_MERGE_MINOR_DEV=true
 # DEPENDABOT_AUTO_MERGE_MINOR_PROD=true

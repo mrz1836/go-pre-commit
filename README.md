@@ -151,7 +151,7 @@ git commit -m "Test commit"
 <summary><strong><code>Environment Configuration</code></strong></summary>
 <br/>
 
-`go-pre-commit` uses environment variables from `.github/.env.shared` for configuration:
+`go-pre-commit` uses environment variables from `.github/.env.base` (default configuration) and optionally `.github/.env.custom` (project-specific overrides) for configuration:
 
 ```bash
 # Core settings
@@ -178,6 +178,12 @@ GO_PRE_COMMIT_FUMPT_AUTO_STAGE=true
 GO_PRE_COMMIT_GOIMPORTS_AUTO_STAGE=true
 GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true
 ```
+
+**Configuration System:**
+- `.env.base` contains default configuration that works for most projects
+- `.env.custom` (optional) contains project-specific overrides  
+- Custom values override base values when both files are present
+- Only create `.env.custom` if you need to modify the defaults
 
 </details>
 
@@ -315,8 +321,9 @@ Plugins are external executables (scripts or binaries) that integrate seamlessly
 
 ### Quick Setup
 
-1. **Enable plugins** in `.github/.env.shared`:
+1. **Enable plugins** in your configuration files:
 ```bash
+# Add to .env.custom to override defaults
 GO_PRE_COMMIT_ENABLE_PLUGINS=true
 GO_PRE_COMMIT_PLUGIN_DIR=.pre-commit-plugins
 ```
@@ -434,11 +441,11 @@ go mod init github.com/username/my-awesome-project
 # Create the .github directory
 mkdir -p .github
 
-# Download the example configuration
-curl -o .github/.env.shared https://raw.githubusercontent.com/mrz1836/go-pre-commit/master/.github/.env.shared
+# Download the default configuration
+curl -o .github/.env.base https://raw.githubusercontent.com/mrz1836/go-pre-commit/master/.github/.env.base
 
-# Or create a minimal configuration
-cat > .github/.env.shared << 'EOF'
+# Optionally create project-specific overrides
+cat > .github/.env.custom << 'EOF'
 ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_ENABLE_AI_DETECTION=true
 GO_PRE_COMMIT_ENABLE_EOF=true
@@ -508,7 +515,7 @@ git commit -m "Initial commit"
 - **Performance** – Parallel execution with configurable workers for blazing-fast checks
 - **CI Integration** – Seamlessly integrates with GitHub Actions via shared configuration
 - **Make Compatibility** – Leverages existing Makefile targets for consistency
-- **Environment Config** – All settings in `.github/.env.shared` for team synchronization
+- **Environment Config** – .env.base contains default configuration, .env.custom (optional) contains project-specific overrides for team synchronization
 
 <br/>
 
@@ -639,7 +646,7 @@ vet                   ## Run go vet only on your module packages
 
 ### 🎛️ The Workflow Control Center
 
-All GitHub Actions workflows in this repository are powered by a single configuration file: [**.env.shared**](.github/.env.shared) – your one-stop shop for tweaking CI/CD behavior without touching a single YAML file! 🎯
+All GitHub Actions workflows in this repository are powered by configuration files: [**.env.base**](.github/.env.base) (default configuration) and optionally [**.env.custom**](.github/.env.custom) (project-specific overrides) – your one-stop shop for tweaking CI/CD behavior without touching a single YAML file! 🎯
 
 This magical file controls everything from:
 - **🚀 Go version matrix** (test on multiple versions or just one)
@@ -649,7 +656,7 @@ This magical file controls everything from:
 - **🤖 Auto-merge behaviors** (how aggressive should the bots be?)
 - **🏷️ PR management rules** (size labels, auto-assignment, welcome messages)
 
-> **Pro tip:** Want to disable code coverage? Just flip `ENABLE_CODE_COVERAGE=false` in [.env.shared](.github/.env.shared) and push. No YAML archaeology required!
+> **Pro tip:** Want to disable code coverage? Just add `ENABLE_CODE_COVERAGE=false` to your [.env.custom](.github/.env.custom) to override the default in .env.base and push. No YAML archaeology required!
 
 <br/>
 
@@ -781,7 +788,7 @@ The sub-agents are located in `.claude/agents/` and can be invoked by Claude Cod
 | **go-standards-enforcer** | Go Standards Compliance | Enforces AGENTS.md coding standards, context-first design, interface patterns, and error handling |
 | **go-tester**             | Testing & Coverage      | Runs tests with testify, fixes failures, ensures 90%+ coverage, manages test suites             |
 | **go-formatter**          | Code Formatting         | Runs fumpt, golangci-lint, fixes whitespace/EOF issues, maintains consistent style              |
-| **hook-specialist**       | Pre-commit Hooks        | Manages hook installation, configuration via .env.shared, troubleshoots hook issues             |
+| **hook-specialist**       | Pre-commit Hooks        | Manages hook installation, configuration via .env.base/.env.custom, troubleshoots hook issues             |
 | **ci-guardian**           | CI/CD Pipeline          | Monitors GitHub Actions, fixes workflow issues, optimizes pipeline performance                  |
 | **doc-maintainer**        | Documentation           | Updates README, maintains AGENTS.md compliance, ensures documentation consistency               |
 | **dependency-auditor**    | Security & Dependencies | Runs govulncheck/nancy/gitleaks, manages Go modules, handles vulnerability fixes                |

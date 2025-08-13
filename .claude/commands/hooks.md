@@ -18,7 +18,7 @@ Use the **hook-specialist agent** to:
    - Check installation status
    - Verify hook configuration
    - Test hook execution
-   - Review .env.shared settings
+   - Review configuration settings (.env.base and .env.custom)
 
 2. **Common Fixes**:
    - Reinstall hooks if missing

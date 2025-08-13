@@ -140,7 +140,7 @@ func NewProductionReadinessValidator() (*ProductionReadinessValidator, error) {
 		return nil, fmt.Errorf("failed to create .github directory: %w", err)
 	}
 
-	envFile := filepath.Join(githubDir, ".env.shared")
+	envFile := filepath.Join(githubDir, ".env.base")
 	testConfig := `# Production readiness validation configuration
 ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=info

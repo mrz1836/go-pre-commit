@@ -123,7 +123,7 @@ git checkout go.mod go.sum
 ## Security Configuration
 
 ### Environment Variables
-From `.github/.env.shared`:
+From configuration files (`.github/.env.base` or `.github/.env.custom`):
 ```bash
 # Nancy exclusions
 NANCY_EXCLUDES=CVE-2024-38513,CVE-2022-21698,CVE-2023-45142
@@ -183,7 +183,7 @@ replace github.com/vulnerable/package => github.com/vulnerable/package v1.2.3
 
 #### 3. Exclude and Document
 ```bash
-# Add to NANCY_EXCLUDES in .env.shared
+# Add to NANCY_EXCLUDES in .env.custom (to override defaults)
 NANCY_EXCLUDES=CVE-2024-XXXXX
 
 # Document in SECURITY.md

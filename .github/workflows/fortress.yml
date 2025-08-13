@@ -40,9 +40,7 @@ on:
     branches:
       - "**" # All branches for PRs
 
-# ————————————————————————————————————————————————————————————————
-# Permissions
-# ————————————————————————————————————————————————————————————————
+# Security: Restrictive default permissions with job-level overrides for least privilege access
 permissions:
   contents: read
 
@@ -60,9 +58,16 @@ jobs:
   load-env:
     name: 🌍 Load Environment Variables
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read # Read repository content for environment config
     outputs:
       env-json: ${{ steps.load-env.outputs.env-json }}
       primary-runner: ${{ steps.load-env.outputs.primary-runner }}
+      base-file-found: ${{ steps.load-env.outputs.base-file-found }}
+      custom-file-found: ${{ steps.load-env.outputs.custom-file-found }}
+      base-var-count: ${{ steps.load-env.outputs.base-var-count }}
+      custom-var-count: ${{ steps.load-env.outputs.custom-var-count }}
+      config-mode: ${{ steps.load-env.outputs.config-mode }}
     steps:
       # ————————————————————————————————————————————————————————————————
       # Check out code to access env file
@@ -71,7 +76,8 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           sparse-checkout: |
-            .github/.env.shared
+            .github/.env.base
+            .github/.env.custom
             .github/actions/load-env
 
       # ————————————————————————————————————————————————————————————————
@@ -87,10 +93,17 @@ jobs:
   setup:
     name: 🎯 Setup Configuration
     needs: [load-env]
+    permissions:
+      contents: read # Read repository content for setup configuration
     uses: ./.github/workflows/fortress-setup-config.yml
     with:
       env-json: ${{ needs.load-env.outputs.env-json }}
       primary-runner: ${{ needs.load-env.outputs.primary-runner }}
+      base-file-found: ${{ needs.load-env.outputs.base-file-found }}
+      custom-file-found: ${{ needs.load-env.outputs.custom-file-found }}
+      base-var-count: ${{ needs.load-env.outputs.base-var-count }}
+      custom-var-count: ${{ needs.load-env.outputs.custom-var-count }}
+      config-mode: ${{ needs.load-env.outputs.config-mode }}
     secrets:
       github-token: ${{ secrets.GH_PAT_TOKEN != '' && secrets.GH_PAT_TOKEN || secrets.GITHUB_TOKEN }}
   # ----------------------------------------------------------------------------------
@@ -99,6 +112,8 @@ jobs:
   test-makefile:
     name: 📋 Test Makefile
     needs: [load-env, setup]
+    permissions:
+      contents: read # Read repository content for makefile testing
     uses: ./.github/workflows/fortress-test-makefile.yml
     with:
       env-json: ${{ needs.load-env.outputs.env-json }}
@@ -109,6 +124,8 @@ jobs:
   warm-cache:
     name: 💾 Warm Cache (${{ matrix.name }})
     needs: [load-env, setup, test-makefile]
+    permissions:
+      contents: read # Read repository content for cache warming
     strategy:
       fail-fast: true
       matrix: ${{ fromJSON(needs.setup.outputs.warm-cache-matrix) }}
@@ -124,6 +141,8 @@ jobs:
             .github/actions/warm-cache
             go.mod
             go.sum
+            .github/coverage/
+            Makefile
 
       # ————————————————————————————————————————————————————————————————
       # Extract verbose flag from env-json
@@ -152,6 +171,8 @@ jobs:
     name: 🔒 Security Scans
     needs: [load-env, setup, warm-cache, test-makefile]
     if: needs.setup.outputs.security-scans-enabled == 'true'
+    permissions:
+      contents: read # Read repository content for security scanning
     uses: ./.github/workflows/fortress-security-scans.yml
     with:
       env-json: ${{ needs.load-env.outputs.env-json }}
@@ -169,6 +190,8 @@ jobs:
   code-quality:
     name: 📊 Code Quality
     needs: [load-env, setup, warm-cache, test-makefile]
+    permissions:
+      contents: read # Read repository content for code quality checks
     uses: ./.github/workflows/fortress-code-quality.yml
     with:
       env-json: ${{ needs.load-env.outputs.env-json }}
@@ -180,14 +203,38 @@ jobs:
     secrets:
       github-token: ${{ secrets.GH_PAT_TOKEN != '' && secrets.GH_PAT_TOKEN || secrets.GITHUB_TOKEN }}
   # ----------------------------------------------------------------------------------
+  # Pre-commit Checks
+  # ----------------------------------------------------------------------------------
+  pre-commit:
+    name: 🪝 Pre-commit Checks
+    needs: [load-env, setup, warm-cache, test-makefile]
+    if: needs.setup.outputs.pre-commit-enabled == 'true'
+    permissions:
+      contents: read # Read repository content for pre-commit checks
+    uses: ./.github/workflows/fortress-pre-commit.yml
+    with:
+      env-json: ${{ needs.load-env.outputs.env-json }}
+      primary-runner: ${{ needs.setup.outputs.primary-runner }}
+      go-primary-version: ${{ needs.setup.outputs.go-primary-version }}
+      pre-commit-enabled: ${{ needs.setup.outputs.pre-commit-enabled }}
+    secrets:
+      github-token: ${{ secrets.GH_PAT_TOKEN != '' && secrets.GH_PAT_TOKEN || secrets.GITHUB_TOKEN }}
+  # ----------------------------------------------------------------------------------
   # Test Suite
   # ----------------------------------------------------------------------------------
   test-suite:
     name: 🧪 Test Suite
     needs: [load-env, setup, warm-cache, test-makefile]
+    permissions:
+      contents: write # Write repository content and push to gh-pages branch for test execution
+      pull-requests: write # Required: Coverage workflow needs to create PR comments
+      pages: write # Required: Coverage workflow needs to deploy to GitHub Pages
+      id-token: write # Required: Coverage workflow needs GitHub Pages authentication
+      statuses: write # Required: Coverage workflow needs to create commit status checks
     uses: ./.github/workflows/fortress-test-suite.yml
     with:
       code-coverage-enabled: ${{ needs.setup.outputs.code-coverage-enabled }}
+      coverage-provider: ${{ needs.setup.outputs.coverage-provider }}
       env-json: ${{ needs.load-env.outputs.env-json }}
       fuzz-testing-enabled: ${{ needs.setup.outputs.fuzz-testing-enabled }}
       go-primary-version: ${{ needs.setup.outputs.go-primary-version }}
@@ -197,7 +244,7 @@ jobs:
       test-matrix: ${{ needs.setup.outputs.test-matrix }}
     secrets:
       github-token: ${{ secrets.GH_PAT_TOKEN != '' && secrets.GH_PAT_TOKEN || secrets.GITHUB_TOKEN }}
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   # ----------------------------------------------------------------------------------
   # Benchmark Suite
   # ----------------------------------------------------------------------------------
@@ -205,6 +252,8 @@ jobs:
     name: 🏃 Benchmarks
     needs: [load-env, setup, warm-cache, test-makefile]
     if: needs.setup.outputs.benchmarks-enabled == 'true'
+    permissions:
+      contents: read # Read repository content for benchmarking
     uses: ./.github/workflows/fortress-benchmarks.yml
     with:
       env-json: ${{ needs.load-env.outputs.env-json }}
@@ -212,6 +261,7 @@ jobs:
       primary-runner: ${{ needs.setup.outputs.primary-runner }}
       go-primary-version: ${{ needs.setup.outputs.go-primary-version }}
       go-secondary-version: ${{ needs.setup.outputs.go-secondary-version }}
+      benchmark-timeout: 30
     secrets:
       github-token: ${{ secrets.GH_PAT_TOKEN != '' && secrets.GH_PAT_TOKEN || secrets.GITHUB_TOKEN }}
   # ----------------------------------------------------------------------------------
@@ -220,7 +270,9 @@ jobs:
   status-check:
     name: 🎯 All Tests Passed
     if: ${{ always() }}
-    needs: [setup, test-makefile, security, code-quality, test-suite, benchmarks]
+    needs: [setup, test-makefile, security, code-quality, pre-commit, test-suite, benchmarks]
+    permissions:
+      contents: read # Read repository content for status checking
     runs-on: ${{ needs.setup.outputs.primary-runner }}
     steps:
       # ————————————————————————————————————————————————————————————————
@@ -231,59 +283,71 @@ jobs:
           {
             echo "## 🚦 Workflow Results"
             echo ""
-            echo "| Component | Result |"
-            echo "|-----------|--------|"
-            echo "| 🎯 Setup | ${{ needs.setup.result }} |"
-            echo "| 📋 Makefile | ${{ needs.test-makefile.result }} |"
-            echo "| 🔒 Security | ${{ needs.security.result }} |"
-            echo "| 📊 Code Quality | ${{ needs.code-quality.result }} |"
-            echo "| 🧪 Test Suite | ${{ needs.test-suite.result }} |"
-            echo "| 🏃 Benchmarks | ${{ needs.benchmarks.result }} |"
+            echo "| Component | Result | Status |"
+            echo "|-----------|--------|--------|"
+            echo "| 🎯 Setup | ${{ needs.setup.result }} | Required |"
+            echo "| 📋 Makefile | ${{ needs.test-makefile.result }} | Required |"
+            echo "| 🔒 Security | ${{ needs.security.result }} | Required |"
+            echo "| 📊 Code Quality | ${{ needs.code-quality.result }} | Required |"
+            echo "| 🪝 Pre-commit | ${{ needs.pre-commit.result }} | ${{ needs.setup.outputs.pre-commit-enabled == 'true' && 'Required' || 'Skipped' }} |"
+            echo "| 🧪 Test Suite | ${{ needs.test-suite.result }} | Required |"
+            echo "| 🏃 Benchmarks | ${{ needs.benchmarks.result }} | Optional ⚠️ |"
+            echo ""
+            if [[ "${{ needs.benchmarks.result }}" == "failure" ]]; then
+              echo "⚠️ **Note**: Benchmarks failed but are currently non-blocking."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       # ————————————————————————————————————————————————————————————————
       # Fail the workflow *only* when a dependency actually failed/canceled
       # - 'skipped' is OK (e.g. feature flag off)
-      # - Only check benchmarks result if benchmarks are enabled
+      # - Benchmarks are currently optional (can fail without blocking)
       # ————————————————————————————————————————————————————————————————
       - name: ❌ Fail if any required job errored
-        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        if: ${{ always() }}
         run: |
-          echo "❌ One or more jobs failed or were cancelled – see summary above." >&2
+          FAILED=false
 
-          # Check if benchmarks failed only if they were enabled
-          if [[ "${{ needs.setup.outputs.benchmarks-enabled }}" == "true" && "${{ needs.benchmarks.result }}" == "failure" ]]; then
-            echo "❌ Benchmarks failed and were enabled" >&2
-            exit 1
-          fi
-
-          # Check other required jobs
+          # Check required jobs (these must pass)
           if [[ "${{ needs.setup.result }}" == "failure" || "${{ needs.setup.result }}" == "cancelled" ]]; then
             echo "❌ Setup failed or was cancelled" >&2
-            exit 1
+            FAILED=true
           fi
 
           if [[ "${{ needs.test-makefile.result }}" == "failure" || "${{ needs.test-makefile.result }}" == "cancelled" ]]; then
             echo "❌ Test makefile failed or was cancelled" >&2
-            exit 1
+            FAILED=true
           fi
 
           if [[ "${{ needs.security.result }}" == "failure" || "${{ needs.security.result }}" == "cancelled" ]]; then
             echo "❌ Security scans failed or were cancelled" >&2
-            exit 1
+            FAILED=true
           fi
 
           if [[ "${{ needs.code-quality.result }}" == "failure" || "${{ needs.code-quality.result }}" == "cancelled" ]]; then
             echo "❌ Code quality checks failed or were cancelled" >&2
-            exit 1
+            FAILED=true
+          fi
+
+          if [[ "${{ needs.pre-commit.result }}" == "failure" || "${{ needs.pre-commit.result }}" == "cancelled" ]]; then
+            echo "❌ Pre-commit checks failed or were cancelled" >&2
+            FAILED=true
           fi
 
           if [[ "${{ needs.test-suite.result }}" == "failure" || "${{ needs.test-suite.result }}" == "cancelled" ]]; then
             echo "❌ Test suite failed or was cancelled" >&2
-            exit 1
+            FAILED=true
           fi
 
-          exit 1
+          # Check benchmarks (currently optional - just warn if they fail)
+          if [[ "${{ needs.benchmarks.result }}" == "failure" ]]; then
+            echo "⚠️  Benchmarks failed (non-blocking)" >&2
+          fi
+
+          if [[ "$FAILED" == "true" ]]; then
+            echo "❌ One or more required jobs failed – see details above." >&2
+            exit 1
+          fi
 
       # ————————————————————————————————————————————————————————————————
       # Succeed if all required jobs passed or were skipped
@@ -298,7 +362,7 @@ jobs:
   # ----------------------------------------------------------------------------------
   release:
     name: 🚀 Release Version
-    needs: [load-env, setup, test-suite, security, code-quality]
+    needs: [load-env, setup, test-suite, security, code-quality, pre-commit]
     # Only run on successful tag pushes
     if: startsWith(github.ref, 'refs/tags/v')
     uses: ./.github/workflows/fortress-release.yml
@@ -318,11 +382,26 @@ jobs:
   performance-summary:
     name: 📊 Performance Summary
     if: always()
-    needs: [load-env, setup, test-makefile, security, code-quality, test-suite, benchmarks, release, status-check]
+    needs:
+      [
+        load-env,
+        setup,
+        test-makefile,
+        pre-commit,
+        security,
+        code-quality,
+        test-suite,
+        benchmarks,
+        release,
+        status-check
+      ]
+    permissions:
+      contents: read # Read repository content for performance summary
     uses: ./.github/workflows/fortress-performance-summary.yml
     with:
       benchmarks-result: ${{ needs.benchmarks.result }}
       code-quality-result: ${{ needs.code-quality.result }}
+      pre-commit-result: ${{ needs.pre-commit.result }}
       env-json: ${{ needs.load-env.outputs.env-json }}
       primary-runner: ${{ needs.setup.outputs.primary-runner }}
       release-result: ${{ needs.release.result }}

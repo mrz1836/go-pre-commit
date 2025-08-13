@@ -35,8 +35,8 @@ func (s *SkipFunctionalityTestSuite) SetupSuite() {
 	githubDir := filepath.Join(s.tempDir, ".github")
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
-	// Create comprehensive .env.shared file
-	s.envFile = filepath.Join(githubDir, ".env.shared")
+	// Create comprehensive .env.base file
+	s.envFile = filepath.Join(githubDir, ".env.base")
 	envContent := `# Test environment configuration for SKIP functionality testing
 ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=info

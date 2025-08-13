@@ -74,7 +74,7 @@ func (cb *CommandBuilder) runInstallWithConfig(installConfig InstallConfig, _ *c
 	// Check if pre-commit system is enabled
 	if !cfg.Enabled {
 		printWarning("Pre-commit system is disabled in configuration (ENABLE_GO_PRE_COMMIT=false)")
-		printInfo("To enable, set ENABLE_GO_PRE_COMMIT=true in .github/.env.shared")
+		printInfo("To enable, set ENABLE_GO_PRE_COMMIT=true in .github/.env.base")
 		return nil
 	}
 

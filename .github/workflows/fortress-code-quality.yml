@@ -49,6 +49,7 @@ on:
         description: "GitHub token for API access"
         required: true
 
+# Security: Restrictive default permissions with job-level overrides for least privilege access
 permissions:
   contents: read
 

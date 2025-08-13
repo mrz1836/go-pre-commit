@@ -20,7 +20,7 @@ const hookScriptTemplate = `#!/bin/bash
 # Configuration
 REPO_ROOT="%s"
 BINARY_NAME="go-pre-commit"
-CONFIG_FILE="$REPO_ROOT/.github/.env.shared"
+CONFIG_FILE="$REPO_ROOT/.github/.env.base"
 
 # CI Environment Detection
 if [[ -n "$CI" || -n "$GITHUB_ACTIONS" || -n "$GITLAB_CI" || -n "$JENKINS_URL" ]]; then

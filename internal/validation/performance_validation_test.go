@@ -36,8 +36,8 @@ func (s *PerformanceValidationTestSuite) SetupSuite() {
 	githubDir := filepath.Join(s.tempDir, ".github")
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
-	// Create optimized .env.shared file for performance testing
-	s.envFile = filepath.Join(githubDir, ".env.shared")
+	// Create optimized .env.base file for performance testing
+	s.envFile = filepath.Join(githubDir, ".env.base")
 	envContent := `# Performance-optimized configuration
 ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=error

@@ -373,11 +373,11 @@ func TestInitConfigDirectoryTraversal(t *testing.T) {
 	err = os.MkdirAll(subDir, 0o750)
 	require.NoError(t, err)
 
-	// Create .github/.env.shared in repo root
+	// Create .github/.env.base in repo root
 	githubDir := filepath.Join(repoRoot, ".github")
 	err = os.MkdirAll(githubDir, 0o750)
 	require.NoError(t, err)
-	envFile := filepath.Join(githubDir, ".env.shared")
+	envFile := filepath.Join(githubDir, ".env.base")
 	err = os.WriteFile(envFile, []byte("# test env file"), 0o600)
 	require.NoError(t, err)
 
@@ -386,7 +386,7 @@ func TestInitConfigDirectoryTraversal(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify we're not in repo root
-	_, err = os.Stat(".github/.env.shared")
+	_, err = os.Stat(".github/.env.base")
 	require.Error(t, err)
 	assert.True(t, os.IsNotExist(err))
 
@@ -399,7 +399,7 @@ func TestInitConfigDirectoryTraversal(t *testing.T) {
 	currentWD, err := os.Getwd()
 	require.NoError(t, err)
 
-	// The function should have attempted to find .github/.env.shared
+	// The function should have attempted to find .github/.env.base
 	// We can't guarantee it changed directory due to the implementation,
 	// but we can verify the function completed without error
 	assert.NotEmpty(t, currentWD)
@@ -411,7 +411,7 @@ func TestInitConfigNoRepositoryRoot(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { _ = os.Chdir(originalWD) }()
 
-	// Create temporary directory without .github/.env.shared
+	// Create temporary directory without .github/.env.base
 	tempDir, err := os.MkdirTemp("", "go-pre-commit-test-no-repo")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tempDir) }()
@@ -420,7 +420,7 @@ func TestInitConfigNoRepositoryRoot(t *testing.T) {
 	err = os.Chdir(tempDir)
 	require.NoError(t, err)
 
-	// Test initConfig when no .github/.env.shared is found
+	// Test initConfig when no .github/.env.base is found
 	app := NewCLIApp("1.0.0", "abc123", "2025-01-01")
 	builder := NewCommandBuilder(app)
 

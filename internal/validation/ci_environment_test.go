@@ -35,8 +35,8 @@ func (s *CIEnvironmentTestSuite) SetupSuite() {
 	githubDir := filepath.Join(s.tempDir, ".github")
 	s.Require().NoError(os.MkdirAll(githubDir, 0o750))
 
-	// Create .env.shared file with test configuration
-	s.envFile = filepath.Join(githubDir, ".env.shared")
+	// Create .env.base file with test configuration
+	s.envFile = filepath.Join(githubDir, ".env.base")
 	envContent := `# Test environment configuration
 ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=info
@@ -444,7 +444,7 @@ func (s *CIEnvironmentTestSuite) validateExecutionParity(local, ci *runner.Resul
 		description, local.TotalDuration, ci.TotalDuration)
 }
 
-// createTempEnvFile creates a temporary .env.shared file for testing
+// createTempEnvFile creates a temporary .env.base file for testing
 func (s *CIEnvironmentTestSuite) createTempEnvFile(vars map[string]string) {
 	var content string
 	for key, value := range vars {

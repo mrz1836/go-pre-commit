@@ -22,6 +22,7 @@ on:
         required: true
         type: string
 
+# Security: Restrictive default permissions with job-level overrides for least privilege access
 permissions:
   contents: read
 

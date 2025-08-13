@@ -61,11 +61,11 @@ make install
 ```
 
 ### 2. Update Configuration Documentation
-When environment variables change in `.github/.env.shared`:
+When environment variables change in the configuration files:
 ```markdown
 ## ⚙️ Configuration
 
-\`go-pre-commit\` uses environment variables from \`.github/.env.shared\`:
+\`go-pre-commit\` uses environment variables from \`.github/.env.base\` (default configuration) and optionally \`.github/.env.custom\` (project-specific overrides):
 
 \```bash
 # Core settings

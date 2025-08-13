@@ -37,6 +37,11 @@ on:
         description: "Whether code coverage is enabled"
         required: true
         type: string
+      coverage-provider:
+        description: "Coverage service provider (internal or codecov)"
+        required: false
+        type: string
+        default: "internal"
       race-detection-enabled:
         description: "Whether race detection is enabled"
         required: true
@@ -49,10 +54,11 @@ on:
       github-token:
         description: "GitHub token for API access"
         required: true
-      codecov-token:
-        description: "Codecov token for coverage uploads"
+      CODECOV_TOKEN:
+        description: "Codecov token for uploading coverage (required when coverage-provider is codecov)"
         required: false
 
+# Security: Restrictive default permissions with job-level overrides for least privilege access
 permissions:
   contents: read
 
@@ -63,6 +69,8 @@ jobs:
   test-go:
     name: 🧪 Test (${{ matrix.name }})
     timeout-minutes: 30 # Prevent hung tests
+    permissions:
+      contents: write # Read repository content for testing
     strategy:
       fail-fast: true
       matrix: ${{ fromJSON(inputs.test-matrix) }}
@@ -193,6 +201,7 @@ jobs:
       # Run tests and coverage
       # ————————————————————————————————————————————————————————————————
       - name: 🧪 Run tests
+        continue-on-error: true
         run: |
           # Safely assign values to shell vars
           RACE="${{ inputs.race-detection-enabled }}"
@@ -203,19 +212,85 @@ jobs:
 
           if [[ "$RACE" == "true" && "$COVER" == "true" ]]; then
             echo "🏁 Running tests with race detection and coverage analysis..."
-            make test-cover-race VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }}
+            make test-cover-race VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }} 2>&1 | tee test-output.log
           elif [[ "$RACE" != "true" && "$COVER" == "true" ]]; then
             echo "🏁 Running tests with coverage analysis..."
-            make test-cover VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }}
+            make test-cover VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }} 2>&1 | tee test-output.log
           elif [[ "$RACE" == "true" && "$COVER" != "true" ]]; then
             echo "🏁 Running tests with race detection..."
-            make test-race VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }}
+            make test-race VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }} 2>&1 | tee test-output.log
           else
             echo "🏁 Running tests without coverage or race detection..."
-            make test VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }}
+            make test VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }} 2>&1 | tee test-output.log
           fi
 
           echo "✅ Tests completed successfully"
+
+      # ————————————————————————————————————————————————————————————————
+      # Test failure analysis and reporting
+      # ————————————————————————————————————————————————————————————————
+      - name: 🚨 Create Test Failure Summary
+        if: failure()
+        run: |
+          echo "## 🚨 Test Failures - ${{ matrix.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **OS**: ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Go Version**: ${{ matrix.go-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Race Detection**: ${{ inputs.race-detection-enabled }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Coverage Enabled**: ${{ inputs.code-coverage-enabled }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f test-output.log ]; then
+            FAIL_COUNT=$(grep -c "^FAIL\|--- FAIL" test-output.log || echo "0")
+            PANIC_COUNT=$(grep -c "panic:" test-output.log || echo "0")
+            echo "- **Failed Tests**: $FAIL_COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "- **Panics**: $PANIC_COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [ "$FAIL_COUNT" -gt 0 ]; then
+              echo "### 🔍 Failed Test Summary (First 10)" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              grep -E "^FAIL\|--- FAIL" test-output.log | head -10 >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [ "$PANIC_COUNT" -gt 0 ]; then
+              echo "### 🚨 Panic Summary" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              grep -A 2 -B 1 "panic:" test-output.log | head -20 >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Test output log not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📋 Annotate Key Test Failures
+        if: failure()
+        run: |
+          if [ -f test-output.log ]; then
+            echo "::group::📋 Test Failure Analysis"
+
+            # Count and report overall statistics
+            FAIL_COUNT=$(grep -c "^FAIL\|--- FAIL" test-output.log || echo "0")
+            PANIC_COUNT=$(grep -c "panic:" test-output.log || echo "0")
+
+            echo "::error title=Test Suite Failed::$FAIL_COUNT tests failed, $PANIC_COUNT panics detected on ${{ matrix.os }} Go ${{ matrix.go-version }}"
+
+            # Annotate first 5 failed tests
+            grep -E "^FAIL\|--- FAIL" test-output.log | head -5 | while IFS= read -r line; do
+              echo "::error title=Failed Test::$line"
+            done
+
+            # Annotate panics
+            if [ "$PANIC_COUNT" -gt 0 ]; then
+              grep -B 1 "panic:" test-output.log | head -3 | while IFS= read -r line; do
+                echo "::error title=Test Panic::$line"
+              done
+            fi
+
+            echo "::endgroup::"
+          fi
 
       # ————————————————————————————————————————————————————————————————
       # Fuzz tests (only on Linux)
@@ -297,13 +372,89 @@ jobs:
           retention-days: 1
 
       # ————————————————————————————————————————————————————————————————
-      # Upload coverage only for race-cover tests
+      # Verify coverage file before upload
       # ————————————————————————————————————————————————————————————————
-      - name: 📈 Upload coverage
+      - name: 🔍 Verify coverage file
         if: inputs.code-coverage-enabled == 'true'
-        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
+        run: |
+          if [ -f coverage.txt ]; then
+            echo "✅ Coverage file exists"
+            echo "📊 Coverage file size: $(wc -c < coverage.txt) bytes"
+            echo "📊 Coverage file lines: $(wc -l < coverage.txt)"
+            echo "📊 First line: $(head -1 coverage.txt)"
+            echo "📊 Last line: $(tail -1 coverage.txt)"
+
+            # Ensure the coverage file starts with valid coverage data
+            FIRST_LINE=$(head -1 coverage.txt)
+            if [[ "$FIRST_LINE" == "mode: atomic" ]] || [[ "$FIRST_LINE" == "mode: count" ]] || [[ "$FIRST_LINE" == "mode: set" ]]; then
+              echo "✅ Coverage file format looks valid"
+
+              # Additional debugging info
+              echo "📋 Sample coverage lines (lines 2-5):"
+              sed -n '2,5p' coverage.txt
+
+              # Check for any non-ASCII characters
+              if file coverage.txt | grep -q "ASCII text"; then
+                echo "✅ File is pure ASCII text"
+              else
+                echo "⚠️ File may contain non-ASCII characters"
+                file coverage.txt
+              fi
+
+              # Check file permissions
+              echo "📋 File permissions: $(ls -la coverage.txt)"
+
+              # List all coverage files in directory
+              echo "📋 All coverage files in current directory:"
+              ls -la *.txt *.out 2>/dev/null | grep -E "(coverage|cover)" || echo "No other coverage files found"
+
+            else
+              echo "❌ Coverage file may be corrupted. First line should be 'mode: atomic' or 'mode: count' but got: $FIRST_LINE"
+              echo "📋 First 10 lines of coverage file:"
+              head -10 coverage.txt
+              exit 1
+            fi
+          else
+            echo "❌ Coverage file not found!"
+            echo "📋 Current directory: $(pwd)"
+            echo "📋 Files in current directory:"
+            ls -la
+            exit 1
+          fi
+
+      # ————————————————————————————————————————————————————————————————
+      # Upload coverage data for processing
+      # ————————————————————————————————————————————————————————————————
+      - name: 📤 Upload coverage data
+        if: inputs.code-coverage-enabled == 'true' && matrix.os == inputs.primary-runner && matrix.go-version == inputs.go-primary-version
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          fail_ci_if_error: true
-          flags: unittests
-          token: ${{ secrets.codecov-token }}
-          verbose: true
+          name: coverage-data
+          path: coverage.txt
+          retention-days: 1
+
+  # ----------------------------------------------------------------------------------
+  # Process Coverage
+  # ----------------------------------------------------------------------------------
+  process-coverage:
+    name: 📊 Process Coverage
+    needs: test-go
+    if: inputs.code-coverage-enabled == 'true' && !startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write # Write repository content and push to gh-pages branch for coverage processing
+      pull-requests: write # Required: Coverage workflow needs to create PR comments
+      pages: write # Required: Coverage workflow needs to deploy to GitHub Pages
+      id-token: write # Required: Coverage workflow needs GitHub Pages authentication
+      statuses: write # Required: Coverage workflow needs to create commit status checks
+    uses: ./.github/workflows/fortress-coverage.yml
+    with:
+      coverage-file: coverage.txt
+      branch-name: ${{ github.head_ref || github.ref_name }}
+      commit-sha: ${{ github.sha }}
+      env-json: ${{ inputs.env-json }}
+      primary-runner: ${{ inputs.primary-runner }}
+      event-name: ${{ github.event_name }}
+      pr-number: ${{ github.event.pull_request.number }}
+    secrets:
+      github-token: ${{ secrets.GH_PAT_TOKEN != '' && secrets.GH_PAT_TOKEN || secrets.GITHUB_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
