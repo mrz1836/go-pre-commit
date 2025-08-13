@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -35,10 +37,15 @@ type Info struct {
 
 // GetLatestRelease fetches the latest release from GitHub
 func GetLatestRelease(owner, repo string) (*GitHubRelease, error) {
+	return GetLatestReleaseWithVersion(owner, repo, "dev")
+}
+
+// GetLatestReleaseWithVersion fetches the latest release from GitHub with version info for User-Agent
+func GetLatestReleaseWithVersion(owner, repo, currentVersion string) (*GitHubRelease, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
 
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 15 * time.Second, // Increased timeout for better reliability
 	}
 
 	req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
@@ -46,9 +53,15 @@ func GetLatestRelease(owner, repo string) (*GitHubRelease, error) {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
 
-	// Set user agent to avoid rate limiting
-	req.Header.Set("User-Agent", fmt.Sprintf("go-pre-commit/%s (%s/%s)", "dev", runtime.GOOS, runtime.GOARCH))
+	// Set descriptive user agent
+	userAgent := fmt.Sprintf("go-pre-commit/%s (%s/%s)", currentVersion, runtime.GOOS, runtime.GOARCH)
+	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
+
+	// Add authentication if available
+	if token := getGitHubToken(); token != "" {
+		req.Header.Set("Authorization", "token "+token)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -58,7 +71,7 @@ func GetLatestRelease(owner, repo string) (*GitHubRelease, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("%w: status %d: %s", ErrGitHubAPIFailed, resp.StatusCode, string(body))
+		return nil, fmt.Errorf("%w: %s", ErrGitHubAPIFailed, formatGitHubError(resp.StatusCode, string(body), resp.Header))
 	}
 
 	var release GitHubRelease
@@ -67,6 +80,48 @@ func GetLatestRelease(owner, repo string) (*GitHubRelease, error) {
 	}
 
 	return &release, nil
+}
+
+// getGitHubToken returns GitHub token from environment variables
+func getGitHubToken() string {
+	// Try common GitHub token environment variables
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		return token
+	}
+	if token := os.Getenv("GH_TOKEN"); token != "" {
+		return token
+	}
+	return ""
+}
+
+// formatGitHubError formats GitHub API errors with helpful suggestions
+func formatGitHubError(statusCode int, body string, headers http.Header) string {
+	var msg strings.Builder
+	msg.WriteString(fmt.Sprintf("status %d: %s", statusCode, body))
+
+	// Handle rate limiting specifically
+	if statusCode == 403 && strings.Contains(body, "rate limit") {
+		msg.WriteString("\n\nTo avoid rate limits:")
+		msg.WriteString("\n• Set GITHUB_TOKEN environment variable with a GitHub personal access token")
+		msg.WriteString("\n• Or set GH_TOKEN if using GitHub CLI")
+		msg.WriteString("\n• Authenticated requests have 5,000 requests/hour vs 60 for unauthenticated")
+
+		// Show rate limit info if available
+		if limit := headers.Get("X-RateLimit-Limit"); limit != "" {
+			msg.WriteString(fmt.Sprintf("\n• Current limit: %s requests/hour", limit))
+		}
+		if remaining := headers.Get("X-RateLimit-Remaining"); remaining != "" {
+			msg.WriteString(fmt.Sprintf("\n• Remaining: %s requests", remaining))
+		}
+		if reset := headers.Get("X-RateLimit-Reset"); reset != "" {
+			if resetTime, err := strconv.ParseInt(reset, 10, 64); err == nil {
+				resetAt := time.Unix(resetTime, 0)
+				msg.WriteString(fmt.Sprintf("\n• Rate limit resets at: %s", resetAt.Format("15:04:05 MST")))
+			}
+		}
+	}
+
+	return msg.String()
 }
 
 // CompareVersions compares two version strings

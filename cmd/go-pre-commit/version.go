@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"runtime/debug"
 	"strings"
+	"time"
 )
 
 // Build-time variables injected via ldflags
@@ -70,14 +72,11 @@ func getVersionWithFallback() string {
 	if info, ok := debug.ReadBuildInfo(); ok {
 		// Check if there's a module version (from go install @version)
 		if info.Main.Version != "" && info.Main.Version != "(devel)" {
-			// Clean up the version string
-			version := info.Main.Version
-			// Remove 'v' prefix if present for consistency
-			version = strings.TrimPrefix(version, "v")
-			return version
+			// For go install @version, use the version as-is (already includes 'v' prefix)
+			return info.Main.Version
 		}
 
-		// Try to get VCS revision as fallback
+		// Try to get VCS revision as fallback for development builds
 		for _, setting := range info.Settings {
 			if setting.Key == "vcs.revision" && setting.Value != "" {
 				// Use short commit hash like we do in Makefile
@@ -104,7 +103,19 @@ func getCommitWithFallback() string {
 	if info, ok := debug.ReadBuildInfo(); ok {
 		for _, setting := range info.Settings {
 			if setting.Key == "vcs.revision" && setting.Value != "" {
+				// For commit display, use short hash for readability
+				if len(setting.Value) > 7 {
+					return setting.Value[:7]
+				}
 				return setting.Value
+			}
+		}
+
+		// For go install builds, try to extract commit from module sum if available
+		if info.Main.Sum != "" {
+			// Module sum format: h1:base64hash - extract first 7 chars of hash
+			if parts := strings.Split(info.Main.Sum, ":"); len(parts) == 2 && len(parts[1]) >= 7 {
+				return parts[1][:7]
 			}
 		}
 	}
@@ -123,12 +134,47 @@ func getBuildDateWithFallback() string {
 	if info, ok := debug.ReadBuildInfo(); ok {
 		for _, setting := range info.Settings {
 			if setting.Key == "vcs.time" && setting.Value != "" {
+				// VCS time is in RFC3339 format, convert to a more readable format
+				if t, err := parseTime(setting.Value); err == nil {
+					return t.Format("2006-01-02_15:04:05_UTC")
+				}
 				return setting.Value
 			}
+		}
+
+		// For go install builds without VCS info, use a generic marker
+		if info.Main.Version != "" && info.Main.Version != "(devel)" {
+			return "go-install"
 		}
 	}
 
 	return "unknown"
+}
+
+// ErrUnableToParseTime is returned when time string cannot be parsed
+var ErrUnableToParseTime = errors.New("unable to parse time")
+
+// parseTime attempts to parse time from various formats
+func parseTime(timeStr string) (time.Time, error) {
+	// Try RFC3339 format first (Git's default)
+	if t, err := time.Parse(time.RFC3339, timeStr); err == nil {
+		return t.UTC(), nil
+	}
+
+	// Try other common formats
+	formats := []string{
+		"2006-01-02T15:04:05Z",
+		"2006-01-02T15:04:05.000Z",
+		"2006-01-02 15:04:05",
+	}
+
+	for _, format := range formats {
+		if t, err := time.Parse(format, timeStr); err == nil {
+			return t.UTC(), nil
+		}
+	}
+
+	return time.Time{}, ErrUnableToParseTime
 }
 
 // Legacy compatibility functions - these wrap the new BuildInfo pattern

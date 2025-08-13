@@ -99,7 +99,7 @@ func (cb *CommandBuilder) runUpgradeWithConfig(config UpgradeConfig) error {
 
 	// Fetch latest release
 	printInfo("Checking for updates...")
-	release, err := version.GetLatestRelease("mrz1836", "go-pre-commit")
+	release, err := version.GetLatestReleaseWithVersion("mrz1836", "go-pre-commit", currentVersion)
 	if err != nil {
 		return fmt.Errorf("failed to check for updates: %w", err)
 	}
