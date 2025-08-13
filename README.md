@@ -697,7 +697,9 @@ Run all tests with race detector (slower):
 make test-race
 ```
 
-### 🔍 Fuzz Tests
+<details>
+<summary><strong><code>Fuzz Tests</code></strong></summary>
+<br/>
 
 The project includes comprehensive fuzz tests for security-critical components:
 
@@ -712,6 +714,8 @@ make test-fuzz
 - **[Runner Engine](internal/runner/fuzz_test.go)** - Tests check execution with edge case configurations
 
 Fuzz tests help ensure the system handles malformed inputs gracefully without crashes or security vulnerabilities.
+
+</details>
 
 <br/>
 
