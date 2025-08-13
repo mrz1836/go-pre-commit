@@ -1,0 +1,16 @@
+name: multi-validator
+version: 1.0.0
+description: Comprehensive multi-step validation combining multiple checks
+author: go-pre-commit examples
+license: MIT
+homepage: https://github.com/mrz1836/go-pre-commit
+executable: ./validate.sh
+file_patterns:
+  - "*"
+timeout: 45s
+category: custom
+requires_files: true
+environment:
+  ENABLE_SPELLING: "${GO_PRE_COMMIT_ENABLE_SPELLING:-true}"
+  ENABLE_LINKS: "${GO_PRE_COMMIT_ENABLE_LINKS:-true}"
+  ENABLE_COMPLEXITY: "${GO_PRE_COMMIT_ENABLE_COMPLEXITY:-true}"

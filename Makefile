@@ -31,36 +31,6 @@ build:
 	@$(GO) build $(BUILD_FLAGS) $(LDFLAGS) -o $(BINARY_PATH) ./cmd/$(BINARY_NAME)
 	@echo "Binary built: $(BINARY_PATH) (v$(VERSION))"
 
-## update-version: Update version number (usage: make update-version version=1.0.1)
-.PHONY: update-version
-update-version:
-	@if [ -z "$(version)" ]; then \
-		echo "Error: version parameter is required. Usage: make update-version version=1.0.1"; \
-		exit 1; \
-	fi; \
-	echo "Updating version to $(version)..."; \
-	\
-	printf "Updating Version in version.go: "; \
-	if grep -E 'Version.*=.*"[0-9]+\.[0-9]+\.[0-9]+"' cmd/$(BINARY_NAME)/version.go >/dev/null 2>&1; then \
-		sed -i '' -E 's/Version.*=.*"[0-9]+\.[0-9]+\.[0-9]+"/Version   = "$(version)"/' cmd/$(BINARY_NAME)/version.go && \
-		echo "✓ updated"; \
-	else \
-		echo "not found"; \
-	fi; \
-	\
-	printf "Updating CITATION.cff: "; \
-    	$(MAKE) citation version=$(version) > /dev/null 2>&1 && echo "✓ updated" || echo "⚠️ failed"; \
-    \
-	printf "Updating GO_PRE_COMMIT_VERSION in .env.shared: "; \
-	if grep -E 'GO_PRE_COMMIT_VERSION=v[0-9]+\.[0-9]+\.[0-9]+' .github/.env.shared >/dev/null 2>&1; then \
-		sed -i '' -E 's/GO_PRE_COMMIT_VERSION=v[0-9]+\.[0-9]+\.[0-9]+/GO_PRE_COMMIT_VERSION=v$(version)/' .github/.env.shared && \
-		echo "✓ updated"; \
-	else \
-		echo "✓ skipped (will add when needed)"; \
-	fi; \
-	\
-	echo "Version update complete!"
-
 ## clean: Clean build artifacts
 clean:
 	@echo "Cleaning $(BINARY_NAME) artifacts..."

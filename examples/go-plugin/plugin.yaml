@@ -1,0 +1,23 @@
+name: license-header
+version: 1.0.0
+description: Ensures source files have proper license headers
+author: go-pre-commit examples
+license: MIT
+homepage: https://github.com/mrz1836/go-pre-commit
+executable: ./license-checker
+file_patterns:
+  - "*.go"
+  - "*.java"
+  - "*.c"
+  - "*.cpp"
+  - "*.h"
+  - "*.py"
+  - "*.js"
+  - "*.ts"
+timeout: 30s
+category: linting
+requires_files: true
+environment:
+  LICENSE_FILE: "${GO_PRE_COMMIT_LICENSE_FILE:-LICENSE}"
+  LICENSE_HEADER: "${GO_PRE_COMMIT_LICENSE_HEADER:-}"
+  SKIP_GENERATED: "${GO_PRE_COMMIT_SKIP_GENERATED:-true}"

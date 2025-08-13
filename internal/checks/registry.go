@@ -10,14 +10,16 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/checks/builtin"
 	"github.com/mrz1836/go-pre-commit/internal/checks/makewrap"
 	"github.com/mrz1836/go-pre-commit/internal/config"
+	"github.com/mrz1836/go-pre-commit/internal/plugins"
 	"github.com/mrz1836/go-pre-commit/internal/shared"
 )
 
 // Registry manages all available checks
 type Registry struct {
-	checks    map[string]Check
-	mu        sync.RWMutex
-	sharedCtx *shared.Context
+	checks         map[string]Check
+	mu             sync.RWMutex
+	sharedCtx      *shared.Context
+	pluginRegistry *plugins.Registry
 }
 
 // NewRegistry creates a new check registry with all built-in checks
@@ -273,4 +275,23 @@ func (r *Registry) convertMetadataReflection(checkMetadata interface{}) CheckMet
 	}
 
 	return result
+}
+
+// LoadPlugins loads and registers plugins from the plugin registry
+func (r *Registry) LoadPlugins() error {
+	if r.pluginRegistry == nil {
+		return nil // No plugin registry configured
+	}
+
+	// Load plugins from directory
+	if err := r.pluginRegistry.LoadPlugins(); err != nil {
+		return err
+	}
+
+	// Register each plugin as a check
+	for _, plugin := range r.pluginRegistry.GetAll() {
+		r.Register(plugin)
+	}
+
+	return nil
 }

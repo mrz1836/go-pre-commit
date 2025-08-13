@@ -21,7 +21,6 @@ Maintain comprehensive, accurate documentation that follows AGENTS.md standards.
 - **.github/SECURITY.md** - Security policies
 - **.github/CODE_OF_CONDUCT.md** - Community standards
 - **.github/SUPPORT.md** - Support information
-- **CITATION.cff** - Citation metadata
 
 ### Markdown Standards
 
@@ -140,7 +139,6 @@ When preparing releases:
 1. Update version in examples
 2. Update Go version requirements
 3. Update changelog/release notes
-4. Update CITATION.cff
 
 ### Changelog Format
 ```markdown

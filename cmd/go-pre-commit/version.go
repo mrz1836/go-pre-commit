@@ -6,19 +6,64 @@ import (
 )
 
 // Build-time variables injected via ldflags
+// These are package-level but unexported to reduce global exposure
 //
-//nolint:gochecknoglobals // These are build-time injected variables
+//nolint:gochecknoglobals // These are build-time injected variables, required for ldflags
 var (
-	Version   = "dev"
-	Commit    = "none"
-	BuildDate = "unknown"
+	injectedVersion   = "dev"
+	injectedCommit    = "none"
+	injectedBuildDate = "unknown"
 )
 
-// GetVersion returns the version information with fallback to BuildInfo
-func GetVersion() string {
+// BuildInfo encapsulates build-time information
+type BuildInfo struct {
+	version   string
+	commit    string
+	buildDate string
+}
+
+// NewBuildInfo creates a new BuildInfo instance with build-time injected values
+// and fallbacks to runtime build information
+func NewBuildInfo() *BuildInfo {
+	return &BuildInfo{
+		version:   getVersionWithFallback(),
+		commit:    getCommitWithFallback(),
+		buildDate: getBuildDateWithFallback(),
+	}
+}
+
+// Version returns the version string
+func (b *BuildInfo) Version() string {
+	return b.version
+}
+
+// Commit returns the commit hash
+func (b *BuildInfo) Commit() string {
+	return b.commit
+}
+
+// BuildDate returns the build date
+func (b *BuildInfo) BuildDate() string {
+	return b.buildDate
+}
+
+// IsModified returns true if the build has uncommitted changes
+func (b *BuildInfo) IsModified() bool {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.modified" {
+				return setting.Value == "true"
+			}
+		}
+	}
+	return false
+}
+
+// getVersionWithFallback returns the version information with fallback to BuildInfo
+func getVersionWithFallback() string {
 	// If version was set via ldflags, use it
-	if Version != "dev" && Version != "" {
-		return Version
+	if injectedVersion != "dev" && injectedVersion != "" {
+		return injectedVersion
 	}
 
 	// Try to get version from build info
@@ -48,11 +93,11 @@ func GetVersion() string {
 	return "dev"
 }
 
-// GetCommit returns the commit hash with fallback to BuildInfo
-func GetCommit() string {
+// getCommitWithFallback returns the commit hash with fallback to BuildInfo
+func getCommitWithFallback() string {
 	// If commit was set via ldflags, use it
-	if Commit != "none" && Commit != "" {
-		return Commit
+	if injectedCommit != "none" && injectedCommit != "" {
+		return injectedCommit
 	}
 
 	// Try to get from build info
@@ -67,11 +112,11 @@ func GetCommit() string {
 	return "none"
 }
 
-// GetBuildDate returns the build date with fallback to BuildInfo
-func GetBuildDate() string {
+// getBuildDateWithFallback returns the build date with fallback to BuildInfo
+func getBuildDateWithFallback() string {
 	// If build date was set via ldflags, use it
-	if BuildDate != "unknown" && BuildDate != "" {
-		return BuildDate
+	if injectedBuildDate != "unknown" && injectedBuildDate != "" {
+		return injectedBuildDate
 	}
 
 	// Try to get from build info
@@ -86,14 +131,26 @@ func GetBuildDate() string {
 	return "unknown"
 }
 
-// IsModified returns true if the build has uncommitted changes
+// Legacy compatibility functions - these wrap the new BuildInfo pattern
+// to maintain backward compatibility during migration
+
+// GetVersion returns the version information (legacy compatibility)
+func GetVersion() string {
+	return getVersionWithFallback()
+}
+
+// GetCommit returns the commit hash (legacy compatibility)
+func GetCommit() string {
+	return getCommitWithFallback()
+}
+
+// GetBuildDate returns the build date (legacy compatibility)
+func GetBuildDate() string {
+	return getBuildDateWithFallback()
+}
+
+// IsModified returns true if the build has uncommitted changes (legacy compatibility)
 func IsModified() bool {
-	if info, ok := debug.ReadBuildInfo(); ok {
-		for _, setting := range info.Settings {
-			if setting.Key == "vcs.modified" {
-				return setting.Value == "true"
-			}
-		}
-	}
-	return false
+	bi := &BuildInfo{}
+	return bi.IsModified()
 }

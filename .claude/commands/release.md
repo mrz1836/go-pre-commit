@@ -25,7 +25,6 @@ Use the **release-coordinator agent** to:
    - Validate against semantic versioning
 
 3. **Update Metadata**:
-   - Update CITATION.cff with version
    - Prepare CHANGELOG.md
    - Update version references in docs
 

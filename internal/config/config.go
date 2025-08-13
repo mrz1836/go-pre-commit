@@ -80,6 +80,13 @@ type Config struct {
 	UI struct {
 		ColorOutput bool // GO_PRE_COMMIT_COLOR_OUTPUT (default: true)
 	}
+
+	// Plugin settings
+	Plugins struct {
+		Enabled   bool   // GO_PRE_COMMIT_ENABLE_PLUGINS
+		Directory string // GO_PRE_COMMIT_PLUGIN_DIR
+		Timeout   int    // GO_PRE_COMMIT_PLUGIN_TIMEOUT
+	}
 }
 
 // Load reads configuration from .github/.env.shared
@@ -155,6 +162,11 @@ func Load() (*Config, error) {
 
 	// UI settings
 	cfg.UI.ColorOutput = getBoolEnv("GO_PRE_COMMIT_COLOR_OUTPUT", true)
+
+	// Plugin settings
+	cfg.Plugins.Enabled = getBoolEnv("GO_PRE_COMMIT_ENABLE_PLUGINS", false)
+	cfg.Plugins.Directory = getStringEnv("GO_PRE_COMMIT_PLUGIN_DIR", ".pre-commit-plugins")
+	cfg.Plugins.Timeout = getIntEnv("GO_PRE_COMMIT_PLUGIN_TIMEOUT", 60)
 
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {

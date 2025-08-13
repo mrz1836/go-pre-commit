@@ -79,6 +79,7 @@
 * [Configuration](#-configuration)
 * [Workflow Process](#-workflow-process)
 * [Available Checks](#-available-checks)
+* [Plugin System](#-plugin-system)
 * [Starting a New Project](#-starting-a-new-project)
 * [Documentation](#-advanced-documentation)
 * [Examples & Tests](#-examples--tests)
@@ -146,6 +147,10 @@ git commit -m "Test commit"
 
 ## ⚙️ Configuration
 
+<details>
+<summary><strong><code>Environment Configuration</code></strong></summary>
+<br/>
+
 `go-pre-commit` uses environment variables from `.github/.env.shared` for configuration:
 
 ```bash
@@ -174,11 +179,15 @@ GO_PRE_COMMIT_GOIMPORTS_AUTO_STAGE=true
 GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true
 ```
 
+</details>
+
 <br/>
 
 ## 🔄 Workflow Process
 
-### Installing hooks
+<details>
+<summary><strong><code>Installing Hooks</code></strong></summary>
+<br/>
 
 ```bash
 # Install default pre-commit hook
@@ -191,7 +200,11 @@ go-pre-commit install --hook-type pre-commit --hook-type pre-push
 go-pre-commit install --force
 ```
 
-### Running checks manually
+</details>
+
+<details>
+<summary><strong><code>Running Checks Manually</code></strong></summary>
+<br/>
 
 ```bash
 # Run all checks on staged files
@@ -206,6 +219,12 @@ go-pre-commit run --all-files
 # Skip specific checks
 go-pre-commit run --skip lint,mod-tidy
 ```
+
+</details>
+
+<details>
+<summary><strong><code>Status & Updates</code></strong></summary>
+<br/>
 
 ### Checking status
 
@@ -249,9 +268,15 @@ go-pre-commit uninstall
 go-pre-commit uninstall --hook-type pre-commit
 ```
 
+</details>
+
 <br/>
 
 ## 🎯 Available Checks
+
+<details>
+<summary><strong><code>Built-in Checks Reference</code></strong></summary>
+<br/>
 
 `go-pre-commit` includes these built-in checks:
 
@@ -268,9 +293,130 @@ go-pre-commit uninstall --hook-type pre-commit
 
 All checks run in parallel for maximum performance. All checks work out-of-the-box with pure Go - no Makefile required! Tools are automatically installed when needed.
 
+</details>
+
+<br/>
+
+## 🔌 Plugin System
+
+`go-pre-commit` supports custom plugins to extend its functionality with checks written in any language.
+
+<details>
+<summary><strong><code>Quick Start with Plugins</code></strong></summary>
+<br/>
+
+### What are Plugins?
+
+Plugins are external executables (scripts or binaries) that integrate seamlessly with the built-in checks. They can be written in:
+- Shell/Bash scripts for simple checks
+- Python for complex validation
+- Go for high-performance checks
+- Any language that can read JSON from stdin and write to stdout
+
+### Quick Setup
+
+1. **Enable plugins** in `.github/.env.shared`:
+```bash
+GO_PRE_COMMIT_ENABLE_PLUGINS=true
+GO_PRE_COMMIT_PLUGIN_DIR=.pre-commit-plugins
+```
+
+2. **Install an example plugin**:
+```bash
+# Copy an example plugin to your project
+cp -r examples/shell-plugin .pre-commit-plugins/
+
+# Or use the CLI
+go-pre-commit plugin add examples/shell-plugin
+```
+
+3. **Run checks** (plugins run alongside built-in checks):
+```bash
+go-pre-commit run
+```
+
+</details>
+
+<details>
+<summary><strong><code>Plugin Management & Creation</code></strong></summary>
+<br/>
+
+### Plugin Management Commands
+
+```bash
+# List available plugins
+go-pre-commit plugin list
+
+# Add a plugin
+go-pre-commit plugin add ./my-plugin
+
+# Remove a plugin
+go-pre-commit plugin remove my-plugin
+
+# Validate a plugin manifest
+go-pre-commit plugin validate ./my-plugin
+
+# Show plugin details
+go-pre-commit plugin info my-plugin
+```
+
+### Creating Your Own Plugin
+
+Every plugin needs:
+1. A manifest file (`plugin.yaml`)
+2. An executable script or binary
+3. JSON-based communication protocol
+
+**Example `plugin.yaml`:**
+```yaml
+name: my-custom-check
+version: 1.0.0
+description: Checks for custom issues in code
+executable: ./check.sh
+file_patterns:
+  - "*.go"
+timeout: 30s
+category: linting
+```
+
+**Example Plugin Script:**
+```bash
+#!/bin/bash
+INPUT=$(cat)
+# Process files and output JSON response
+echo '{"success": true, "output": "Check passed"}'
+```
+
+### Available Example Plugins
+
+| Plugin | Description | Language |
+|--------|-------------|----------|
+| [todo-checker](examples/shell-plugin/) | Finds TODO/FIXME comments | Shell |
+| [json-validator](examples/python-plugin/) | Validates JSON formatting | Python |
+| [license-header](examples/go-plugin/) | Checks license headers | Go |
+| [security-scanner](examples/docker-plugin/) | Security scanning | Docker |
+| [multi-validator](examples/composite-plugin/) | Multi-step validation | Mixed |
+
+See the [examples directory](examples/) for complete plugin implementations and documentation.
+
+### Plugin Features
+
+- **Parallel Execution**: Plugins run in parallel with built-in checks
+- **File Filtering**: Process only relevant files using patterns
+- **Timeout Protection**: Configurable timeouts prevent hanging
+- **Environment Variables**: Pass configuration via environment
+- **JSON Protocol**: Structured communication for reliable integration
+- **Category Support**: Organize plugins by type (linting, security, etc.)
+
+</details>
+
 <br/>
 
 ## 🏗️ Starting a New Project
+
+<details>
+<summary><strong><code>Project Setup Guide</code></strong></summary>
+<br/>
 
 Setting up `go-pre-commit` in a new Go project:
 
@@ -353,6 +499,8 @@ git commit -m "Initial commit"
 # Watch go-pre-commit automatically fix issues!
 ```
 
+</details>
+
 <br/>
 
 ## 📚 Advanced Documentation
@@ -379,7 +527,7 @@ git commit -m "Initial commit"
 * **Security Posture by Default** with [CodeQL](https://docs.github.com/en/github/finding-security-vulnerabilities-and-errors-in-your-code/about-code-scanning), [OpenSSF Scorecard](https://openssf.org), and secret‑leak detection via [gitleaks](https://github.com/gitleaks/gitleaks).
 * **Automatic Syndication** to [pkg.go.dev](https://pkg.go.dev/) on every release for instant godoc visibility.
 * **Polished Community Experience** using rich templates for [Issues & PRs](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository).
-* **All the Right Meta Files** (`LICENSE`, `CITATION.cff`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SUPPORT.md`, `SECURITY.md`) pre‑filled and ready.
+* **All the Right Meta Files** (`LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SUPPORT.md`, `SECURITY.md`) pre‑filled and ready.
 * **Code Ownership** clarified through a [CODEOWNERS](.github/CODEOWNERS) file, keeping reviews fast and focused.
 * **Zero‑Noise Dev Environments** with tuned editor settings (`.editorconfig`) plus curated *ignore* files for [VS Code](.editorconfig), [Docker](.dockerignore), and [Git](.gitignore).
 * **Label Sync Magic**: your repo labels stay in lock‑step with [.github/labels.yml](.github/labels.yml).
@@ -409,12 +557,6 @@ To generate a snapshot (non-versioned) release for testing purposes, run:
 
 ```bash
 make release-snap
-```
-
-Before tagging a new version, update the release metadata (version) in the `CITATION.cff` file:
-
-```bash
-make citation version=0.2.1
 ```
 
 Then create and push a new Git tag using:
@@ -630,20 +772,20 @@ This project includes a comprehensive team of **12 specialized AI sub-agents** d
 
 The sub-agents are located in `.claude/agents/` and can be invoked by Claude Code to handle specific tasks:
 
-| Agent                     | Specialization          | Primary Responsibilities                                                                          |
-|---------------------------|-------------------------|---------------------------------------------------------------------------------------------------|
+| Agent                     | Specialization          | Primary Responsibilities                                                                        |
+|---------------------------|-------------------------|-------------------------------------------------------------------------------------------------|
 | **go-standards-enforcer** | Go Standards Compliance | Enforces AGENTS.md coding standards, context-first design, interface patterns, and error handling |
-| **go-tester**             | Testing & Coverage      | Runs tests with testify, fixes failures, ensures 90%+ coverage, manages test suites               |
-| **go-formatter**          | Code Formatting         | Runs fumpt, golangci-lint, fixes whitespace/EOF issues, maintains consistent style                |
-| **hook-specialist**       | Pre-commit Hooks        | Manages hook installation, configuration via .env.shared, troubleshoots hook issues               |
-| **ci-guardian**           | CI/CD Pipeline          | Monitors GitHub Actions, fixes workflow issues, optimizes pipeline performance                    |
-| **doc-maintainer**        | Documentation           | Updates README, maintains AGENTS.md compliance, ensures documentation consistency                 |
-| **dependency-auditor**    | Security & Dependencies | Runs govulncheck/nancy/gitleaks, manages Go modules, handles vulnerability fixes                  |
-| **release-coordinator**   | Release Management      | Prepares releases following semver, updates CITATION.cff, manages goreleaser                      |
-| **code-reviewer**         | Code Quality            | Reviews changes for security, performance, maintainability, provides prioritized feedback         |
-| **performance-optimizer** | Performance Tuning      | Profiles code, runs benchmarks, optimizes hot paths, reduces allocations                          |
-| **makefile-expert**       | Build System            | Manages Makefile targets, fixes build issues, maintains .make includes                            |
-| **pr-orchestrator**       | Pull Requests           | Ensures PR conventions, coordinates validation, manages labels and CI checks                      |
+| **go-tester**             | Testing & Coverage      | Runs tests with testify, fixes failures, ensures 90%+ coverage, manages test suites             |
+| **go-formatter**          | Code Formatting         | Runs fumpt, golangci-lint, fixes whitespace/EOF issues, maintains consistent style              |
+| **hook-specialist**       | Pre-commit Hooks        | Manages hook installation, configuration via .env.shared, troubleshoots hook issues             |
+| **ci-guardian**           | CI/CD Pipeline          | Monitors GitHub Actions, fixes workflow issues, optimizes pipeline performance                  |
+| **doc-maintainer**        | Documentation           | Updates README, maintains AGENTS.md compliance, ensures documentation consistency               |
+| **dependency-auditor**    | Security & Dependencies | Runs govulncheck/nancy/gitleaks, manages Go modules, handles vulnerability fixes                |
+| **release-coordinator**   | Release Management      | Prepares releases following semver, manages goreleaser                      |
+| **code-reviewer**         | Code Quality            | Reviews changes for security, performance, maintainability, provides prioritized feedback       |
+| **performance-optimizer** | Performance Tuning      | Profiles code, runs benchmarks, optimizes hot paths, reduces allocations                        |
+| **makefile-expert**       | Build System            | Manages Makefile targets, fixes build issues, maintains .make includes                          |
+| **pr-orchestrator**       | Pull Requests           | Ensures PR conventions, coordinates validation, manages labels and CI checks                    |
 
 </details>
 
@@ -710,9 +852,8 @@ pr-orchestrator → code-reviewer → go-standards-enforcer
 # The release-coordinator manages the process:
 1. Validates all tests pass (go-tester)
 2. Ensures security scans clean (dependency-auditor)
-3. Updates version in CITATION.cff
-4. Prepares changelog
-5. Coordinates with ci-guardian for release workflow
+3. Prepares changelog
+4. Coordinates with ci-guardian for release workflow
 ```
 
 #### 4. Security Audit

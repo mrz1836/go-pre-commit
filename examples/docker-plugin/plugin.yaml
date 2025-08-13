@@ -1,0 +1,22 @@
+name: security-scanner
+version: 1.0.0
+description: Runs security scans in an isolated Docker environment
+author: go-pre-commit examples
+license: MIT
+homepage: https://github.com/mrz1836/go-pre-commit
+executable: ./scan.sh
+file_patterns:
+  - "*.go"
+  - "*.py"
+  - "*.js"
+  - "go.mod"
+  - "package.json"
+  - "requirements.txt"
+timeout: 60s
+category: security
+requires_files: true
+environment:
+  SCAN_TYPE: "${GO_PRE_COMMIT_SCAN_TYPE:-basic}"
+  FAIL_ON_HIGH: "${GO_PRE_COMMIT_FAIL_ON_HIGH:-true}"
+dependencies:
+  - docker

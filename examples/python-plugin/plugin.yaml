@@ -1,0 +1,17 @@
+name: json-validator
+version: 1.0.0
+description: Validates JSON files for proper formatting and structure
+author: go-pre-commit examples
+license: MIT
+homepage: https://github.com/mrz1836/go-pre-commit
+executable: ./check.py
+file_patterns:
+  - "*.json"
+  - "*.jsonc"
+timeout: 20s
+category: formatting
+requires_files: true
+environment:
+  INDENT_SIZE: "${GO_PRE_COMMIT_JSON_INDENT:-2}"
+  SORT_KEYS: "${GO_PRE_COMMIT_JSON_SORT_KEYS:-false}"
+  VALIDATE_SCHEMA: "${GO_PRE_COMMIT_JSON_VALIDATE_SCHEMA:-false}"

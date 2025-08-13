@@ -11,6 +11,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 - Runs checks in parallel: `ai_detection`, `fumpt`, `lint`, `mod-tidy`, `whitespace`, `eof`, `fmt`, `goimports`
 - **Pure Go implementation** - all checks run directly without Make dependencies
 - **Auto-installs tools** - fumpt, goimports, and golangci-lint are installed automatically when needed
+- **Plugin system** - Extend with custom checks in any language (Shell, Python, Go, Docker, etc.)
 - Configures via `.github/.env.shared` (no YAML files)
 - Works with or without Makefile (backward compatible)
 
@@ -44,8 +45,14 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
   │   └── makewrap/    # Make-based checks (fumpt, lint, mod-tidy)
   ├── config/          # Configuration loader
   ├── git/             # Git operations and hook management
+  ├── plugins/         # Plugin system (loader, registry, protocol)
   ├── runner/          # Parallel check execution
   └── output/          # Formatted output
+/examples/             # Plugin examples
+  ├── shell-plugin/    # Shell script plugin example
+  ├── python-plugin/   # Python plugin example
+  ├── go-plugin/       # Go binary plugin example
+  └── docker-plugin/   # Docker-based plugin example
 ```
 
 ### ⚙️ Technical Requirements
@@ -104,6 +111,16 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 - **Faster execution** - No Make overhead
 - **Better portability** - Works in more environments
 - **Backward compatible** - Still supports Make targets if present
+- **Plugin system** - Extend with custom checks in any language
+
+### 🔌 Plugin System Notes
+
+- **Plugin directory**: `.pre-commit-plugins/` by default
+- **Manifest files**: `plugin.yaml` or `plugin.json` define plugin metadata
+- **Communication**: JSON over stdin/stdout protocol
+- **Examples**: See `/examples/` for Shell, Python, Go, and Docker plugins
+- **CLI commands**: `go-pre-commit plugin list/add/remove/validate/info`
+- **Configuration**: Enable with `GO_PRE_COMMIT_ENABLE_PLUGINS=true`
 
 If you encounter conflicting guidance elsewhere, `AGENTS.md` wins.
 Questions or ambiguities? Open a discussion or ping @mrz1836 instead of guessing.

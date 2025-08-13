@@ -1,0 +1,20 @@
+name: todo-checker
+version: 1.0.0
+description: Checks for TODO/FIXME/HACK comments in code
+author: go-pre-commit examples
+license: MIT
+executable: ./check.sh
+file_patterns:
+  - "*.go"
+  - "*.js"
+  - "*.py"
+  - "*.java"
+  - "*.c"
+  - "*.cpp"
+  - "*.h"
+timeout: 15s
+category: linting
+requires_files: true
+environment:
+  ALLOW_TODOS: "${GO_PRE_COMMIT_ALLOW_TODOS:-false}"
+  MAX_TODOS: "${GO_PRE_COMMIT_MAX_TODOS:-10}"

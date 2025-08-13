@@ -9,29 +9,6 @@ import (
 	"github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/cmd"
 )
 
-// BuildInfo holds build-time information that gets injected via ldflags
-type BuildInfo struct {
-	Version   string
-	Commit    string
-	BuildDate string
-}
-
-// getBuildInfo returns build information from version constants
-func getBuildInfo() BuildInfo {
-	version := GetVersion()
-
-	// Add modified suffix if there are uncommitted changes
-	if IsModified() && !strings.HasSuffix(version, "-dirty") {
-		version += "-dirty"
-	}
-
-	return BuildInfo{
-		Version:   version,
-		Commit:    GetCommit(),
-		BuildDate: GetBuildDate(),
-	}
-}
-
 func main() {
 	os.Exit(run())
 }
@@ -39,11 +16,17 @@ func main() {
 // run executes the main application logic and returns the exit code.
 // This function is separated from main() to enable testing.
 func run() int {
-	// Get build information
-	buildInfo := getBuildInfo()
+	// Create build information using the new pattern
+	buildInfo := NewBuildInfo()
+
+	// Get version and add modified suffix if there are uncommitted changes
+	version := buildInfo.Version()
+	if buildInfo.IsModified() && !strings.HasSuffix(version, "-dirty") {
+		version += "-dirty"
+	}
 
 	// Create CLI application with dependency injection
-	app := cmd.NewCLIApp(buildInfo.Version, buildInfo.Commit, buildInfo.BuildDate)
+	app := cmd.NewCLIApp(version, buildInfo.Commit(), buildInfo.BuildDate())
 	builder := cmd.NewCommandBuilder(app)
 
 	// Execute the root command
