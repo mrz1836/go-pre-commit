@@ -116,6 +116,7 @@ jobs:
           echo "📊 System Settings:"
           echo "  • System Enabled: ${{ env.ENABLE_GO_PRE_COMMIT }}"
           echo "  • Tool Version: ${{ env.GO_PRE_COMMIT_VERSION }}"
+          echo "  • Use Local Build: ${{ env.GO_PRE_COMMIT_USE_LOCAL }}"
           echo "  • Enabled Checks: ${{ env.GO_PRE_COMMIT_ENABLED_CHECKS }}"
           echo "  • Fail Fast: ${{ env.GO_PRE_COMMIT_FAIL_FAST }}"
           echo "  • Timeout: ${{ env.GO_PRE_COMMIT_TIMEOUT_SECONDS }} seconds"
@@ -155,24 +156,53 @@ jobs:
       - name: 📦 Install go-pre-commit
         id: install-pre-commit
         run: |
-          echo "📦 Installing go-pre-commit ${{ env.GO_PRE_COMMIT_VERSION }}..."
+          echo "📦 Installing go-pre-commit..."
 
-          # Install the external tool
-          go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@${{ env.GO_PRE_COMMIT_VERSION }}
+          # Check if we should use local development version
+          if [[ "${{ env.GO_PRE_COMMIT_USE_LOCAL }}" == "true" ]]; then
+            echo "📦 Using local development version of go-pre-commit"
+            echo "  Building from source at: $GITHUB_WORKSPACE/cmd/go-pre-commit"
 
-          # Verify installation
-          if command -v go-pre-commit &> /dev/null; then
-            echo "✅ go-pre-commit installed successfully"
-            echo "install_success=true" >> $GITHUB_OUTPUT
+            # Build from local source
+            cd "$GITHUB_WORKSPACE"
+            go build -v -o /tmp/go-pre-commit ./cmd/go-pre-commit
+            chmod +x /tmp/go-pre-commit
 
-            # Get version
-            VERSION=$(go-pre-commit --version 2>&1 | head -1 || echo "${{ env.GO_PRE_COMMIT_VERSION }}")
+            # Store the binary path
+            echo "GO_PRE_COMMIT_BINARY=/tmp/go-pre-commit" >> $GITHUB_ENV
+
+            # Show version info
+            echo "✅ Local go-pre-commit built successfully"
+            VERSION=$(/tmp/go-pre-commit --version 2>&1 | head -1 || echo "local-dev")
             echo "🏷️ Version: $VERSION"
+            echo "install_success=true" >> $GITHUB_OUTPUT
             echo "version=$VERSION" >> $GITHUB_OUTPUT
           else
-            echo "❌ Failed to install go-pre-commit"
-            echo "install_success=false" >> $GITHUB_OUTPUT
-            exit 1
+            # Use production version
+            VERSION="${{ env.GO_PRE_COMMIT_VERSION }}"
+            echo "📦 Installing go-pre-commit version: $VERSION"
+
+            # Install using go install
+            go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@$VERSION
+
+            # Store the binary path
+            GO_BIN="$(go env GOPATH)/bin"
+            echo "GO_PRE_COMMIT_BINARY=$GO_BIN/go-pre-commit" >> $GITHUB_ENV
+
+            # Verify installation
+            if command -v go-pre-commit &> /dev/null; then
+              echo "✅ go-pre-commit installed successfully"
+              echo "install_success=true" >> $GITHUB_OUTPUT
+
+              # Get version
+              VERSION_OUTPUT=$(go-pre-commit --version 2>&1 | head -1 || echo "$VERSION")
+              echo "🏷️ Version: $VERSION_OUTPUT"
+              echo "version=$VERSION_OUTPUT" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Failed to install go-pre-commit"
+              echo "install_success=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
           fi
 
       # ————————————————————————————————————————————————————————————————
@@ -205,7 +235,7 @@ jobs:
 
           # Run all checks on all files (CI mode)
           echo "🔍 Executing checks on all files..."
-          CHECKS_OUTPUT=$(go-pre-commit run --all-files 2>&1) || CHECKS_EXIT=$?
+          CHECKS_OUTPUT=$("${{ env.GO_PRE_COMMIT_BINARY }}" run --all-files 2>&1) || CHECKS_EXIT=$?
 
           # Strip ANSI color codes for clean GitHub Actions output
           echo "$CHECKS_OUTPUT" | sed 's/\x1b\[[0-9;]*m//g'
