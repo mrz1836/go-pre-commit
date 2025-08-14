@@ -30,8 +30,11 @@
         <a href="https://goreportcard.com/report/github.com/mrz1836/go-pre-commit">
           <img src="https://goreportcard.com/badge/github.com/mrz1836/go-pre-commit?style=flat" alt="Go Report Card">
         </a><br/>
-		<a href="https://codecov.io/gh/mrz1836/go-pre-commit/tree/master">
+		<!-- <a href="https://codecov.io/gh/mrz1836/go-pre-commit/tree/master">
           <img src="https://codecov.io/gh/mrz1836/go-pre-commit/branch/master/graph/badge.svg?style=flat" alt="Code Coverage">
+        </a><br/> -->
+		<a href="https://mrz1836.github.io/go-pre-commit/" target="_blank">
+          <img src="https://mrz1836.github.io/go-pre-commit/coverage.svg" alt="Code Coverage">
         </a><br/>
 		<a href="https://scorecard.dev/viewer/?uri=github.com/mrz1836/go-pre-commit">
           <img src="https://api.scorecard.dev/projects/github.com/mrz1836/go-pre-commit/badge?logo=springsecurity&logoColor=white" alt="OpenSSF Scorecard">
