@@ -59,7 +59,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 
 - **Go version:** 1.24+ (check `go.mod`)
 - **Dependencies:** Minimal - Cobra, testify, color, godotenv
-- **Configuration:** 
+- **Configuration:**
   - `.env.base` contains default configuration that works for most projects
   - `.env.custom` (optional) contains project-specific overrides
   - Custom values override base values when both files are present

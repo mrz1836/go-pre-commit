@@ -181,7 +181,7 @@ GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true
 
 **Configuration System:**
 - `.env.base` contains default configuration that works for most projects
-- `.env.custom` (optional) contains project-specific overrides  
+- `.env.custom` (optional) contains project-specific overrides
 - Custom values override base values when both files are present
 - Only create `.env.custom` if you need to modify the defaults
 
