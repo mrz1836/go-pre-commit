@@ -55,17 +55,7 @@ git log $(git describe --tags --abbrev=0)..HEAD --oneline
 # Bug fixes only → PATCH
 ```
 
-#### 3. Update CITATION.cff
-```bash
-# Update version in CITATION.cff
-make citation version=1.2.3
-
-# Or manually edit
-version: "1.2.3"
-date-released: "2024-08-08"
-```
-
-#### 4. Generate Changelog
+#### 3. Generate Changelog
 ```markdown
 ## [v1.2.3] - 2024-08-08
 
@@ -85,7 +75,7 @@ date-released: "2024-08-08"
 - Updated dependencies for CVE-2024-XXXXX
 ```
 
-#### 5. Create Release Tag
+#### 4. Create Release Tag
 ```bash
 # Create and push tag (ONLY maintainers can do this)
 make tag version=1.2.3

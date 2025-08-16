@@ -323,6 +323,16 @@ func extractKeyErrorLines(output string) []string {
 			isError = true
 		}
 
+		// Diff output from go mod tidy -diff
+		if strings.HasPrefix(line, "diff ") ||
+			strings.HasPrefix(line, "--- ") ||
+			strings.HasPrefix(line, "+++ ") ||
+			strings.HasPrefix(line, "@@") ||
+			(strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "+++")) ||
+			(strings.HasPrefix(line, "-") && !strings.HasPrefix(line, "---")) {
+			isError = true
+		}
+
 		if isError {
 			// Clean up ANSI color codes for cleaner display
 			cleanLine := stripANSI(line)

@@ -336,7 +336,7 @@ func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, repoRoot string) er
 			)
 		}
 
-		// Handle other errors
+		// Handle other errors that are not diff-related
 		if strings.Contains(output, "no go.mod file") {
 			return prerrors.NewToolExecutionError(
 				"go mod tidy -diff",
@@ -353,7 +353,19 @@ func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, repoRoot string) er
 			)
 		}
 
-		return fmt.Errorf("%w: %s", ErrModTidyDiffFailed, output)
+		// For go mod tidy -diff, exit code 1 with diff output in stdout is expected
+		// when changes need to be made. Only treat it as an error if no diff output.
+		diffOutput := stdout.String()
+		if diffOutput == "" {
+			// No diff output but command failed - this is a real error
+			return prerrors.NewToolExecutionError(
+				"go mod tidy -diff",
+				output,
+				"Module dependencies check failed. See error details above.",
+			)
+		}
+		// This is the expected case - go mod tidy -diff found differences
+		// Continue to process the diff output below
 	}
 
 	// If there's any diff output (excluding warnings), it means changes would be made
@@ -370,11 +382,12 @@ func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, repoRoot string) er
 			actualDiffs = append(actualDiffs, line)
 		}
 
-		// If there are actual diffs (not just warnings), return error
+		// If there are actual diffs (not just warnings), return error with detailed diff
 		if len(actualDiffs) > 0 {
+			diffDetails := strings.Join(actualDiffs, "\n")
 			return prerrors.NewToolExecutionError(
 				"go mod tidy -diff",
-				strings.Join(actualDiffs, "\n"),
+				diffDetails,
 				"go.mod or go.sum are not tidy. Run 'go mod tidy' to update dependencies.",
 			)
 		}
