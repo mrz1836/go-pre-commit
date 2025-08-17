@@ -107,10 +107,8 @@ Get up and running with `go-pre-commit` in 30 seconds:
 # Install from source (requires Go 1.24+)
 go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
 
-# Or clone and build locally
-git clone https://github.com/mrz1836/go-pre-commit.git
-cd go-pre-commit
-make install
+# Upgrade to the latest version
+go-pre-commit upgrade --force
 ```
 
 ### Set up in your project
@@ -563,12 +561,6 @@ brew install goreleaser
 
 The release process is defined in the [.goreleaser.yml](.goreleaser.yml) configuration file.
 
-To generate a snapshot (non-versioned) release for testing purposes, run:
-
-```bash
-make release-snap
-```
-
 Then create and push a new Git tag using:
 
 ```bash
@@ -904,12 +896,12 @@ tools: Read, Edit, Bash, Grep
 
 ### Benefits of the Sub-Agent Team
 
-- **🚀 Parallel Execution**: Multiple agents can work simultaneously on different aspects
-- **🎯 Specialized Expertise**: Each agent deeply understands its domain
-- **🔒 Security**: Limited tool access per agent reduces risk
-- **📊 Consistency**: All agents follow AGENTS.md standards strictly
-- **♻️ Reusability**: Agents can be used across different scenarios
-- **🧠 Smart Collaboration**: Agents invoke each other strategically
+- **Parallel Execution**: Multiple agents can work simultaneously on different aspects
+- **Specialized Expertise**: Each agent deeply understands its domain
+- **Security**: Limited tool access per agent reduces risk
+- **Consistency**: All agents follow AGENTS.md standards strictly
+- **Reusability**: Agents can be used across different scenarios
+- **Smart Collaboration**: Agents invoke each other strategically
 
 ### Creating Custom Sub-Agents
 
