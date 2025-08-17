@@ -930,6 +930,8 @@ For more information about sub-agents, see the [Claude Code documentation](https
 
 This project includes **23 custom slash commands** that leverage our specialized sub-agents for efficient project management. These commands provide streamlined workflows for common development tasks.
 
+<br>
+
 ### 🎯 Quick Command Categories
 
 - **Core Commands** (6): `/fix`, `/test`, `/review`, `/docs`, `/clean`, `/validate`
@@ -989,6 +991,8 @@ This project includes **23 custom slash commands** that leverage our specialized
 
 </details>
 
+<br>
+
 ### 📚 Command Features
 
 - **⚡ Parallel Execution**: Commands like `/fix`, `/review`, and `/validate` run multiple agents simultaneously
@@ -996,6 +1000,8 @@ This project includes **23 custom slash commands** that leverage our specialized
 - **🎯 Focused Scope**: All commands accept arguments to target specific files or packages
 - **🔄 Multi-Agent Coordination**: Most commands coordinate multiple specialized agents
 - **📊 Comprehensive Output**: Detailed reports with actionable feedback
+
+<br>
 
 ### 📖 Full Documentation
 
