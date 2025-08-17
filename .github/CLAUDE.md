@@ -13,7 +13,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 - **Auto-installs tools** - fumpt, goimports, and golangci-lint are installed automatically when needed
 - **Plugin system** - Extend with custom checks in any language (Shell, Python, Go, Docker, etc.)
 - Configures via `.github/.env.base` (default configuration) and optionally `.github/.env.custom` (project-specific overrides) - no YAML files
-- Works with or without Makefile (backward compatible)
+- Pure Go implementation with no external dependencies
 
 **Key commands:**
 - `go-pre-commit install` - Install hooks in repository
@@ -42,7 +42,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 /internal/             # Core packages
   ├── checks/          # Check implementations
   │   ├── builtin/     # Built-in checks (ai_detection, whitespace, eof)
-  │   └── makewrap/    # Make-based checks (fumpt, lint, mod-tidy)
+  │   └── gotools/     # Go tool checks (fumpt, lint, mod-tidy)
   ├── config/          # Configuration loader
   ├── git/             # Git operations and hook management
   ├── plugins/         # Plugin system (loader, registry, protocol)
@@ -63,7 +63,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
   - `.env.base` contains default configuration that works for most projects
   - `.env.custom` (optional) contains project-specific overrides
   - Custom values override base values when both files are present
-- **Make targets:** Optional - checks work without Makefile
+- **Build targets:** All checks work with pure Go
 
 ### ✅ Quick Checklist for Claude
 
@@ -71,10 +71,10 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
    Make sure every automated change or suggestion respects those rules.
 
 2. **Understand the pure Go check system**
-   - All checks in `makewrap/` now prefer direct tool execution
+   - All checks in `gotools/` execute tools directly
    - Tools are auto-installed when not found
-   - Make targets are used only as fallback for backward compatibility
-   - Built-in checks operate directly on files
+   - All checks operate directly on files
+   - No external dependencies required
 
 3. **Follow branch‑prefix and commit‑message standards**
    They drive auto‑labeling and CI gates.
@@ -109,11 +109,11 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 
 ### 🎯 Pure Go Benefits
 
-- **Zero Make dependency** - Works on any system with Go installed
+- **Zero external dependency** - Works on any system with Go installed
 - **Automatic tool installation** - No manual setup required
 - **Faster execution** - No Make overhead
 - **Better portability** - Works in more environments
-- **Backward compatible** - Still supports Make targets if present
+- **Flexible** - Works with any build system or none at all
 - **Plugin system** - Extend with custom checks in any language
 
 ### 🔌 Plugin System Notes

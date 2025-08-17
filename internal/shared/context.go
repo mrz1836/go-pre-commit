@@ -14,8 +14,8 @@ import (
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 )
 
-// MakeTargetInfo contains information about a make target
-type MakeTargetInfo struct {
+// BuildTargetInfo contains information about a build target
+type BuildTargetInfo struct {
 	Name        string
 	Exists      bool
 	Description string
@@ -23,19 +23,19 @@ type MakeTargetInfo struct {
 	LastChecked time.Time
 }
 
-// Context provides cached repository information and make target availability
+// Context provides cached repository information and build target availability
 type Context struct {
-	repoRoot         string
-	makeTargets      map[string]*MakeTargetInfo
-	makeTargetsMutex sync.RWMutex
-	repoRootOnce     sync.Once
-	repoRootErr      error
+	repoRoot          string
+	buildTargets      map[string]*BuildTargetInfo
+	buildTargetsMutex sync.RWMutex
+	repoRootOnce      sync.Once
+	repoRootErr       error
 }
 
 // NewContext creates a new shared context for checks
 func NewContext() *Context {
 	return &Context{
-		makeTargets: make(map[string]*MakeTargetInfo),
+		buildTargets: make(map[string]*BuildTargetInfo),
 	}
 }
 
@@ -58,27 +58,27 @@ func (sc *Context) GetRepoRoot(ctx context.Context) (string, error) {
 	return sc.repoRoot, sc.repoRootErr
 }
 
-// HasMakeTarget checks if a make target exists, with caching
+// HasMakeTarget checks if a build target exists, with caching
 func (sc *Context) HasMakeTarget(ctx context.Context, target string) bool {
-	info := sc.GetMakeTargetInfo(ctx, target)
+	info := sc.GetBuildTargetInfo(ctx, target)
 	return info.Exists
 }
 
-// GetMakeTargetInfo gets detailed information about a make target
-func (sc *Context) GetMakeTargetInfo(ctx context.Context, target string) *MakeTargetInfo {
+// GetBuildTargetInfo gets detailed information about a build target
+func (sc *Context) GetBuildTargetInfo(ctx context.Context, target string) *BuildTargetInfo {
 	// Check cache first with TTL (5 minutes)
-	sc.makeTargetsMutex.RLock()
-	if info, exists := sc.makeTargets[target]; exists {
+	sc.buildTargetsMutex.RLock()
+	if info, exists := sc.buildTargets[target]; exists {
 		// Check if cache entry is still valid (5 minutes)
 		if time.Since(info.LastChecked) < 5*time.Minute {
-			sc.makeTargetsMutex.RUnlock()
+			sc.buildTargetsMutex.RUnlock()
 			return info
 		}
 	}
-	sc.makeTargetsMutex.RUnlock()
+	sc.buildTargetsMutex.RUnlock()
 
 	// Create new target info
-	info := &MakeTargetInfo{
+	info := &BuildTargetInfo{
 		Name:        target,
 		LastChecked: time.Now(),
 	}
@@ -87,15 +87,15 @@ func (sc *Context) GetMakeTargetInfo(ctx context.Context, target string) *MakeTa
 	repoRoot, err := sc.GetRepoRoot(ctx)
 	if err != nil {
 		info.Error = fmt.Errorf("failed to find repository root: %w", err)
-		sc.cacheMakeTargetInfo(target, info)
+		sc.cacheBuildTargetInfo(target, info)
 		return info
 	}
 
-	// Add timeout for make command
+	// Add timeout for build command
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	// Check if make target exists using dry-run
+	// Check if build target exists using dry-run
 	cmd := exec.CommandContext(ctx, "make", "-n", target)
 	cmd.Dir = repoRoot
 
@@ -107,34 +107,34 @@ func (sc *Context) GetMakeTargetInfo(ctx context.Context, target string) *MakeTa
 
 	if err == nil {
 		info.Exists = true
-		// Try to extract description from make help or target comments
+		// Try to extract description from build help or target comments
 		info.Description = sc.extractTargetDescription(ctx, repoRoot, target)
 	} else {
 		info.Exists = false
 		// Provide helpful error information
 		output := stdout.String() + stderr.String()
 		if strings.Contains(output, "No rule to make target") {
-			info.Error = fmt.Errorf("%w '%s' in Makefile", prerrors.ErrMakeTargetNotFound, target)
+			info.Error = fmt.Errorf("%w '%s' in build configuration", prerrors.ErrMakeTargetNotFound, target)
 		} else if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			info.Error = fmt.Errorf("%w '%s'", prerrors.ErrMakeTargetTimeout, target)
 		} else {
-			info.Error = fmt.Errorf("error checking make target '%s': %w", target, err)
+			info.Error = fmt.Errorf("error checking build target '%s': %w", target, err)
 		}
 	}
 
 	// Cache the result
-	sc.cacheMakeTargetInfo(target, info)
+	sc.cacheBuildTargetInfo(target, info)
 	return info
 }
 
-// cacheMakeTargetInfo safely caches make target information
-func (sc *Context) cacheMakeTargetInfo(target string, info *MakeTargetInfo) {
-	sc.makeTargetsMutex.Lock()
-	sc.makeTargets[target] = info
-	sc.makeTargetsMutex.Unlock()
+// cacheBuildTargetInfo safely caches build target information
+func (sc *Context) cacheBuildTargetInfo(target string, info *BuildTargetInfo) {
+	sc.buildTargetsMutex.Lock()
+	sc.buildTargets[target] = info
+	sc.buildTargetsMutex.Unlock()
 }
 
-// extractTargetDescription tries to extract a description for a make target
+// extractTargetDescription tries to extract a description for a build target
 func (sc *Context) extractTargetDescription(ctx context.Context, repoRoot, target string) string {
 	// Check if the parent context is already canceled/timed out
 	if ctx.Err() != nil {
@@ -214,8 +214,8 @@ func (sc *Context) extractTargetDescription(ctx context.Context, repoRoot, targe
 	return ""
 }
 
-// GetAvailableMakeTargets returns all available make targets
-func (sc *Context) GetAvailableMakeTargets(ctx context.Context) ([]string, error) {
+// GetAvailableBuildTargets returns all available build targets
+func (sc *Context) GetAvailableBuildTargets(ctx context.Context) ([]string, error) {
 	repoRoot, err := sc.GetRepoRoot(ctx)
 	if err != nil {
 		// Check if it's a timeout vs not a git repo
@@ -228,7 +228,7 @@ func (sc *Context) GetAvailableMakeTargets(ctx context.Context) ([]string, error
 		return nil, fmt.Errorf("failed to find repository root: %w", err)
 	}
 
-	// Add timeout for make command
+	// Add timeout for build command
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -242,12 +242,12 @@ func (sc *Context) GetAvailableMakeTargets(ctx context.Context) ([]string, error
 		return []string{"help", "build", "test", "clean", "install"}, nil
 	}
 
-	targets := sc.parseMakeTargets(string(output))
+	targets := sc.parseBuildTargets(string(output))
 	return targets, nil
 }
 
-// parseMakeTargets extracts target names from make -qp output
-func (sc *Context) parseMakeTargets(output string) []string {
+// parseBuildTargets extracts target names from make -qp output
+func (sc *Context) parseBuildTargets(output string) []string {
 	var targets []string
 	lines := strings.Split(output, "\n")
 
@@ -289,14 +289,14 @@ func (sc *Context) parseMakeTargets(output string) []string {
 	return unique
 }
 
-// ExecuteMakeTarget executes a make target with proper timeout
-func (sc *Context) ExecuteMakeTarget(ctx context.Context, target string, timeout time.Duration) error {
+// ExecuteBuildTarget executes a build target with proper timeout
+func (sc *Context) ExecuteBuildTarget(ctx context.Context, target string, timeout time.Duration) error {
 	repoRoot, err := sc.GetRepoRoot(ctx)
 	if err != nil {
 		return err
 	}
 
-	// Add timeout for make command
+	// Add timeout for build command
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

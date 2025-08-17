@@ -1,4 +1,4 @@
-package makewrap
+package gotools
 
 import (
 	"testing"
@@ -133,8 +133,8 @@ func TestModTidyCheckWithConfig_Metadata(t *testing.T) {
 	assert.False(t, metadata.RequiresFiles)
 }
 
-// Test all makewrap checks have proper metadata
-func TestAllMakewrapChecks_Metadata(t *testing.T) {
+// Test all gotools checks have proper metadata
+func TestAllGotoolsChecks_Metadata(t *testing.T) {
 	sharedCtx := shared.NewContext()
 
 	tests := []struct {
@@ -189,7 +189,7 @@ func TestAllMakewrapChecks_Metadata(t *testing.T) {
 }
 
 // Test metadata with different timeout values
-func TestMakewrapChecks_TimeoutVariations(t *testing.T) {
+func TestGotoolsChecks_TimeoutVariations(t *testing.T) {
 	sharedCtx := shared.NewContext()
 
 	timeouts := []time.Duration{
@@ -220,7 +220,7 @@ func TestMakewrapChecks_TimeoutVariations(t *testing.T) {
 	}
 }
 
-// Benchmark metadata retrieval for makewrap checks
+// Benchmark metadata retrieval for gotools checks
 func BenchmarkFumptCheck_Metadata(b *testing.B) {
 	sharedCtx := shared.NewContext()
 	check := NewFumptCheckWithSharedContext(sharedCtx)
@@ -248,7 +248,7 @@ func BenchmarkModTidyCheck_Metadata(b *testing.B) {
 	}
 }
 
-// Example of using makewrap check metadata
+// Example of using gotools check metadata
 func ExampleFumptCheck_Metadata() {
 	sharedCtx := shared.NewContext()
 	check := NewFumptCheckWithSharedContext(sharedCtx)

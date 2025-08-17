@@ -1,4 +1,4 @@
-package makewrap
+package gotools
 
 import (
 	"bytes"
@@ -69,7 +69,7 @@ func (c *ModTidyCheck) Metadata() interface{} {
 		Description:       "Ensure go.mod and go.sum are up to date and tidy",
 		FilePatterns:      []string{"*.go", "go.mod", "go.sum"},
 		EstimatedDuration: 5 * time.Second,
-		Dependencies:      []string{"mod-tidy"}, // make target
+		Dependencies:      []string{"mod-tidy"}, // tool or build target
 		DefaultTimeout:    c.timeout,
 		Category:          "dependencies",
 		RequiresFiles:     false, // Can run even with no staged files
@@ -86,7 +86,7 @@ func (c *ModTidyCheck) Run(ctx context.Context, files []string) error {
 	// Prefer direct go mod tidy execution for pure Go implementation
 	err := c.runDirectModTidy(ctx)
 
-	// Only fall back to make if direct execution failed and make target exists
+	// Only fall back to build tool if direct execution failed and build target exists
 	if err != nil && c.sharedCtx.HasMakeTarget(ctx, "mod-tidy") {
 		// Try make mod-tidy as fallback
 		err = c.runMakeModTidy(ctx)
@@ -176,7 +176,7 @@ func (c *ModTidyCheck) runMakeModTidy(ctx context.Context) error {
 		if strings.Contains(output, "No rule to make target") {
 			return prerrors.NewMakeTargetNotFoundError(
 				"mod-tidy",
-				"Create a 'mod-tidy' target in your Makefile or disable mod-tidy with GO_PRE_COMMIT_ENABLE_MOD_TIDY=false",
+				"Create a 'mod-tidy' target in your build configuration or disable mod-tidy with GO_PRE_COMMIT_ENABLE_MOD_TIDY=false",
 			)
 		}
 
@@ -208,7 +208,7 @@ func (c *ModTidyCheck) runMakeModTidy(ctx context.Context) error {
 		return prerrors.NewToolExecutionError(
 			"make mod-tidy",
 			output,
-			"Run 'make mod-tidy' manually to see detailed error output. Check your Makefile and module dependencies.",
+			"Run 'make mod-tidy' manually to see detailed error output. Check your build configuration and module dependencies.",
 		)
 	}
 

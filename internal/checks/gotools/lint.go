@@ -1,4 +1,4 @@
-package makewrap
+package gotools
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/shared"
 )
 
-// LintCheck runs golangci-lint via make
+// LintCheck runs golangci-lint directly or via build tools
 type LintCheck struct {
 	sharedCtx *shared.Context
 	timeout   time.Duration
@@ -63,7 +63,7 @@ func (c *LintCheck) Metadata() interface{} {
 		Description:       "Run golangci-lint to check code quality and style",
 		FilePatterns:      []string{"*.go"},
 		EstimatedDuration: 10 * time.Second,
-		Dependencies:      []string{"lint"}, // make target
+		Dependencies:      []string{"lint"}, // tool or build target
 		DefaultTimeout:    c.timeout,
 		Category:          "linting",
 		RequiresFiles:     true,
@@ -80,7 +80,7 @@ func (c *LintCheck) Run(ctx context.Context, files []string) error {
 	// Prefer direct golangci-lint execution for pure Go implementation
 	err := c.runDirectLint(ctx, files)
 
-	// Only fall back to make if direct execution failed and make target exists
+	// Only fall back to build tool if direct execution failed and build target exists
 	if err != nil && c.sharedCtx.HasMakeTarget(ctx, "lint") {
 		// Try make lint as fallback
 		err = c.runMakeLint(ctx)
@@ -135,14 +135,14 @@ func (c *LintCheck) runMakeLint(ctx context.Context) error {
 		if strings.Contains(output, "No rule to make target") {
 			return prerrors.NewMakeTargetNotFoundError(
 				"lint",
-				"Create a 'lint' target in your Makefile or disable linting with GO_PRE_COMMIT_ENABLE_LINT=false",
+				"Create a 'lint' target in your build configuration or disable linting with GO_PRE_COMMIT_ENABLE_LINT=false",
 			)
 		}
 
 		if strings.Contains(output, "golangci-lint") && strings.Contains(output, "not found") {
 			return prerrors.NewToolNotFoundError(
 				"golangci-lint",
-				"Install golangci-lint: 'go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest' or add an install target to your Makefile",
+				"Install golangci-lint: 'go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest' or add an install target to your build configuration",
 			)
 		}
 
@@ -167,7 +167,7 @@ func (c *LintCheck) runMakeLint(ctx context.Context) error {
 		return prerrors.NewToolExecutionError(
 			"make lint",
 			output,
-			"Run 'make lint' manually to see detailed error output. Check your Makefile and golangci-lint configuration.",
+			"Run 'make lint' manually to see detailed error output. Check your build configuration and golangci-lint settings.",
 		)
 	}
 
@@ -201,6 +201,68 @@ func (c *LintCheck) runDirectLint(ctx context.Context, files []string) error {
 		return fmt.Errorf("failed to find repository root: %w", err)
 	}
 
+	// Group files by directory
+	filesByDir := make(map[string][]string)
+	for _, file := range files {
+		dir := filepath.Dir(file)
+		filesByDir[dir] = append(filesByDir[dir], file)
+	}
+
+	// If all files are in the same directory, use the optimized single-directory path
+	if len(filesByDir) == 1 {
+		return c.runLintOnFiles(ctx, repoRoot, files)
+	}
+
+	// For multiple directories, run golangci-lint on each directory
+	// This avoids the "named files must all be in one directory" error
+	var allErrors []string
+	var hasLintingIssues bool
+	var hasToolFailure bool
+
+	for dir := range filesByDir {
+		// Run golangci-lint on the directory containing the files
+		err = c.runLintOnDirectory(ctx, repoRoot, dir)
+		if err != nil {
+			// Check if it's actual linting issues vs tool failure
+			var checkErr *prerrors.CheckError
+			if errors.As(err, &checkErr) && errors.Is(checkErr.Err, prerrors.ErrLintingIssues) {
+				hasLintingIssues = true
+				allErrors = append(allErrors, fmt.Sprintf("Directory %s:\n%s", dir, checkErr.Message))
+			} else {
+				hasToolFailure = true
+				allErrors = append(allErrors, fmt.Sprintf("Directory %s: %v", dir, err))
+			}
+		}
+	}
+
+	// If there were any errors, aggregate and return them
+	if len(allErrors) > 0 {
+		combinedErrors := strings.Join(allErrors, "\n\n")
+
+		if hasLintingIssues && !hasToolFailure {
+			// All errors are linting issues
+			return &prerrors.CheckError{
+				Err:        prerrors.ErrLintingIssues,
+				Message:    combinedErrors,
+				Suggestion: "Fix the linting issues shown above. Run 'golangci-lint run' on each directory to see full details.",
+				Command:    "golangci-lint run",
+				Output:     combinedErrors,
+			}
+		}
+
+		// There were tool failures
+		return prerrors.NewToolExecutionError(
+			"golangci-lint run",
+			combinedErrors,
+			"Run 'golangci-lint run' manually on each directory to see detailed error output.",
+		)
+	}
+
+	return nil
+}
+
+// runLintOnFiles runs golangci-lint on specific files (all in the same directory)
+func (c *LintCheck) runLintOnFiles(ctx context.Context, repoRoot string, files []string) error {
 	// Build absolute paths
 	absFiles := make([]string, len(files))
 	for i, file := range files {
@@ -232,6 +294,13 @@ func (c *LintCheck) runDirectLint(ctx context.Context, files []string) error {
 			)
 		}
 
+		// Check if it's the "named files must all be in one directory" error
+		if strings.Contains(output, "named files must all be in one directory") {
+			// This shouldn't happen with our grouping, but if it does, fall back to directory linting
+			dir := filepath.Dir(files[0])
+			return c.runLintOnDirectory(ctx, repoRoot, dir)
+		}
+
 		// Check if it's configuration issues
 		if strings.Contains(output, "config") && (strings.Contains(output, "error") || strings.Contains(output, "failed")) {
 			return prerrors.NewToolExecutionError(
@@ -261,6 +330,68 @@ func (c *LintCheck) runDirectLint(ctx context.Context, files []string) error {
 			"golangci-lint run",
 			output,
 			"Run 'golangci-lint run' manually to see detailed error output. Check your configuration and file paths.",
+		)
+	}
+
+	return nil
+}
+
+// runLintOnDirectory runs golangci-lint on a specific directory
+func (c *LintCheck) runLintOnDirectory(ctx context.Context, repoRoot, dir string) error {
+	// Add timeout for golangci-lint command
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+
+	// Run golangci-lint on the directory with --new-from-rev flag to only check changed files
+	args := []string{"run", "--new-from-rev=HEAD~1", filepath.Join(repoRoot, dir)}
+	cmd := exec.CommandContext(ctx, "golangci-lint", args...) //nolint:gosec // Command arguments are validated
+	cmd.Dir = repoRoot
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		output := stdout.String() + stderr.String()
+
+		// Check if it's a context timeout
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return prerrors.NewToolExecutionError(
+				"golangci-lint run",
+				output,
+				fmt.Sprintf("Lint check timed out after %v. Consider increasing GO_PRE_COMMIT_LINT_TIMEOUT.", c.timeout),
+			)
+		}
+
+		// Check if it's configuration issues
+		if strings.Contains(output, "config") && (strings.Contains(output, "error") || strings.Contains(output, "failed")) {
+			return prerrors.NewToolExecutionError(
+				"golangci-lint run",
+				output,
+				"Fix golangci-lint configuration issues. Check your .golangci.yml file or run 'golangci-lint config path'.",
+			)
+		}
+
+		// Check if it's actual linting issues vs tool failure
+		if strings.Contains(output, ".go:") && strings.Contains(output, ":") {
+			// This looks like linting issues, not a tool failure
+			// Extract and format specific lint errors for better visibility
+			formattedOutput := FormatLintErrors(output)
+			// For lint errors, return the formatted output as the error message
+			return &prerrors.CheckError{
+				Err:        prerrors.ErrLintingIssues,
+				Message:    formattedOutput,
+				Suggestion: fmt.Sprintf("Fix the linting issues shown above. Run 'golangci-lint run %s' to see full details.", dir),
+				Command:    fmt.Sprintf("golangci-lint run %s", dir),
+				Output:     formattedOutput,
+			}
+		}
+
+		// Generic failure
+		return prerrors.NewToolExecutionError(
+			"golangci-lint run",
+			output,
+			fmt.Sprintf("Run 'golangci-lint run %s' manually to see detailed error output.", dir),
 		)
 	}
 

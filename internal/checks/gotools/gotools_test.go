@@ -1,4 +1,4 @@
-package makewrap
+package gotools
 
 import (
 	"bytes"
@@ -800,8 +800,8 @@ func TestModTidyCheckEdgeCases(t *testing.T) {
 
 // Comprehensive Error Path Testing
 
-// Test fumpt make command error scenarios
-func TestFumptCheckMakeErrorScenarios(t *testing.T) {
+// Test fumpt build command error scenarios
+func TestFumptCheckBuildErrorScenarios(t *testing.T) {
 	tests := []struct {
 		name            string
 		makefileContent string
@@ -944,8 +944,8 @@ func TestFumptCheckDirectErrorScenarios(t *testing.T) {
 	}
 }
 
-// Test lint make command error scenarios
-func TestLintCheckMakeErrorScenarios(t *testing.T) {
+// Test lint build command error scenarios
+func TestLintCheckBuildErrorScenarios(t *testing.T) {
 	tests := []struct {
 		name            string
 		makefileContent string
@@ -1081,8 +1081,8 @@ func TestLintCheckDirectErrorScenarios(t *testing.T) {
 	}
 }
 
-// Test mod-tidy make command error scenarios
-func TestModTidyCheckMakeErrorScenarios(t *testing.T) {
+// Test mod-tidy build command error scenarios
+func TestModTidyCheckBuildErrorScenarios(t *testing.T) {
 	tests := []struct {
 		name            string
 		makefileContent string
@@ -1164,7 +1164,7 @@ func TestModTidyCheckDirectErrorScenarios(t *testing.T) {
 			setupFunc: func(_ *testing.T, _ string) {
 				// Don't create go.mod file
 			},
-			expectedError: "go mod tidy -diff failed", // Actual error from checkModTidyDiff when no go.mod
+			expectedError: "command 'go mod tidy -diff' failed", // Actual error from NewToolExecutionError when no go.mod
 		},
 		{
 			name: "timeout in direct mod tidy",
@@ -1390,8 +1390,8 @@ func TestStripANSIColors(t *testing.T) {
 	}
 }
 
-// Test environment variable integration and make target detection
-func TestMakeTargetIntegration(t *testing.T) {
+// Test environment variable integration and build target detection
+func TestBuildTargetIntegration(t *testing.T) {
 	tests := []struct {
 		name            string
 		checkType       string

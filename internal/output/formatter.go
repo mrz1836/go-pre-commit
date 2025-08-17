@@ -160,8 +160,8 @@ func (f *Formatter) Duration(d time.Duration) string {
 	return fmt.Sprintf("%.1fm", d.Minutes())
 }
 
-// ParseMakeError analyzes make command output and provides context-aware suggestions
-func (f *Formatter) ParseMakeError(command, output string) (message, suggestion string) {
+// ParseCommandError analyzes command output and provides context-aware suggestions
+func (f *Formatter) ParseCommandError(command, output string) (message, suggestion string) {
 	output = strings.TrimSpace(output)
 
 	switch command {
@@ -172,7 +172,7 @@ func (f *Formatter) ParseMakeError(command, output string) (message, suggestion 
 	case "make mod-tidy":
 		return f.parseModTidyError(output)
 	default:
-		return f.parseGenericMakeError(command, output)
+		return f.parseGenericCommandError(command, output)
 	}
 }
 
@@ -266,14 +266,14 @@ func (f *Formatter) parseModTidyError(output string) (string, string) {
 		"Run 'go mod tidy' manually to see detailed errors."
 }
 
-// parseGenericMakeError analyzes generic make command errors
-func (f *Formatter) parseGenericMakeError(command, output string) (string, string) {
+// parseGenericCommandError analyzes generic command errors
+func (f *Formatter) parseGenericCommandError(command, output string) (string, string) {
 	target := strings.TrimPrefix(command, "make ")
 
 	if strings.Contains(output, "No rule to make target") ||
 		strings.Contains(output, "No such file or directory") {
-		return fmt.Sprintf("Make target '%s' not found", target),
-			fmt.Sprintf("Check your Makefile for the '%s' target or run 'make help' to see available targets.", target)
+		return fmt.Sprintf("Build target '%s' not found", target),
+			fmt.Sprintf("Check your build configuration for the '%s' target or run 'make help' to see available targets.", target)
 	}
 
 	if strings.Contains(output, "Permission denied") {
@@ -281,7 +281,7 @@ func (f *Formatter) parseGenericMakeError(command, output string) (string, strin
 			"Check file permissions and ensure you have write access to the project directory."
 	}
 
-	return fmt.Sprintf("Make command '%s' failed", command),
+	return fmt.Sprintf("Command '%s' failed", command),
 		fmt.Sprintf("Run '%s' manually to see detailed error output.", command)
 }
 

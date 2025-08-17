@@ -1,5 +1,5 @@
-// Package makewrap provides pre-commit checks that wrap make commands
-package makewrap
+// Package gotools provides pre-commit checks that run Go tools directly
+package gotools
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/shared"
 )
 
-// FumptCheck runs gofumpt via make
+// FumptCheck runs gofumpt directly or via build tools
 type FumptCheck struct {
 	sharedCtx *shared.Context
 	timeout   time.Duration
@@ -89,7 +89,7 @@ func (c *FumptCheck) Metadata() interface{} {
 		Description:       "Format Go code with gofumpt (stricter gofmt)",
 		FilePatterns:      []string{"*.go"},
 		EstimatedDuration: 3 * time.Second,
-		Dependencies:      []string{"fumpt"}, // make target
+		Dependencies:      []string{"fumpt"}, // tool or build target
 		DefaultTimeout:    c.timeout,
 		Category:          "formatting",
 		RequiresFiles:     true,
@@ -113,7 +113,7 @@ func (c *FumptCheck) Run(ctx context.Context, files []string) error {
 	// Prefer direct gofumpt execution for pure Go implementation
 	err = c.runDirectFumpt(ctx, files)
 
-	// Only fall back to make if direct execution failed and make target exists
+	// Only fall back to build tool if direct execution failed and build target exists
 	if err != nil && c.sharedCtx.HasMakeTarget(ctx, "fumpt") {
 		// Try make fumpt as fallback
 		err = c.runMakeFumpt(ctx)
@@ -176,7 +176,7 @@ func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
 		if strings.Contains(output, "No rule to make target") {
 			return prerrors.NewMakeTargetNotFoundError(
 				"fumpt",
-				"Create a 'fumpt' target in your Makefile or disable fumpt with GO_PRE_COMMIT_ENABLE_FUMPT=false",
+				"Create a 'fumpt' target in your build configuration or disable fumpt with GO_PRE_COMMIT_ENABLE_FUMPT=false",
 			)
 		}
 
@@ -245,7 +245,7 @@ func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
 		// Enhanced generic failure with better context
 		envHints := []string{
 			"Run 'make fumpt' manually to see detailed error output.",
-			"Check your Makefile and gofumpt installation.",
+			"Check your build configuration and gofumpt installation.",
 			"If using a git GUI (Tower, SourceTree, etc.), try using terminal instead.",
 			"Ensure GO_PRE_COMMIT_FUMPT_VERSION is set correctly in .env.base",
 		}

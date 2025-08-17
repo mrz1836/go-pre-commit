@@ -53,8 +53,8 @@
         <a href=".github/AGENTS.md">
           <img src="https://img.shields.io/badge/AGENTS.md-found-40b814?style=flat&logo=openai" alt="AGENTS.md rules">
         </a><br/>
-        <a href="Makefile">
-          <img src="https://img.shields.io/badge/Makefile-supported-brightgreen?style=flat&logo=probot&logoColor=white" alt="Makefile Supported">
+        <a href="https://golang.org/">
+          <img src="https://img.shields.io/badge/Pure_Go-100%25-00ADD8?style=flat&logo=go&logoColor=white" alt="Pure Go">
         </a><br/>
 		<a href=".github/dependabot.yml">
           <img src="https://img.shields.io/badge/dependencies-automatic-blue?logo=dependabot&style=flat" alt="Dependabot">
@@ -144,7 +144,7 @@ git commit -m "Test commit"
 
 > **Good to know:** `go-pre-commit` is a pure Go solution with *zero* external dependencies.
 > It's a single Go binary that replaces Python-based pre-commit frameworks.
-> All formatting and linting tools are automatically installed when needed - no Makefile required!
+> All formatting and linting tools are automatically installed when needed!
 
 <br/>
 
@@ -300,7 +300,7 @@ go-pre-commit uninstall --hook-type pre-commit
 | **mod-tidy**     | Ensures go.mod and go.sum are tidy               | ✅        | Pure Go - no dependencies       |
 | **whitespace**   | Removes trailing whitespace                      | ✅        | Auto-stages changes if enabled  |
 
-All checks run in parallel for maximum performance. All checks work out-of-the-box with pure Go - no Makefile required! Tools are automatically installed when needed.
+All checks run in parallel for maximum performance. All checks work out-of-the-box with pure Go! Tools are automatically installed when needed.
 
 </details>
 
@@ -462,11 +462,11 @@ GO_PRE_COMMIT_AI_DETECTION_AUTO_FIX=false
 EOF
 ```
 
-### 3. (Optional) Create a Makefile for custom workflows
+### 3. (Optional) Create custom workflows
 
-Since `go-pre-commit` now runs all checks with pure Go, a Makefile is optional! The pre-commit hooks will automatically install any needed tools (fumpt, goimports, golangci-lint) on first use.
+Since `go-pre-commit` runs all checks with pure Go, the pre-commit hooks will automatically install any needed tools (fumpt, goimports, golangci-lint) on first use.
 
-If you want to use a Makefile for other tasks or custom workflows, you can still create one:
+If you want custom workflows for other tasks, you can create scripts or configuration:
 
 ```bash
 cat > Makefile << 'EOF'
@@ -517,7 +517,7 @@ git commit -m "Initial commit"
 
 - **Performance** – Parallel execution with configurable workers for blazing-fast checks
 - **CI Integration** – Seamlessly integrates with GitHub Actions via shared configuration
-- **Make Compatibility** – Leverages existing Makefile targets for consistency
+- **Tool Compatibility** – Works seamlessly with existing Go tools for consistency
 - **Environment Config** – .env.base contains default configuration, .env.custom (optional) contains project-specific overrides for team synchronization
 
 <br/>
@@ -580,10 +580,10 @@ This process ensures consistent, repeatable releases with properly versioned art
 </details>
 
 <details>
-<summary><strong><code>Makefile Commands</code></strong></summary>
+<summary><strong><code>Build Commands</code></strong></summary>
 <br/>
 
-View all `makefile` commands
+View all build commands
 
 ```bash script
 make help
@@ -686,7 +686,7 @@ To update all dependencies (Go modules, linters, and related tools), run:
 make update
 ```
 
-This command ensures all dependencies are brought up to date in a single step, including Go modules and any tools managed by the Makefile. It is the recommended way to keep your development environment and CI in sync with the latest versions.
+This command ensures all dependencies are brought up to date in a single step, including Go modules and any managed tools. It is the recommended way to keep your development environment and CI in sync with the latest versions.
 
 </details>
 
@@ -798,7 +798,7 @@ The sub-agents are located in `.claude/agents/` and can be invoked by Claude Cod
 | **release-coordinator**   | Release Management      | Prepares releases following semver, manages goreleaser                      |
 | **code-reviewer**         | Code Quality            | Reviews changes for security, performance, maintainability, provides prioritized feedback       |
 | **performance-optimizer** | Performance Tuning      | Profiles code, runs benchmarks, optimizes hot paths, reduces allocations                        |
-| **makefile-expert**       | Build System            | Manages Makefile targets, fixes build issues, maintains .make includes                          |
+| **build-expert**          | Build System            | Manages build targets, fixes build issues, maintains build configuration                        |
 | **pr-orchestrator**       | Pull Requests           | Ensures PR conventions, coordinates validation, manages labels and CI checks                    |
 
 </details>

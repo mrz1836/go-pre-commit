@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/mrz1836/go-pre-commit/internal/checks/builtin"
-	"github.com/mrz1836/go-pre-commit/internal/checks/makewrap"
+	"github.com/mrz1836/go-pre-commit/internal/checks/gotools"
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/plugins"
 	"github.com/mrz1836/go-pre-commit/internal/shared"
@@ -33,10 +33,10 @@ func NewRegistry() *Registry {
 	r.Register(builtin.NewWhitespaceCheck())
 	r.Register(builtin.NewEOFCheck())
 
-	// Register make wrapper checks with shared context
-	r.Register(makewrap.NewFumptCheckWithSharedContext(r.sharedCtx))
-	r.Register(makewrap.NewLintCheckWithSharedContext(r.sharedCtx))
-	r.Register(makewrap.NewModTidyCheckWithSharedContext(r.sharedCtx))
+	// Register Go tool checks with shared context
+	r.Register(gotools.NewFumptCheckWithSharedContext(r.sharedCtx))
+	r.Register(gotools.NewLintCheckWithSharedContext(r.sharedCtx))
+	r.Register(gotools.NewModTidyCheckWithSharedContext(r.sharedCtx))
 
 	return r
 }
@@ -59,10 +59,10 @@ func NewRegistryWithConfig(cfg *config.Config) *Registry {
 	r.Register(builtin.NewWhitespaceCheckWithConfig(cfg))
 	r.Register(builtin.NewEOFCheckWithTimeout(time.Duration(cfg.CheckTimeouts.EOF) * time.Second))
 
-	// Register make wrapper checks with shared context and timeouts
-	r.Register(makewrap.NewFumptCheckWithConfig(r.sharedCtx, time.Duration(cfg.CheckTimeouts.Fumpt)*time.Second))
-	r.Register(makewrap.NewLintCheckWithConfig(r.sharedCtx, time.Duration(cfg.CheckTimeouts.Lint)*time.Second))
-	r.Register(makewrap.NewModTidyCheckWithConfig(r.sharedCtx, time.Duration(cfg.CheckTimeouts.ModTidy)*time.Second))
+	// Register Go tool checks with shared context and timeouts
+	r.Register(gotools.NewFumptCheckWithConfig(r.sharedCtx, time.Duration(cfg.CheckTimeouts.Fumpt)*time.Second))
+	r.Register(gotools.NewLintCheckWithConfig(r.sharedCtx, time.Duration(cfg.CheckTimeouts.Lint)*time.Second))
+	r.Register(gotools.NewModTidyCheckWithConfig(r.sharedCtx, time.Duration(cfg.CheckTimeouts.ModTidy)*time.Second))
 
 	return r
 }

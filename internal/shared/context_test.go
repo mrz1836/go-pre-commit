@@ -100,7 +100,7 @@ func (s *ContextTestSuite) createMakefile(targets []string) {
 func (s *ContextTestSuite) TestNewContext() {
 	ctx := NewContext()
 	s.NotNil(ctx)
-	s.NotNil(ctx.makeTargets)
+	s.NotNil(ctx.buildTargets)
 	s.Empty(ctx.repoRoot)
 }
 
@@ -279,8 +279,8 @@ func (s *ContextTestSuite) TestHasMakeTargetTimeout() {
 	s.False(hasTarget)
 }
 
-// TestExecuteMakeTarget tests make target execution
-func (s *ContextTestSuite) TestExecuteMakeTarget() {
+// TestExecuteBuildTarget tests make target execution
+func (s *ContextTestSuite) TestExecuteBuildTarget() {
 	ctx := NewContext()
 
 	// Change to temp directory
@@ -298,16 +298,16 @@ func (s *ContextTestSuite) TestExecuteMakeTarget() {
 	s.createMakefile([]string{"test", "build"})
 
 	// Test successful execution
-	err = ctx.ExecuteMakeTarget(context.Background(), "test", 5*time.Second)
+	err = ctx.ExecuteBuildTarget(context.Background(), "test", 5*time.Second)
 	s.Require().NoError(err)
 
 	// Test execution of non-existent target
-	err = ctx.ExecuteMakeTarget(context.Background(), "nonexistent", 5*time.Second)
+	err = ctx.ExecuteBuildTarget(context.Background(), "nonexistent", 5*time.Second)
 	s.Error(err)
 }
 
-// TestExecuteMakeTargetNoGitRepo tests execution when not in git repository
-func (s *ContextTestSuite) TestExecuteMakeTargetNoGitRepo() {
+// TestExecuteBuildTargetNoGitRepo tests execution when not in git repository
+func (s *ContextTestSuite) TestExecuteBuildTargetNoGitRepo() {
 	ctx := NewContext()
 
 	// Create a non-git directory
@@ -330,12 +330,12 @@ func (s *ContextTestSuite) TestExecuteMakeTargetNoGitRepo() {
 	s.Require().NoError(err)
 
 	// Test that it returns error when git repo root cannot be found
-	err = ctx.ExecuteMakeTarget(context.Background(), "test", 5*time.Second)
+	err = ctx.ExecuteBuildTarget(context.Background(), "test", 5*time.Second)
 	s.Error(err)
 }
 
-// TestExecuteMakeTargetTimeout tests timeout handling
-func (s *ContextTestSuite) TestExecuteMakeTargetTimeout() {
+// TestExecuteBuildTargetTimeout tests timeout handling
+func (s *ContextTestSuite) TestExecuteBuildTargetTimeout() {
 	ctx := NewContext()
 
 	// Change to temp directory
@@ -360,7 +360,7 @@ slow:
 	s.Require().NoError(err)
 
 	// Test execution with short timeout
-	err = ctx.ExecuteMakeTarget(context.Background(), "slow", 100*time.Millisecond)
+	err = ctx.ExecuteBuildTarget(context.Background(), "slow", 100*time.Millisecond)
 	s.Error(err)
 }
 
@@ -410,7 +410,7 @@ func (s *ContextTestSuite) TestConcurrentAccess() {
 func TestNewContextUnit(t *testing.T) {
 	ctx := NewContext()
 	assert.NotNil(t, ctx)
-	assert.NotNil(t, ctx.makeTargets)
+	assert.NotNil(t, ctx.buildTargets)
 	assert.Empty(t, ctx.repoRoot)
 }
 
@@ -418,8 +418,8 @@ func TestContextCaching(t *testing.T) {
 	ctx := NewContext()
 
 	// Test that make targets cache is properly initialized
-	assert.NotNil(t, ctx.makeTargets)
-	assert.Empty(t, ctx.makeTargets)
+	assert.NotNil(t, ctx.buildTargets)
+	assert.Empty(t, ctx.buildTargets)
 }
 
 // Benchmark tests
@@ -457,7 +457,7 @@ func BenchmarkHasMakeTarget(b *testing.B) {
 }
 
 // Tests for GetAvailableMakeTargets function (currently 0% coverage)
-func TestGetAvailableMakeTargets(t *testing.T) {
+func TestGetAvailableBuildTargets(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldDir, err := os.Getwd()
 	require.NoError(t, err)
@@ -503,7 +503,7 @@ install: build
 		require.NoError(t, err)
 
 		sharedCtx := NewContext()
-		targets, err := sharedCtx.GetAvailableMakeTargets(ctx)
+		targets, err := sharedCtx.GetAvailableBuildTargets(ctx)
 		require.NoError(t, err)
 
 		// Should contain the main targets but not hidden ones
@@ -526,7 +526,7 @@ install: build
 		_ = os.Remove("Makefile")
 
 		sharedCtx := NewContext()
-		targets, err := sharedCtx.GetAvailableMakeTargets(ctx)
+		targets, err := sharedCtx.GetAvailableBuildTargets(ctx)
 
 		// Should return fallback targets when make fails
 		require.NoError(t, err)
@@ -541,7 +541,7 @@ install: build
 		require.NoError(t, err)
 
 		sharedCtx := NewContext()
-		targets, err := sharedCtx.GetAvailableMakeTargets(ctx)
+		targets, err := sharedCtx.GetAvailableBuildTargets(ctx)
 
 		// Should fail when not in git repository
 		require.Error(t, err)
@@ -564,7 +564,7 @@ install: build
 		time.Sleep(10 * time.Millisecond) // Ensure timeout
 
 		sharedCtx := NewContext()
-		targets, err := sharedCtx.GetAvailableMakeTargets(shortCtx)
+		targets, err := sharedCtx.GetAvailableBuildTargets(shortCtx)
 
 		// Should return fallback targets on timeout
 		require.NoError(t, err) // Function handles timeout gracefully
@@ -655,7 +655,7 @@ clean	:`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := sharedCtx.parseMakeTargets(tt.input)
+			result := sharedCtx.parseBuildTargets(tt.input)
 			assert.ElementsMatch(t, tt.expected, result)
 		})
 	}

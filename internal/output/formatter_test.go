@@ -440,8 +440,8 @@ func TestParseGenericMakeError(t *testing.T) {
 			name:               "TargetNotFound",
 			command:            "make test",
 			output:             "No rule to make target 'test'",
-			expectedMessage:    "Make target 'test' not found",
-			expectedSuggestion: "Check your Makefile for the 'test' target or run 'make help' to see available targets.",
+			expectedMessage:    "Build target 'test' not found",
+			expectedSuggestion: "Check your build configuration for the 'test' target or run 'make help' to see available targets.",
 		},
 		{
 			name:               "PermissionDenied",
@@ -454,14 +454,14 @@ func TestParseGenericMakeError(t *testing.T) {
 			name:               "GenericError",
 			command:            "make deploy",
 			output:             "deployment failed with unknown error",
-			expectedMessage:    "Make command 'make deploy' failed",
+			expectedMessage:    "Command 'make deploy' failed",
 			expectedSuggestion: "Run 'make deploy' manually to see detailed error output.",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			message, suggestion := f.parseGenericMakeError(tc.command, tc.output)
+			message, suggestion := f.parseGenericCommandError(tc.command, tc.output)
 			assert.Equal(t, tc.expectedMessage, message)
 			assert.Equal(t, tc.expectedSuggestion, suggestion)
 		})
@@ -635,7 +635,7 @@ func TestParseTextMakeError(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			message, suggestion := f.ParseMakeError(tc.command, tc.output)
+			message, suggestion := f.ParseCommandError(tc.command, tc.output)
 			require.NotEmpty(t, message)
 			require.NotEmpty(t, suggestion)
 			assert.Equal(t, tc.expectedMessage, message)
@@ -726,17 +726,17 @@ func TestFormatterWithStringFormatting(t *testing.T) {
 	})
 }
 
-// TestParseMakeErrorWhitespaceHandling tests whitespace handling in ParseMakeError
-func TestParseMakeErrorWhitespaceHandling(t *testing.T) {
+// TestParseCommandErrorWhitespaceHandling tests whitespace handling in ParseCommandError
+func TestParseCommandErrorWhitespaceHandling(t *testing.T) {
 	f := NewDefault()
 
 	// Test with leading/trailing whitespace
-	message, suggestion := f.ParseMakeError("make lint", "  \n\tgolangci-lint: no such file or directory\n\t  ")
+	message, suggestion := f.ParseCommandError("make lint", "  \n\tgolangci-lint: no such file or directory\n\t  ")
 	assert.Equal(t, "golangci-lint binary not found", message)
 	assert.Contains(t, suggestion, "Install golangci-lint")
 
 	// Test with empty output (just whitespace)
-	message, suggestion = f.ParseMakeError("make unknown-target", "   \n\t   ")
-	assert.Equal(t, "Make command 'make unknown-target' failed", message)
+	message, suggestion = f.ParseCommandError("make unknown-target", "   \n\t   ")
+	assert.Equal(t, "Command 'make unknown-target' failed", message)
 	assert.Contains(t, suggestion, "Run 'make unknown-target' manually")
 }

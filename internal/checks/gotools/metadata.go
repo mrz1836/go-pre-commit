@@ -1,4 +1,4 @@
-package makewrap
+package gotools
 
 import "time"
 

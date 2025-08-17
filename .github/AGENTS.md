@@ -375,7 +375,7 @@ govulncheck ./...
 go get -u ./...  # Update to latest minor/patch versions
 go mod tidy
 
-# ✅ Use Makefile for common tasks
+# ✅ Use build commands for common tasks
 make update # updates dependencies and runs go mod tidy
 
 # 🚫 Avoid using `replace` unless absolutely necessary
@@ -516,7 +516,7 @@ Run tests locally with:
 go test ./...
 ```
 
-Or use our makefile:
+Or use our build commands:
 ```bash
 make test
 ```
@@ -545,10 +545,10 @@ Best practices:
 
 <br/>
 
-## 🛠 Makefile Overview
+## 🛠 Build System Overview
 
-The repository's `Makefile` includes reusable targets from `.make/common.mk` and
-`.make/go.mk`. The root file exposes a few high-level commands while the files
+The repository includes build commands from `.make/common.mk` and
+`.make/go.mk`. The root configuration exposes high-level commands while the files
 under `.make` contain the bulk of the build logic.
 
 `common.mk` provides utility tasks for releasing with GoReleaser, tagging
@@ -557,7 +557,7 @@ commands used across projects.
 
 `go.mk` supplies Go-specific helpers for linting, testing, generating code,
 building binaries, and updating dependencies. Targets such as `lint`, `test`,
-`test-ci`, and `coverage` are defined here and invoked by the root `Makefile`.
+`test-ci`, and `coverage` are defined here and invoked by the root configuration.
 
 Use `make help` to view the full list of supported commands.
 
@@ -1081,7 +1081,7 @@ Dependency hygiene is critical for security, reproducibility, and developer expe
   govulncheck ./...
 ```
 
-* Run via make command:
+* Run via build command:
 ```bash
   make govulncheck
 ```
