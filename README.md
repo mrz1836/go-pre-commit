@@ -289,16 +289,16 @@ go-pre-commit uninstall --hook-type pre-commit
 
 `go-pre-commit` includes these built-in checks:
 
-| Check            | Description                                      | Auto-fix | Configuration                   |
-|------------------|--------------------------------------------------|----------|---------------------------------|
-| **ai_detection** | Detects AI attribution in code and commit messages | ✅     | Auto-fix disabled by default    |
-| **eof**          | Ensures files end with a newline                 | ✅        | Auto-stages changes if enabled  |
-| **fmt**          | Formats Go code with standard `go fmt`           | ✅        | Pure Go - no dependencies       |
-| **fumpt**        | Formats Go code with stricter rules than `gofmt` | ✅        | Auto-installs if needed         |
-| **goimports**    | Formats code and manages imports automatically   | ✅        | Auto-installs if needed         |
-| **lint**         | Runs golangci-lint for comprehensive linting     | ❌        | Auto-installs if needed         |
-| **mod-tidy**     | Ensures go.mod and go.sum are tidy               | ✅        | Pure Go - no dependencies       |
-| **whitespace**   | Removes trailing whitespace                      | ✅        | Auto-stages changes if enabled  |
+| Check            | Description                                        | Auto-fix | Configuration                  |
+|------------------|----------------------------------------------------|----------|--------------------------------|
+| **ai_detection** | Detects AI attribution in code and commit messages | ✅        | Auto-fix disabled by default   |
+| **eof**          | Ensures files end with a newline                   | ✅        | Auto-stages changes if enabled |
+| **fmt**          | Formats Go code with standard `go fmt`             | ✅        | Pure Go - no dependencies      |
+| **fumpt**        | Formats Go code with stricter rules than `gofmt`   | ✅        | Auto-installs if needed        |
+| **goimports**    | Formats code and manages imports automatically     | ✅        | Auto-installs if needed        |
+| **lint**         | Runs golangci-lint for comprehensive linting       | ❌        | Auto-installs if needed        |
+| **mod-tidy**     | Ensures go.mod and go.sum are tidy                 | ✅        | Pure Go - no dependencies      |
+| **whitespace**   | Removes trailing whitespace                        | ✅        | Auto-stages changes if enabled |
 
 All checks run in parallel for maximum performance. All checks work out-of-the-box with pure Go! Tools are automatically installed when needed.
 
@@ -399,15 +399,15 @@ echo '{"success": true, "output": "Check passed"}'
 
 ### Available Example Plugins
 
-| Plugin | Description | Language |
-|--------|-------------|----------|
-| [todo-checker](examples/shell-plugin/) | Finds TODO/FIXME comments | Shell |
-| [json-validator](examples/python-plugin/) | Validates JSON formatting | Python |
-| [license-header](examples/go-plugin/) | Checks license headers | Go |
-| [security-scanner](examples/docker-plugin/) | Security scanning | Docker |
-| [multi-validator](examples/composite-plugin/) | Multi-step validation | Mixed |
+| Plugin                                       | Description               | Language |
+|----------------------------------------------|---------------------------|----------|
+| [todo-checker](examples/shell-plugin)        | Finds TODO/FIXME comments | Shell    |
+| [json-validator](examples/python-plugin)     | Validates JSON formatting | Python   |
+| [license-header](examples/go-plugin)         | Checks license headers    | Go       |
+| [security-scanner](examples/docker-plugin)   | Security scanning         | Docker   |
+| [multi-validator](examples/composite-plugin) | Multi-step validation     | Mixed    |
 
-See the [examples directory](examples/) for complete plugin implementations and documentation.
+See the [examples directory](examples) for complete plugin implementations and documentation.
 
 ### Plugin Features
 
@@ -649,7 +649,7 @@ vet                   ## Run go vet only on your module packages
 
 ### 🎛️ The Workflow Control Center
 
-All GitHub Actions workflows in this repository are powered by configuration files: [**.env.base**](.github/.env.base) (default configuration) and optionally [**.env.custom**](.github/.env.custom) (project-specific overrides) – your one-stop shop for tweaking CI/CD behavior without touching a single YAML file! 🎯
+All GitHub Actions workflows in this repository are powered by configuration files: [**.env.base**](.github/.env.base) (default configuration) and optionally **.env.custom** (project-specific overrides) – your one-stop shop for tweaking CI/CD behavior without touching a single YAML file! 🎯
 
 This magical file controls everything from:
 - **🚀 Go version matrix** (test on multiple versions or just one)
@@ -659,7 +659,7 @@ This magical file controls everything from:
 - **🤖 Auto-merge behaviors** (how aggressive should the bots be?)
 - **🏷️ PR management rules** (size labels, auto-assignment, welcome messages)
 
-> **Pro tip:** Want to disable code coverage? Just add `ENABLE_CODE_COVERAGE=false` to your [.env.custom](.github/.env.custom) to override the default in .env.base and push. No YAML archaeology required!
+> **Pro tip:** Want to disable code coverage? Just add `ENABLE_CODE_COVERAGE=false` to your .env.custom to override the default in .env.base and push. No YAML archaeology required!
 
 <br/>
 
@@ -694,7 +694,7 @@ This command ensures all dependencies are brought up to date in a single step, i
 
 ## 🧪 Examples & Tests
 
-All unit tests and [fuzz tests](#-fuzz-tests) run via [GitHub Actions](https://github.com/mrz1836/go-pre-commit/actions) and use [Go version 1.24.x](https://go.dev/doc/go1.24). View the [configuration file](.github/workflows/fortress.yml).
+All unit tests and fuzz tests run via [GitHub Actions](https://github.com/mrz1836/go-pre-commit/actions) and use [Go version 1.24.x](https://go.dev/doc/go1.24). View the [configuration file](.github/workflows/fortress.yml).
 
 Run all tests (fast):
 
@@ -786,20 +786,20 @@ This project includes a comprehensive team of **12 specialized AI sub-agents** d
 
 The sub-agents are located in `.claude/agents/` and can be invoked by Claude Code to handle specific tasks:
 
-| Agent                     | Specialization          | Primary Responsibilities                                                                        |
-|---------------------------|-------------------------|-------------------------------------------------------------------------------------------------|
+| Agent                     | Specialization          | Primary Responsibilities                                                                          |
+|---------------------------|-------------------------|---------------------------------------------------------------------------------------------------|
 | **go-standards-enforcer** | Go Standards Compliance | Enforces AGENTS.md coding standards, context-first design, interface patterns, and error handling |
-| **go-tester**             | Testing & Coverage      | Runs tests with testify, fixes failures, ensures 90%+ coverage, manages test suites             |
-| **go-formatter**          | Code Formatting         | Runs fumpt, golangci-lint, fixes whitespace/EOF issues, maintains consistent style              |
-| **hook-specialist**       | Pre-commit Hooks        | Manages hook installation, configuration via .env.base/.env.custom, troubleshoots hook issues             |
-| **ci-guardian**           | CI/CD Pipeline          | Monitors GitHub Actions, fixes workflow issues, optimizes pipeline performance                  |
-| **doc-maintainer**        | Documentation           | Updates README, maintains AGENTS.md compliance, ensures documentation consistency               |
-| **dependency-auditor**    | Security & Dependencies | Runs govulncheck/nancy/gitleaks, manages Go modules, handles vulnerability fixes                |
-| **release-coordinator**   | Release Management      | Prepares releases following semver, manages goreleaser                      |
-| **code-reviewer**         | Code Quality            | Reviews changes for security, performance, maintainability, provides prioritized feedback       |
-| **performance-optimizer** | Performance Tuning      | Profiles code, runs benchmarks, optimizes hot paths, reduces allocations                        |
-| **build-expert**          | Build System            | Manages build targets, fixes build issues, maintains build configuration                        |
-| **pr-orchestrator**       | Pull Requests           | Ensures PR conventions, coordinates validation, manages labels and CI checks                    |
+| **go-tester**             | Testing & Coverage      | Runs tests with testify, fixes failures, ensures 90%+ coverage, manages test suites               |
+| **go-formatter**          | Code Formatting         | Runs fumpt, golangci-lint, fixes whitespace/EOF issues, maintains consistent style                |
+| **hook-specialist**       | Pre-commit Hooks        | Manages hook installation, configuration via .env.base/.env.custom, troubleshoots hook issues     |
+| **ci-guardian**           | CI/CD Pipeline          | Monitors GitHub Actions, fixes workflow issues, optimizes pipeline performance                    |
+| **doc-maintainer**        | Documentation           | Updates README, maintains AGENTS.md compliance, ensures documentation consistency                 |
+| **dependency-auditor**    | Security & Dependencies | Runs govulncheck/nancy/gitleaks, manages Go modules, handles vulnerability fixes                  |
+| **release-coordinator**   | Release Management      | Prepares releases following semver, manages goreleaser                                            |
+| **code-reviewer**         | Code Quality            | Reviews changes for security, performance, maintainability, provides prioritized feedback         |
+| **performance-optimizer** | Performance Tuning      | Profiles code, runs benchmarks, optimizes hot paths, reduces allocations                          |
+| **build-expert**          | Build System            | Manages build targets, fixes build issues, maintains build configuration                          |
+| **pr-orchestrator**       | Pull Requests           | Ensures PR conventions, coordinates validation, manages labels and CI checks                      |
 
 </details>
 
