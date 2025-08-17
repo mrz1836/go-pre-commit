@@ -261,79 +261,13 @@ func (c *LintCheck) runDirectLint(ctx context.Context, files []string) error {
 	return nil
 }
 
-// runLintOnFiles runs golangci-lint on specific files (all in the same directory)
+// runLintOnFiles runs golangci-lint on the directory containing the files (all in the same directory)
+// This ensures golangci-lint has the full package context for typecheck to work correctly
 func (c *LintCheck) runLintOnFiles(ctx context.Context, repoRoot string, files []string) error {
-	// Build absolute paths
-	absFiles := make([]string, len(files))
-	for i, file := range files {
-		absFiles[i] = filepath.Join(repoRoot, file)
-	}
-
-	// Add timeout for golangci-lint command
-	ctx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
-	// Run golangci-lint
-	args := append([]string{"run", "--new-from-rev=HEAD~1"}, absFiles...)
-	cmd := exec.CommandContext(ctx, "golangci-lint", args...) //nolint:gosec // Command arguments are validated
-	cmd.Dir = repoRoot
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		output := stdout.String() + stderr.String()
-
-		// Check if it's a context timeout
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return prerrors.NewToolExecutionError(
-				"golangci-lint run",
-				output,
-				fmt.Sprintf("Lint check timed out after %v. Consider increasing GO_PRE_COMMIT_LINT_TIMEOUT or running on fewer files.", c.timeout),
-			)
-		}
-
-		// Check if it's the "named files must all be in one directory" error
-		if strings.Contains(output, "named files must all be in one directory") {
-			// This shouldn't happen with our grouping, but if it does, fall back to directory linting
-			dir := filepath.Dir(files[0])
-			return c.runLintOnDirectory(ctx, repoRoot, dir)
-		}
-
-		// Check if it's configuration issues
-		if strings.Contains(output, "config") && (strings.Contains(output, "error") || strings.Contains(output, "failed")) {
-			return prerrors.NewToolExecutionError(
-				"golangci-lint run",
-				output,
-				"Fix golangci-lint configuration issues. Check your .golangci.yml file or run 'golangci-lint config path'.",
-			)
-		}
-
-		// Check if it's actual linting issues vs tool failure
-		if strings.Contains(output, ".go:") && strings.Contains(output, ":") {
-			// This looks like linting issues, not a tool failure
-			// Extract and format specific lint errors for better visibility
-			formattedOutput := FormatLintErrors(output)
-			// For lint errors, return the formatted output as the error message
-			return &prerrors.CheckError{
-				Err:        prerrors.ErrLintingIssues,
-				Message:    formattedOutput,
-				Suggestion: "Fix the linting issues shown above. Run 'golangci-lint run' to see full details.",
-				Command:    "golangci-lint run",
-				Output:     formattedOutput,
-			}
-		}
-
-		// Generic failure
-		return prerrors.NewToolExecutionError(
-			"golangci-lint run",
-			output,
-			"Run 'golangci-lint run' manually to see detailed error output. Check your configuration and file paths.",
-		)
-	}
-
-	return nil
+	// Since all files are guaranteed to be in the same directory (checked in caller),
+	// run golangci-lint on the directory to ensure full package context
+	dir := filepath.Dir(files[0])
+	return c.runLintOnDirectory(ctx, repoRoot, dir)
 }
 
 // runLintOnDirectory runs golangci-lint on a specific directory
