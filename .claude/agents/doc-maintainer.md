@@ -81,7 +81,7 @@ When checks are added/modified:
 
 | Check | Description | Auto-fix | Configuration |
 |-------|-------------|----------|---------------|
-| **fumpt** | Formats Go code | ✅ | Requires `magex format` |
+| **fumpt** | Formats Go code | ✅ | Requires `magex format:fix` |
 | **lint** | Runs golangci-lint | ❌ | Requires `magex lint` |
 ```
 

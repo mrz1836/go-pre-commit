@@ -38,7 +38,7 @@ Before creating PR, coordinate validation:
 ```bash
 # 1. Run formatting checks
 echo "===> Running formatters..."
-magex format
+magex format:fix
 magex lint
 magex deps:tidy
 

@@ -87,6 +87,7 @@ jobs:
           REQUIRED_COMMANDS=(
             "bench"
             "clean"
+            "deps:download"
             "deps:tidy"
             "deps:update"
             "format:fix"

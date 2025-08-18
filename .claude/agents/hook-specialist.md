@@ -147,7 +147,7 @@ GO_PRE_COMMIT_TIMEOUT_SECONDS=60
 #### 3. Make Target Failures
 ```bash
 # Verify MAGE-X commands exist
-magex format
+magex format:fix
 magex lint
 magex deps:tidy
 

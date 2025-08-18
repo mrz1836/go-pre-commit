@@ -23,7 +23,7 @@ When invoked:
    goimports -w .
 
    # Strict formatting with fumpt
-   magex format
+   magex format:fix
 
    # Run comprehensive linting
    magex lint
@@ -123,7 +123,7 @@ The project uses golangci-lint with configuration in `.golangci.yml`. Key linter
 ### 1. Pre-Commit Formatting
 ```bash
 # Run all formatters before commit
-magex format
+magex format:fix
 magex lint
 magex deps:tidy
 
