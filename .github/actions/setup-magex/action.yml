@@ -103,7 +103,7 @@ runs:
         if command -v magex >/dev/null 2>&1; then
           MAGEX_VERSION=$(magex version 2>/dev/null || echo "unknown")
           echo "✅ MAGE-X is available: $MAGEX_VERSION"
-          
+
           # Determine installation method
           if [[ "${{ steps.magex-cache.outputs.cache-hit }}" == "true" ]]; then
             echo "method=cached" >> $GITHUB_OUTPUT

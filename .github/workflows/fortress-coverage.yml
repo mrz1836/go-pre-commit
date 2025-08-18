@@ -223,7 +223,7 @@ jobs:
             # Copy the freshly built binary to cache directory
             mkdir -p ~/.cache/go-coverage-bin
             cp /tmp/go-coverage ~/.cache/go-coverage-bin/
-            
+
             # Also copy to GOPATH/bin for immediate use
             mkdir -p "$(go env GOPATH)/bin"
             cp /tmp/go-coverage "$(go env GOPATH)/bin/go-coverage"
