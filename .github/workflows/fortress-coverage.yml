@@ -173,9 +173,11 @@ jobs:
 
       # ————————————————————————————————————————————————————————————————
       # Restore (and later save) a compact cache for the go-coverage binary
+      # Skip cache when using local development version
       # ————————————————————————————————————————————————————————————————
       - name: 💾 Restore go-coverage binary cache
         id: go-coverage-cache
+        if: env.GO_COVERAGE_USE_LOCAL != 'true'
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
           path: |
@@ -183,6 +185,7 @@ jobs:
           key: ${{ inputs.primary-runner }}-go-coverage-${{ env.GO_COVERAGE_VERSION }}
 
       - name: 🛠️ Make cached go-coverage usable
+        if: env.GO_COVERAGE_USE_LOCAL != 'true'
         run: |
           set -euo pipefail
           BIN_DIR="$HOME/.cache/go-coverage-bin"
@@ -203,13 +206,11 @@ jobs:
           echo "GO_COVERAGE_BINARY=$GO_BIN/go-coverage" >> $GITHUB_ENV
 
       # ————————————————————————————————————————————————————————————————
-      # Install go-coverage tool *only* when the cache was empty
+      # Install go-coverage tool when cache miss OR using local version
       # ————————————————————————————————————————————————————————————————
-      - name: 🔨 Install go-coverage tool (cache miss)
-        if: steps.go-coverage-cache.outputs.cache-hit != 'true'
+      - name: 🔨 Install go-coverage tool
+        if: steps.go-coverage-cache.outputs.cache-hit != 'true' || env.GO_COVERAGE_USE_LOCAL == 'true'
         run: |
-          echo "⬇️ Cache miss – installing go-coverage..."
-
           # Check if we should use local development version
           if [[ "${{ env.GO_COVERAGE_USE_LOCAL }}" == "true" ]]; then
             echo "📦 Using local development version of go-coverage"
@@ -237,7 +238,7 @@ jobs:
           else
             # Use production version
             VERSION="${{ env.GO_COVERAGE_VERSION }}"
-            echo "📦 Installing go-coverage version: $VERSION"
+            echo "⬇️ Cache miss – installing go-coverage version: $VERSION"
 
             # Install using go install
             go install github.com/mrz1836/go-coverage/cmd/go-coverage@$VERSION
