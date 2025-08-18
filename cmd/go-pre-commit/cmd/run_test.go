@@ -5,9 +5,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mrz1836/go-pre-commit/internal/output"
+	"github.com/mrz1836/go-pre-commit/internal/runner"
 )
 
 func TestRunCmd_CommandStructure(t *testing.T) {
@@ -371,4 +375,341 @@ func setupTempGitRepoForRun(t *testing.T, enabled, hasConfig bool) string {
 	}
 
 	return tempDir
+}
+
+// TestDisplayEnhancedResults tests the displayEnhancedResults function comprehensively
+func TestDisplayEnhancedResults(t *testing.T) {
+	testCases := []struct {
+		name        string
+		results     *runner.Results
+		quietMode   bool
+		verboseMode bool
+		description string
+	}{
+		{
+			name:        "All Checks Passed - Normal Mode",
+			quietMode:   false,
+			verboseMode: false,
+			results: &runner.Results{
+				CheckResults: []runner.CheckResult{
+					{
+						Name:     "fmt",
+						Success:  true,
+						Duration: 500 * time.Millisecond,
+						Files:    []string{"main.go", "utils.go"},
+					},
+					{
+						Name:     "lint",
+						Success:  true,
+						Duration: 2 * time.Second,
+						Files:    []string{"main.go"},
+					},
+				},
+				Passed:        2,
+				Failed:        0,
+				Skipped:       0,
+				TotalDuration: 2500 * time.Millisecond,
+				TotalFiles:    2,
+			},
+			description: "Should display success messages for all passed checks",
+		},
+		{
+			name:        "Mixed Results - Verbose Mode",
+			quietMode:   false,
+			verboseMode: true,
+			results: &runner.Results{
+				CheckResults: []runner.CheckResult{
+					{
+						Name:     "fmt",
+						Success:  true,
+						Duration: 300 * time.Millisecond,
+						Files:    []string{"main.go"},
+					},
+					{
+						Name:       "lint",
+						Success:    false,
+						Error:      "linting failed",
+						Output:     "main.go:10:5: error: unused variable 'x'\nmain.go:15:1: error: missing return",
+						Duration:   1 * time.Second,
+						Files:      []string{"main.go"},
+						Suggestion: "Fix the linting errors and run again",
+					},
+				},
+				Passed:        1,
+				Failed:        1,
+				Skipped:       0,
+				TotalDuration: 1300 * time.Millisecond,
+				TotalFiles:    1,
+			},
+			description: "Should display detailed information in verbose mode",
+		},
+		{
+			name:        "Gracefully Skipped Check",
+			quietMode:   false,
+			verboseMode: false,
+			results: &runner.Results{
+				CheckResults: []runner.CheckResult{
+					{
+						Name:       "fumpt",
+						Success:    true, // Marked as success but was skipped
+						Error:      "gofumpt not installed",
+						Duration:   50 * time.Millisecond,
+						CanSkip:    true,
+						Suggestion: "Install gofumpt: go install mvdan.cc/gofumpt@latest",
+					},
+				},
+				Passed:        0,
+				Failed:        0,
+				Skipped:       1,
+				TotalDuration: 50 * time.Millisecond,
+				TotalFiles:    0,
+			},
+			description: "Should display warning for gracefully skipped checks",
+		},
+		{
+			name:        "Quiet Mode with Failures",
+			quietMode:   true,
+			verboseMode: false,
+			results: &runner.Results{
+				CheckResults: []runner.CheckResult{
+					{
+						Name:     "fmt",
+						Success:  true,
+						Duration: 200 * time.Millisecond,
+					},
+					{
+						Name:       "whitespace",
+						Success:    false,
+						Error:      "trailing whitespace found",
+						Output:     "utils.go:25: trailing whitespace\nservice.go:10: trailing whitespace",
+						Duration:   100 * time.Millisecond,
+						Suggestion: "Remove trailing whitespace from the files",
+					},
+				},
+				Passed:        1,
+				Failed:        1,
+				Skipped:       0,
+				TotalDuration: 300 * time.Millisecond,
+				TotalFiles:    2,
+			},
+			description: "Should show failures even in quiet mode",
+		},
+		{
+			name:        "Multiple Failures with Error Extraction",
+			quietMode:   false,
+			verboseMode: false,
+			results: &runner.Results{
+				CheckResults: []runner.CheckResult{
+					{
+						Name:    "lint",
+						Success: false,
+						Error:   "golangci-lint failed",
+						Output: `Running golangci-lint...
+main.go:10:5: Error: unused variable 'x' (ineffassign)
+main.go:15:1: Error: missing return statement (typecheck)
+utils.go:5:2: Error: imported but not used: "fmt" (unused)
+Analyzing 3 files...
+Done.`,
+						Duration:   3 * time.Second,
+						Suggestion: "Fix the linting errors reported above",
+					},
+					{
+						Name:    "mod-tidy",
+						Success: false,
+						Error:   "go mod tidy failed",
+						Output: `diff go.mod go.mod.orig
+--- go.mod.orig
++++ go.mod
+@@ -5,3 +5,4 @@
+ require (
+ 	github.com/pkg/errors v0.9.1
+ 	github.com/stretchr/testify v1.8.0
++	github.com/unused/dep v1.0.0
+ )`,
+						Duration:   500 * time.Millisecond,
+						Suggestion: "Run 'go mod tidy' to fix module dependencies",
+					},
+				},
+				Passed:        0,
+				Failed:        2,
+				Skipped:       0,
+				TotalDuration: 3500 * time.Millisecond,
+				TotalFiles:    3,
+			},
+			description: "Should extract and display key error lines from command output",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create output formatter
+			formatter := output.New(output.Options{
+				ColorEnabled: false, // Disable colors for consistent testing
+			})
+
+			// This should not panic and should complete successfully
+			require.NotPanics(t, func() {
+				displayEnhancedResults(formatter, tc.results, tc.quietMode, tc.verboseMode)
+			}, "displayEnhancedResults should not panic for case: %s", tc.description)
+
+			t.Logf("✓ %s: %s", tc.name, tc.description)
+		})
+	}
+}
+
+// TestExtractKeyErrorLines tests the error extraction functionality
+func TestExtractKeyErrorLines(t *testing.T) {
+	testCases := []struct {
+		name          string
+		input         string
+		expectedCount int
+		expectedLines []string
+		description   string
+	}{
+		{
+			name: "Go Lint Errors",
+			input: `Running golangci-lint...
+Analyzing files...
+main.go:10:5: Error: unused variable 'x' (ineffassign)
+main.go:15:1: Error: missing return statement (typecheck)
+utils.go:5:2: Error: imported but not used: "fmt" (unused)
+Done.`,
+			expectedCount: 3,
+			expectedLines: []string{
+				"main.go:10:5: Error: unused variable 'x' (ineffassign)",
+				"main.go:15:1: Error: missing return statement (typecheck)",
+				"utils.go:5:2: Error: imported but not used: \"fmt\" (unused)",
+			},
+			description: "Should extract Go file error lines",
+		},
+		{
+			name: "Whitespace Issues",
+			input: `Checking whitespace...
+utils.go:25: trailing whitespace
+service.go:10: trailing whitespace
+main.go:5: mixed spaces and tabs
+Fixed 3 files.`,
+			expectedCount: 3,
+			expectedLines: []string{
+				"utils.go:25: trailing whitespace",
+				"service.go:10: trailing whitespace",
+				"main.go:5: mixed spaces and tabs",
+			},
+			description: "Should extract whitespace error lines",
+		},
+		{
+			name: "Module Tidy Diff",
+			input: `Running go mod tidy...
+diff go.mod go.mod.orig
+--- go.mod.orig
++++ go.mod
+@@ -5,3 +5,4 @@
+ require (
+ 	github.com/pkg/errors v0.9.1
++	github.com/unused/dep v1.0.0
+ )
+Module not tidy.`,
+			expectedCount: 5,
+			expectedLines: []string{
+				"diff go.mod go.mod.orig",
+				"--- go.mod.orig",
+				"+++ go.mod",
+				"@@ -5,3 +5,4 @@",
+				"+	github.com/unused/dep v1.0.0",
+			},
+			description: "Should extract diff lines from go mod tidy output",
+		},
+		{
+			name: "No Errors",
+			input: `Running checks...
+Analyzing files...
+All checks passed!
+Done.`,
+			expectedCount: 0,
+			expectedLines: nil,
+			description:   "Should return no error lines when there are no errors",
+		},
+		{
+			name: "Mixed Error Types",
+			input: `Running multiple checks...
+main.go:10:1: error: syntax error
+utils.go:5: trailing whitespace
+ERRO[0001] Failed to process file
+level=error msg="processing failed"
+✗ Check failed
+Completed with errors.`,
+			expectedCount: 5,
+			expectedLines: []string{
+				"main.go:10:1: error: syntax error",
+				"utils.go:5: trailing whitespace",
+				"ERRO[0001] Failed to process file",
+				"level=error msg=\"processing failed\"",
+				"✗ Check failed",
+			},
+			description: "Should extract different types of error indicators",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Test the extractKeyErrorLines function
+			errorLines := extractKeyErrorLines(tc.input)
+
+			// Check count
+			assert.Len(t, errorLines, tc.expectedCount,
+				"Expected %d error lines, got %d for %s", tc.expectedCount, len(errorLines), tc.description)
+
+			// Check specific lines if provided
+			if tc.expectedLines != nil {
+				for i, expectedLine := range tc.expectedLines {
+					if i < len(errorLines) {
+						assert.Contains(t, errorLines[i], expectedLine,
+							"Error line %d should contain '%s'", i, expectedLine)
+					}
+				}
+			}
+
+			t.Logf("✓ %s: Found %d error lines", tc.description, len(errorLines))
+			for i, line := range errorLines {
+				t.Logf("  [%d] %s", i+1, line)
+			}
+		})
+	}
+}
+
+// TestStripANSI tests ANSI color code removal
+func TestStripANSI(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "No ANSI codes",
+			input:    "plain text",
+			expected: "plain text",
+		},
+		{
+			name:     "Red color code",
+			input:    "\x1b[31merror message\x1b[0m",
+			expected: "error message",
+		},
+		{
+			name:     "Multiple color codes",
+			input:    "\x1b[32mSuccess:\x1b[0m \x1b[31mError:\x1b[0m message",
+			expected: "Success: Error: message",
+		},
+		{
+			name:     "Complex ANSI sequence",
+			input:    "\x1b[1;32;40mbold green on black\x1b[0m",
+			expected: "bold green on black",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := stripANSI(tc.input)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
 }

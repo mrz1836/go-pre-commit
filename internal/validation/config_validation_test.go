@@ -50,6 +50,10 @@ func (s *ConfigValidationTestSuite) SetupSuite() {
 		s.originalEnv[envVar] = os.Getenv(envVar)
 	}
 
+	// Set up required environment variables for tests
+	s.Require().NoError(os.Setenv("GO_PRE_COMMIT_FUMPT_VERSION", "latest"))
+	s.Require().NoError(os.Setenv("GO_PRE_COMMIT_GOLANGCI_LINT_VERSION", "latest"))
+
 	// Change to temp directory for tests
 	s.Require().NoError(os.Chdir(s.tempDir))
 }
@@ -508,7 +512,7 @@ GO_PRE_COMMIT_MAX_FILE_SIZE_MB=-1
 		{
 			name: "Invalid Log Level",
 			config: `ENABLE_GO_PRE_COMMIT=true
-GO_PRE_COMMIT_LOG_LEVEL=trace
+GO_PRE_COMMIT_LOG_LEVEL=invalid_level
 `,
 			shouldError:   true,
 			expectedError: "LOG_LEVEL must be one of",
