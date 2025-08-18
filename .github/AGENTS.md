@@ -439,7 +439,6 @@ func processUsers(users []User) []ProcessedUser {
 Code must be cleanly formatted and pass all linters before being committed.
 
 ```bash
-magex lint:fix
 magex lint
 ```
 
