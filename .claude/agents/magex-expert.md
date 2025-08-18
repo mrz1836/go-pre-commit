@@ -48,16 +48,6 @@ magex bench:run       # Run benchmarks
 magex build:clean     # Clean build artifacts
 ```
 
-### Advanced Commands:
-```bash
-magex audit:security      # Run security audits
-magex metrics:coverage    # Generate coverage metrics
-magex docs:godocs        # Generate documentation
-magex version:tag        # Tag releases
-magex release:test       # Test release process
-magex release:snapshot   # Create release snapshots
-```
-
 ## Common Configuration Patterns
 
 ### Basic .mage.yaml Structure:
