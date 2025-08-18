@@ -361,10 +361,35 @@ func (r *Runner) parseSkipValue(value string) []string {
 	// Split by comma and clean up
 	parts := strings.Split(value, ",")
 	var skips []string
+	var hasContent bool // Track if we found any non-empty content
+	validChecks := map[string]bool{
+		"fmt":          true,
+		"fumpt":        true,
+		"goimports":    true,
+		"lint":         true,
+		"mod-tidy":     true,
+		"whitespace":   true,
+		"eof":          true,
+		"ai_detection": true,
+	}
 	for _, part := range parts {
 		if cleaned := strings.TrimSpace(part); cleaned != "" {
-			skips = append(skips, cleaned)
+			hasContent = true // Found non-empty content
+			// Only add valid check names
+			if validChecks[cleaned] {
+				skips = append(skips, cleaned)
+			}
 		}
+	}
+
+	// If no content was found (only commas/whitespace), return nil
+	if !hasContent {
+		return nil
+	}
+
+	// If content was found but nothing valid, return empty slice
+	if skips == nil {
+		return []string{}
 	}
 
 	return skips
