@@ -682,7 +682,7 @@ func ProcessData(input string) (int, error) {
 // main function demonstrates various patterns
 func main() {
 	cfg := NewConfig()
-	
+
 	if len(os.Args) < 2 {
 		log.Println("Usage: program <number>")
 		os.Exit(1)
@@ -752,7 +752,7 @@ func TestProcessData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := ProcessData(tt.input)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Zero(t, result)
@@ -872,13 +872,13 @@ import "fmt"
 
 func function%d() {
 	fmt.Printf("Function %d called\\n")
-	
+
 	// Some computation
 	sum := 0
 	for i := 0; i < 1000; i++ {
 		sum += i * %d
 	}
-	
+
 	fmt.Printf("Sum: %%d\\n", sum)
 }
 `, i, i, i, i+1)

@@ -276,12 +276,12 @@ import (
 // ProcessData processes application data
 func ProcessData() {
 	fmt.Println("Processing data...")
-	
+
 	start := time.Now()
 	defer func() {
 		fmt.Printf("Processing completed in %v\n", time.Since(start))
 	}()
-	
+
 	// Simulate processing
 	time.Sleep(10 * time.Millisecond)
 	fmt.Println("Data processed successfully")
@@ -305,7 +305,7 @@ import (
 func StartServer() {
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/api/status", statusHandler)
-	
+
 	fmt.Println("Server starting on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
