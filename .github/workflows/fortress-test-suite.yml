@@ -226,7 +226,7 @@ jobs:
         if: matrix.run-fuzz
         run: |
           echo "🎯 Running fuzz tests..."
-          magex test:fuzz
+          magex test:fuzz time=5s
           echo "✅ Fuzz tests completed successfully"
 
       # ————————————————————————————————————————————————————————————————
