@@ -160,43 +160,55 @@ jobs:
           fetch-depth: 0 # Fetch all history including tags for version display
 
       # ————————————————————————————————————————————————————————————————
-      # Set up Go cache paths and restore caches
+      # Setup Go with caching and version management
       # ————————————————————————————————————————————————————————————————
-      - name: 🔧 Set Go cache paths (cross-platform)
-        run: |
-          echo "🔧 Setting up Go cache paths..."
-          echo "GOCACHE=$HOME/.cache/go-build"        >> $GITHUB_ENV
-          echo "GOMODCACHE=$HOME/go/pkg/mod"          >> $GITHUB_ENV
-          echo "GOLANGCI_LINT_CACHE=$HOME/.cache/golangci-lint" >> $GITHUB_ENV
-
-      - name: 💾 Restore Go module cache
-        id: restore-gomod
-        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ inputs.primary-runner }}-gomod-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ inputs.primary-runner }}-gomod-
-
-      - name: 💾 Restore Go build cache
-        id: restore-gobuild
-        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/.cache/go-build/test
-          key: ${{ inputs.primary-runner }}-gobuild-${{ env.GO_PRIMARY_VERSION }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ inputs.primary-runner }}-gobuild-${{ env.GO_PRIMARY_VERSION }}-
-
-      - name: 🔧 Setup Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+      - name: 🏗️ Setup Go with Cache
+        id: setup-go-coverage
+        uses: ./.github/actions/setup-go-with-cache
         with:
           go-version: ${{ env.GO_PRIMARY_VERSION }}
-          cache: false # we handle caches ourselves
-      - name: 🔨 Install go-coverage tool
+          matrix-os: ${{ inputs.primary-runner }}
+          go-primary-version: ${{ env.GO_PRIMARY_VERSION }}
+          go-secondary-version: ${{ env.GO_SECONDARY_VERSION }}
+
+      # ————————————————————————————————————————————————————————————————
+      # Restore (and later save) a compact cache for the go-coverage binary
+      # ————————————————————————————————————————————————————————————————
+      - name: 💾 Restore go-coverage binary cache
+        id: go-coverage-cache
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/.cache/go-coverage-bin
+          key: ${{ inputs.primary-runner }}-go-coverage-${{ env.GO_COVERAGE_VERSION }}
+
+      - name: 🛠️ Make cached go-coverage usable
         run: |
-          echo "🔨 Installing go-coverage tool..."
+          set -euo pipefail
+          BIN_DIR="$HOME/.cache/go-coverage-bin"
+          GO_COVERAGE_BIN="$BIN_DIR/go-coverage"
+          # If we restored a cache, copy/link it into GOPATH/bin so the binary works.
+          if [[ -f "$GO_COVERAGE_BIN" ]]; then
+            echo "✅ Using cached go-coverage binary"
+            mkdir -p "$(go env GOPATH)/bin"
+            cp "$GO_COVERAGE_BIN" "$(go env GOPATH)/bin/"
+          fi
+          # Make sure the binary location is on PATH for *all* subsequent steps.
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: 🎯 Set go-coverage binary path
+        run: |
+          # Set the binary path for both cache hit and cache miss scenarios
+          GO_BIN="$(go env GOPATH)/bin"
+          echo "GO_COVERAGE_BINARY=$GO_BIN/go-coverage" >> $GITHUB_ENV
+
+      # ————————————————————————————————————————————————————————————————
+      # Install go-coverage tool *only* when the cache was empty
+      # ————————————————————————————————————————————————————————————————
+      - name: 🔨 Install go-coverage tool (cache miss)
+        if: steps.go-coverage-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "⬇️ Cache miss – installing go-coverage..."
 
           # Check if we should use local development version
           if [[ "${{ env.GO_COVERAGE_USE_LOCAL }}" == "true" ]]; then
@@ -208,12 +220,20 @@ jobs:
             go build -v -o /tmp/go-coverage ./cmd/go-coverage
             chmod +x /tmp/go-coverage
 
+            # Copy the freshly built binary to cache directory
+            mkdir -p ~/.cache/go-coverage-bin
+            cp /tmp/go-coverage ~/.cache/go-coverage-bin/
+            
+            # Also copy to GOPATH/bin for immediate use
+            mkdir -p "$(go env GOPATH)/bin"
+            cp /tmp/go-coverage "$(go env GOPATH)/bin/go-coverage"
+
             # Store the binary path
-            echo "GO_COVERAGE_BINARY=/tmp/go-coverage" >> $GITHUB_ENV
+            echo "GO_COVERAGE_BINARY=$(go env GOPATH)/bin/go-coverage" >> $GITHUB_ENV
 
             # Show version info
-            echo "✅ Local go-coverage built successfully"
-            /tmp/go-coverage --version || echo "Version info not available for local build"
+            echo "✅ Local go-coverage built and stored in cache"
+            "$(go env GOPATH)/bin/go-coverage" --version || echo "Version info not available for local build"
           else
             # Use production version
             VERSION="${{ env.GO_COVERAGE_VERSION }}"
@@ -222,12 +242,16 @@ jobs:
             # Install using go install
             go install github.com/mrz1836/go-coverage/cmd/go-coverage@$VERSION
 
+            # Copy the freshly installed binary to cache directory
+            mkdir -p ~/.cache/go-coverage-bin
+            cp "$(go env GOPATH)/bin/go-coverage" ~/.cache/go-coverage-bin/
+
             # Store the binary path
             GO_BIN="$(go env GOPATH)/bin"
             echo "GO_COVERAGE_BINARY=$GO_BIN/go-coverage" >> $GITHUB_ENV
 
             # Verify installation
-            echo "✅ go-coverage installed successfully"
+            echo "✅ go-coverage installed and stored in cache"
             "$GO_BIN/go-coverage" --version
           fi
 
@@ -1983,8 +2007,8 @@ jobs:
           echo "📊 Collecting cache statistics..."
 
           # Get cache hit information
-          GOMOD_HIT="${{ steps.restore-gomod.outputs.cache-hit }}"
-          GOBUILD_HIT="${{ steps.restore-gobuild.outputs.cache-hit }}"
+          GOMOD_HIT="${{ steps.setup-go-coverage.outputs.module-cache-hit }}"
+          GOBUILD_HIT="${{ steps.setup-go-coverage.outputs.build-cache-hit }}"
 
           # Get cache sizes
           GOMOD_SIZE="0B"

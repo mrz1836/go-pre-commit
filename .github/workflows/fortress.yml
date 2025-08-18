@@ -139,6 +139,7 @@ jobs:
         with:
           sparse-checkout: |
             .github/actions/warm-cache
+            .github/.env.base
             go.mod
             go.sum
             .mage.yaml
@@ -163,6 +164,7 @@ jobs:
           enable-verbose: ${{ steps.extract.outputs.enable_verbose }}
           go-primary-version: ${{ needs.setup.outputs.go-primary-version }}
           go-secondary-version: ${{ needs.setup.outputs.go-secondary-version }}
+          env-json: ${{ needs.load-env.outputs.env-json }}
   # ----------------------------------------------------------------------------------
   # Security Scans
   # ----------------------------------------------------------------------------------
