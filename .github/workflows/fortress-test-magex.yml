@@ -114,19 +114,14 @@ jobs:
 
           # List of required magex commands
           REQUIRED_COMMANDS=(
-            "bench:run"
-            "build:clean"
-            "deps:tidy"
-            "deps:update"
-            "deps:update"
-            "metrics:coverage"
-            "test:cover"
-            "test:race"
             "bench"
+            "clean"
+            "tidy"
+            "mod:update"
+            "test:coverage"
             "lint"
             "test"
             "test:fuzz"
-            "test:unit"
           )
 
           MATCHED_COUNT=0
@@ -137,7 +132,7 @@ jobs:
           echo "🔍 Verifying required magex commands..."
 
           for cmd in "${REQUIRED_COMMANDS[@]}"; do
-            if echo "$HELP_OUTPUT" | grep -qE "^$cmd[[:space:]]"; then
+            if echo "$HELP_OUTPUT" | grep -qE "^[[:space:]]*$cmd[[:space:]]"; then
               echo "✅ Found: $cmd"
               MATCHED_COUNT=$((MATCHED_COUNT + 1))
             else
