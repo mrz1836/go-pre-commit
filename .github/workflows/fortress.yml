@@ -110,7 +110,7 @@ jobs:
   # Test MAGE-X
   # ----------------------------------------------------------------------------------
   test-magex:
-    name: 📋 Test MAGE-X
+    name: 🪄 Test MAGE-X
     needs: [load-env, setup]
     permissions:
       contents: read # Read repository content for magex testing
