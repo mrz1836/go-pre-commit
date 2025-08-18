@@ -14,6 +14,7 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 	"github.com/mrz1836/go-pre-commit/internal/shared"
+	"github.com/mrz1836/go-pre-commit/internal/tools"
 )
 
 // FumptCheck runs gofumpt directly or via build tools
@@ -109,15 +110,17 @@ func (c *FumptCheck) Run(ctx context.Context, files []string) error {
 		modifiedFiles = files // Track the files we're formatting
 	}
 
-	var err error
-	// Prefer direct gofumpt execution for pure Go implementation
-	err = c.runDirectFumpt(ctx, files)
-
-	// Only fall back to build tool if direct execution failed and build target exists
-	if err != nil && c.sharedCtx.HasMagexTarget(ctx, "format") {
-		// Try magex format as fallback
-		err = c.runMagexFumpt(ctx)
+	// Ensure gofumpt is installed
+	if err := tools.EnsureInstalled(ctx, "gofumpt"); err != nil {
+		return prerrors.NewToolExecutionError(
+			"gofumpt",
+			err.Error(),
+			"Failed to install gofumpt. You can install it manually with: go install mvdan.cc/gofumpt@latest",
+		)
 	}
+
+	// Run gofumpt directly
+	err := c.runDirectFumpt(ctx, files)
 
 	// If formatting succeeded and auto-stage is enabled, stage the modified files
 	if err == nil && c.autoStage && len(modifiedFiles) > 0 {
@@ -142,148 +145,9 @@ func (c *FumptCheck) FilterFiles(files []string) []string {
 	return filtered
 }
 
-// runMagexFumpt runs magex fumpt with proper error handling
-func (c *FumptCheck) runMagexFumpt(ctx context.Context) error {
-	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to find repository root: %w", err)
-	}
-
-	// Add timeout for magex command
-	ctx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "magex", "format")
-	cmd.Dir = repoRoot
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		output := stdout.String() + stderr.String()
-
-		// Check if it's a context timeout
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return prerrors.NewToolExecutionError(
-				"magex format",
-				output,
-				fmt.Sprintf("Fumpt check timed out after %v. Consider increasing GO_PRE_COMMIT_FUMPT_TIMEOUT or run 'magex format' manually.", c.timeout),
-			)
-		}
-
-		// Parse the error for better context
-		if strings.Contains(output, "command not found") || strings.Contains(output, "unknown command") {
-			return prerrors.NewMagexTargetNotFoundError(
-				"fumpt",
-				"Create a 'format' target in your magex configuration or disable fumpt with GO_PRE_COMMIT_ENABLE_FUMPT=false",
-			)
-		}
-
-		// Enhanced gofumpt detection and PATH diagnostics
-		if strings.Contains(output, "gofumpt") && (strings.Contains(output, "not found") || strings.Contains(output, "command not found")) {
-			// Try to provide better diagnostics
-			gopath, err := exec.LookPath("go")
-			if err != nil {
-				return prerrors.NewToolNotFoundError(
-					"go",
-					"Go is not installed or not in PATH. Install Go first: https://golang.org/doc/install",
-				)
-			}
-
-			// Check if gofumpt exists in common locations
-			diagnostics := []string{
-				"gofumpt is not available in the current PATH.",
-				"Common causes:",
-				"1. gofumpt is not installed - run: go install mvdan.cc/gofumpt@v0.7.0",
-				"2. GOPATH/bin or GOROOT/bin is not in PATH",
-				"3. Different environment between terminal and git GUI",
-				"",
-				"Current diagnostics:",
-				fmt.Sprintf("- Go binary found at: %s", gopath),
-			}
-
-			// Try to detect GOPATH
-			goCmd := exec.CommandContext(ctx, "go", "env", "GOPATH")
-			if gopathBytes, err := goCmd.Output(); err == nil {
-				gopath := strings.TrimSpace(string(gopathBytes))
-				diagnostics = append(diagnostics, fmt.Sprintf("- GOPATH: %s", gopath))
-				diagnostics = append(diagnostics, fmt.Sprintf("- Expected gofumpt location: %s/bin/gofumpt", gopath))
-			}
-
-			return prerrors.NewToolNotFoundError(
-				"gofumpt",
-				strings.Join(diagnostics, "\n"),
-			)
-		}
-
-		// Enhanced PATH-related error detection
-		if strings.Contains(output, "installation failed or not in PATH") {
-			return prerrors.NewToolExecutionError(
-				"magex format",
-				output,
-				"gofumpt installation succeeded but the binary is not accessible. This commonly happens in git GUI applications where PATH differs from terminal. Solutions:\n1. Add GOPATH/bin to your system PATH\n2. Restart your git GUI application\n3. Use terminal for git operations\n4. Check that $(go env GOPATH)/bin is in PATH",
-			)
-		}
-
-		if strings.Contains(output, "permission denied") {
-			return prerrors.NewToolExecutionError(
-				"magex format",
-				output,
-				"Permission denied. Check file permissions and ensure you have write access to all Go files.",
-			)
-		}
-
-		if strings.Contains(output, "syntax error") || strings.Contains(output, "invalid Go syntax") {
-			return prerrors.NewToolExecutionError(
-				"magex format",
-				output,
-				"Go syntax errors prevent formatting. Fix syntax errors in your Go files before running fumpt.",
-			)
-		}
-
-		// Enhanced generic failure with better context
-		envHints := []string{
-			"Run 'magex format' manually to see detailed error output.",
-			"Check your build configuration and gofumpt installation.",
-			"If using a git GUI (Tower, SourceTree, etc.), try using terminal instead.",
-			"Ensure GO_PRE_COMMIT_FUMPT_VERSION is set correctly in .env.base",
-		}
-
-		return prerrors.NewToolExecutionError(
-			"magex format",
-			output,
-			strings.Join(envHints, "\n"),
-		)
-	}
-
-	return nil
-}
-
 // runDirectFumpt runs gofumpt directly on files
 func (c *FumptCheck) runDirectFumpt(ctx context.Context, files []string) error {
-	// Check if gofumpt is available, install if not
-	if _, err := exec.LookPath("gofumpt"); err != nil {
-		// Try to install gofumpt automatically
-		installCmd := exec.CommandContext(ctx, "go", "install", "mvdan.cc/gofumpt@latest")
-		var installStderr bytes.Buffer
-		installCmd.Stderr = &installStderr
-
-		if installErr := installCmd.Run(); installErr != nil {
-			return prerrors.NewToolNotFoundError(
-				"gofumpt",
-				fmt.Sprintf("Failed to auto-install gofumpt: %v\nTry manually: 'go install mvdan.cc/gofumpt@latest'", installStderr.String()),
-			)
-		}
-
-		// Verify installation succeeded
-		if _, err := exec.LookPath("gofumpt"); err != nil {
-			return prerrors.NewToolNotFoundError(
-				"gofumpt",
-				"gofumpt was installed but not found in PATH. Ensure $(go env GOPATH)/bin is in your PATH",
-			)
-		}
-	}
+	// Tool installation is already handled in Run(), so we can proceed directly
 
 	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
 	if err != nil {

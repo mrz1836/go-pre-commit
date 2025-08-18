@@ -57,7 +57,7 @@ Key features:
   - Zero runtime dependencies (single binary)
   - Environment-based configuration via .github/.env.base
   - Seamless CI/CD integration
-  - Native magex command compatibility`,
+  - Direct tool execution without build system dependencies`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRun: func(cmd *cobra.Command, _ []string) {

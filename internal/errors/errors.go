@@ -41,9 +41,6 @@ var (
 	// ErrAIAttributionFound is returned when AI attribution is detected
 	ErrAIAttributionFound = errors.New("AI attribution detected")
 
-	// ErrMagexTargetNotFound is returned when a magex target is not available
-	ErrMagexTargetNotFound = errors.New("magex target not found")
-
 	// ErrToolExecutionFailed is returned when a tool execution fails
 	ErrToolExecutionFailed = errors.New("tool execution failed")
 
@@ -56,9 +53,6 @@ var (
 	ErrPreCommitDirNotExist = errors.New("pre-commit directory does not exist")
 	ErrHookNotExecutable    = errors.New("hook file is not executable")
 	ErrHookMarkerMissing    = errors.New("installed hook does not contain expected marker")
-
-	// Magex-related errors
-	ErrMagexTargetTimeout = errors.New("timeout checking magex target")
 )
 
 // CheckError represents an enhanced error with context and suggestions
@@ -120,16 +114,6 @@ func NewToolNotFoundError(tool, alternative string) *CheckError {
 	return &CheckError{
 		Err:        ErrToolNotFound,
 		Message:    fmt.Sprintf("%s not found", tool),
-		Suggestion: alternative,
-		CanSkip:    true,
-	}
-}
-
-// NewMagexTargetNotFoundError creates an error for missing magex targets with graceful degradation
-func NewMagexTargetNotFoundError(target, alternative string) *CheckError {
-	return &CheckError{
-		Err:        ErrMagexTargetNotFound,
-		Message:    fmt.Sprintf("magex target '%s' not found", target),
 		Suggestion: alternative,
 		CanSkip:    true,
 	}

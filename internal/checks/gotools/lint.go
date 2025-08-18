@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -14,6 +13,7 @@ import (
 
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 	"github.com/mrz1836/go-pre-commit/internal/shared"
+	"github.com/mrz1836/go-pre-commit/internal/tools"
 )
 
 // LintCheck runs golangci-lint directly or via build tools
@@ -77,16 +77,17 @@ func (c *LintCheck) Run(ctx context.Context, files []string) error {
 		return nil
 	}
 
-	// Prefer direct golangci-lint execution for pure Go implementation
-	err := c.runDirectLint(ctx, files)
-
-	// Only fall back to build tool if direct execution failed and build target exists
-	if err != nil && c.sharedCtx.HasMagexTarget(ctx, "lint") {
-		// Try magex lint as fallback
-		err = c.runMagexLint(ctx)
+	// Ensure golangci-lint is installed
+	if err := tools.EnsureInstalled(ctx, "golangci-lint"); err != nil {
+		return prerrors.NewToolExecutionError(
+			"golangci-lint",
+			err.Error(),
+			"Failed to install golangci-lint. You can install it manually with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest",
+		)
 	}
 
-	return err
+	// Run golangci-lint directly
+	return c.runDirectLint(ctx, files)
 }
 
 // FilterFiles filters to only Go files
@@ -100,101 +101,9 @@ func (c *LintCheck) FilterFiles(files []string) []string {
 	return filtered
 }
 
-// runMagexLint runs magex lint with proper error handling
-func (c *LintCheck) runMagexLint(ctx context.Context) error {
-	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to find repository root: %w", err)
-	}
-
-	// Add timeout for magex command
-	ctx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "magex", "lint")
-	cmd.Dir = repoRoot
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		// Combine stdout and stderr for analysis
-		output := stdout.String() + stderr.String()
-
-		// Check if it's a context timeout
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return prerrors.NewToolExecutionError(
-				"magex lint",
-				output,
-				fmt.Sprintf("Lint check timed out after %v. Consider increasing GO_PRE_COMMIT_LINT_TIMEOUT or run 'magex lint' manually to see detailed output.", c.timeout),
-			)
-		}
-
-		// Parse the error for better context
-		if strings.Contains(output, "command not found") || strings.Contains(output, "unknown command") {
-			return prerrors.NewMagexTargetNotFoundError(
-				"lint",
-				"Create a 'lint' target in your magex configuration or disable linting with GO_PRE_COMMIT_ENABLE_LINT=false",
-			)
-		}
-
-		if strings.Contains(output, "golangci-lint") && strings.Contains(output, "not found") {
-			return prerrors.NewToolNotFoundError(
-				"golangci-lint",
-				"Install golangci-lint: 'go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest' or add an install target to your build configuration",
-			)
-		}
-
-		// Try to determine if this is linting issues vs. actual failure
-		if strings.Contains(output, "level=error") ||
-			strings.Contains(output, "ERRO") ||
-			(strings.Contains(output, ".go:") && strings.Contains(output, ":")) {
-			// This looks like linting issues, not a tool failure
-			// Extract and format specific lint errors for better visibility
-			formattedOutput := FormatLintErrors(output)
-			// For lint errors, return the formatted output as the error message
-			return &prerrors.CheckError{
-				Err:        prerrors.ErrLintingIssues,
-				Message:    formattedOutput,
-				Suggestion: "Fix the linting issues shown above. Run 'magex lint' to see full details and 'golangci-lint run --help' for configuration options.",
-				Command:    "magex lint",
-				Output:     formattedOutput,
-			}
-		}
-
-		// Generic failure
-		return prerrors.NewToolExecutionError(
-			"magex lint",
-			output,
-			"Run 'magex lint' manually to see detailed error output. Check your build configuration and golangci-lint settings.",
-		)
-	}
-
-	return nil
-}
-
 // runDirectLint runs golangci-lint directly on files
 func (c *LintCheck) runDirectLint(ctx context.Context, files []string) error {
-	// Check if golangci-lint is available, install if not
-	if _, err := exec.LookPath("golangci-lint"); err != nil {
-		// Try to install golangci-lint using the official install script
-		// This is the preferred installation method as it handles platform specifics
-		if installErr := c.installGolangciLint(ctx); installErr != nil {
-			return prerrors.NewToolNotFoundError(
-				"golangci-lint",
-				fmt.Sprintf("Failed to auto-install golangci-lint: %v\nTry manually: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin", installErr),
-			)
-		}
-
-		// Verify installation succeeded
-		if _, err := exec.LookPath("golangci-lint"); err != nil {
-			return prerrors.NewToolNotFoundError(
-				"golangci-lint",
-				"golangci-lint was installed but not found in PATH. Ensure $(go env GOPATH)/bin is in your PATH",
-			)
-		}
-	}
+	// Tool installation is already handled in Run(), so we can proceed directly
 
 	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
 	if err != nil {
@@ -385,35 +294,4 @@ func StripANSIColors(s string) string {
 }
 
 // installGolangciLint installs golangci-lint using the official installation script
-func (c *LintCheck) installGolangciLint(ctx context.Context) error {
-	// Get GOPATH to determine installation directory
-	goCmd := exec.CommandContext(ctx, "go", "env", "GOPATH")
-	gopathBytes, err := goCmd.Output()
-	if err != nil {
-		return fmt.Errorf("failed to get GOPATH: %w", err)
-	}
-	gopath := strings.TrimSpace(string(gopathBytes))
-	if gopath == "" {
-		// Fallback to default GOPATH
-		gopath = filepath.Join(os.Getenv("HOME"), "go")
-	}
-
-	installDir := filepath.Join(gopath, "bin")
-
-	// Download and run the installation script
-	// Using sh -c to pipe the curl output to sh
-	installScript := fmt.Sprintf(
-		"curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b %s",
-		installDir,
-	)
-
-	cmd := exec.CommandContext(ctx, "sh", "-c", installScript) //nolint:gosec // installScript is constructed from constants and validated paths
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("installation failed: %w (stderr: %s)", err, stderr.String())
-	}
-
-	return nil
-}
+// installGolangciLint is no longer needed - handled by tools.EnsureInstalled

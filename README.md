@@ -468,28 +468,7 @@ GO_PRE_COMMIT_AI_DETECTION_AUTO_FIX=false
 EOF
 ```
 
-### 3. (Optional) Create custom workflows
-
-Since `go-pre-commit` runs all checks with pure Go, the pre-commit hooks will automatically install any needed tools (fumpt, goimports, golangci-lint) on first use.
-
-If you want custom workflows for other tasks, you can create scripts or configuration:
-
-```bash
-cat > Makefile << 'EOF'
-.PHONY: test build clean
-
-test:
-	@go test ./...
-
-build:
-	@go build ./...
-
-clean:
-	@go clean ./...
-EOF
-```
-
-### 4. Install go-pre-commit
+### 3. Install go-pre-commit
 
 ```bash
 # Install the tool
@@ -502,7 +481,7 @@ go-pre-commit install
 go-pre-commit status
 ```
 
-### 5. Test your setup
+### 4. Test your setup
 
 ```bash
 # Create a test file with issues

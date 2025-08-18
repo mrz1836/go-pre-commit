@@ -203,13 +203,13 @@ func TestParseLintError(t *testing.T) {
 			name:               "LintingIssues",
 			output:             "main.go:10:5: unused variable 'x'\nutils.go:25:1: function should be commented",
 			expectedMessage:    "Found 2 linting issue(s)",
-			expectedSuggestion: "Fix the issues shown above. Run 'magex lint' or 'golangci-lint run' to see full details.",
+			expectedSuggestion: "Fix the issues shown above. Run 'golangci-lint run' to see full details.",
 		},
 		{
 			name:               "UnknownError",
 			output:             "some unknown error occurred",
 			expectedMessage:    "Linting failed with unknown error",
-			expectedSuggestion: "Run 'magex lint' manually to see detailed output.",
+			expectedSuggestion: "Run 'golangci-lint run' manually to see detailed output.",
 		},
 	}
 
@@ -437,25 +437,25 @@ func TestParseGenericMakeError(t *testing.T) {
 		expectedSuggestion string
 	}{
 		{
-			name:               "TargetNotFound",
-			command:            "magex test",
-			output:             "command not found: test",
-			expectedMessage:    "Build target 'test' not found",
-			expectedSuggestion: "Check your magex configuration for the 'test' target or run 'magex help' to see available targets.",
+			name:               "ToolNotFound",
+			command:            "gofumpt -w .",
+			output:             "command not found: gofumpt",
+			expectedMessage:    "Tool or command 'gofumpt -w .' not found",
+			expectedSuggestion: "The required tool will be automatically installed on the next run. You can also install it manually.",
 		},
 		{
 			name:               "PermissionDenied",
-			command:            "magex build",
+			command:            "go build",
 			output:             "Permission denied: cannot create output file",
 			expectedMessage:    "Permission denied",
 			expectedSuggestion: "Check file permissions and ensure you have write access to the project directory.",
 		},
 		{
 			name:               "GenericError",
-			command:            "magex deploy",
-			output:             "deployment failed with unknown error",
-			expectedMessage:    "Command 'magex deploy' failed",
-			expectedSuggestion: "Run 'magex deploy' manually to see detailed error output.",
+			command:            "go test",
+			output:             "test failed with unknown error",
+			expectedMessage:    "Command 'go test' failed",
+			expectedSuggestion: "Run 'go test' manually to see detailed error output.",
 		},
 	}
 
@@ -612,21 +612,21 @@ func TestParseTextMakeError(t *testing.T) {
 	}{
 		{
 			name:               "LintCommand",
-			command:            "magex lint",
+			command:            "golangci-lint run",
 			output:             "golangci-lint: no such file or directory",
 			expectedMessage:    "golangci-lint binary not found",
 			expectedSuggestion: "Install golangci-lint with 'go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest' or ensure it's in your PATH.",
 		},
 		{
 			name:               "FumptCommand",
-			command:            "magex format:fumpt",
+			command:            "gofumpt -w .",
 			output:             "gofumpt: no such file or directory",
 			expectedMessage:    "gofumpt binary not found",
 			expectedSuggestion: "Install gofumpt with 'go install mvdan.cc/gofumpt@latest'.",
 		},
 		{
 			name:               "ModTidyCommand",
-			command:            "magex deps:tidy",
+			command:            "go mod tidy",
 			output:             "no go.mod file found",
 			expectedMessage:    "No go.mod file found",
 			expectedSuggestion: "Initialize a Go module with 'go mod init <module-name>'.",
@@ -731,12 +731,12 @@ func TestParseCommandErrorWhitespaceHandling(t *testing.T) {
 	f := NewDefault()
 
 	// Test with leading/trailing whitespace
-	message, suggestion := f.ParseCommandError("magex lint", "  \n\tgolangci-lint: no such file or directory\n\t  ")
+	message, suggestion := f.ParseCommandError("golangci-lint run", "  \n\tgolangci-lint: no such file or directory\n\t  ")
 	assert.Equal(t, "golangci-lint binary not found", message)
 	assert.Contains(t, suggestion, "Install golangci-lint")
 
 	// Test with empty output (just whitespace)
-	message, suggestion = f.ParseCommandError("magex unknown-target", "   \n\t   ")
-	assert.Equal(t, "Command 'magex unknown-target' failed", message)
-	assert.Contains(t, suggestion, "Run 'magex unknown-target' manually")
+	message, suggestion = f.ParseCommandError("go test ./...", "   \n\t   ")
+	assert.Equal(t, "Command 'go test ./...' failed", message)
+	assert.Contains(t, suggestion, "Run 'go test ./...' manually")
 }

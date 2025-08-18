@@ -666,7 +666,7 @@ func TestRunFunctionVersionInfo(t *testing.T) {
 // Example showing how to use the pre-commit system
 func Example_main() {
 	// The go-pre-commit tool manages Git hooks for code quality
-	// It integrates with your existing Makefile targets
+	// It runs tools directly without build system dependencies
 
 	// Usage:
 	// go-pre-commit install          # Install Git hooks

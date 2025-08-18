@@ -164,16 +164,17 @@ func (f *Formatter) Duration(d time.Duration) string {
 func (f *Formatter) ParseCommandError(command, output string) (message, suggestion string) {
 	output = strings.TrimSpace(output)
 
-	switch command {
-	case "magex lint":
+	// Parse tool-specific errors directly
+	if strings.Contains(command, "golangci-lint") {
 		return f.parseLintError(output)
-	case "magex format:fumpt":
-		return f.parseFumptError(output)
-	case "magex deps:tidy":
-		return f.parseModTidyError(output)
-	default:
-		return f.parseGenericCommandError(command, output)
 	}
+	if strings.Contains(command, "gofumpt") {
+		return f.parseFumptError(output)
+	}
+	if strings.Contains(command, "go mod tidy") {
+		return f.parseModTidyError(output)
+	}
+	return f.parseGenericCommandError(command, output)
 }
 
 // parseLintError analyzes golangci-lint output
@@ -211,12 +212,12 @@ func (f *Formatter) parseLintError(output string) (string, string) {
 			}
 
 			return fmt.Sprintf("Found %d linting issue(s)", issueCount),
-				"Fix the issues shown above. Run 'magex lint' or 'golangci-lint run' to see full details."
+				"Fix the issues shown above. Run 'golangci-lint run' to see full details."
 		}
 	}
 
 	return "Linting failed with unknown error",
-		"Run 'magex lint' manually to see detailed output."
+		"Run 'golangci-lint run' manually to see detailed output."
 }
 
 // parseFumptError analyzes gofumpt output
@@ -268,13 +269,11 @@ func (f *Formatter) parseModTidyError(output string) (string, string) {
 
 // parseGenericCommandError analyzes generic command errors
 func (f *Formatter) parseGenericCommandError(command, output string) (string, string) {
-	target := strings.TrimPrefix(command, "magex ")
-
 	if strings.Contains(output, "command not found") ||
 		strings.Contains(output, "unknown command") ||
 		strings.Contains(output, "No such file or directory") {
-		return fmt.Sprintf("Build target '%s' not found", target),
-			fmt.Sprintf("Check your magex configuration for the '%s' target or run 'magex help' to see available targets.", target)
+		return fmt.Sprintf("Tool or command '%s' not found", command),
+			"The required tool will be automatically installed on the next run. You can also install it manually."
 	}
 
 	if strings.Contains(output, "Permission denied") {

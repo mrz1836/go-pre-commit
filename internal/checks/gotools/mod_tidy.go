@@ -83,16 +83,8 @@ func (c *ModTidyCheck) Run(ctx context.Context, files []string) error {
 		return nil
 	}
 
-	// Prefer direct go mod tidy execution for pure Go implementation
-	err := c.runDirectModTidy(ctx)
-
-	// Only fall back to build tool if direct execution failed and build target exists
-	if err != nil && c.sharedCtx.HasMagexTarget(ctx, "mod:tidy") {
-		// Try magex mod:tidy as fallback
-		err = c.runMagexModTidy(ctx)
-	}
-
-	return err
+	// Run go mod tidy directly (no tools to install, it's built into go)
+	return c.runDirectModTidy(ctx)
 }
 
 // FilterFiles filters to only go.mod and go.sum files or when .go files change
@@ -125,95 +117,6 @@ func (c *ModTidyCheck) FilterFiles(files []string) []string {
 
 	// No relevant files
 	return []string{}
-}
-
-// runMagexModTidy runs magex deps:tidy
-func (c *ModTidyCheck) runMagexModTidy(ctx context.Context) error {
-	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to find repository root: %w", err)
-	}
-
-	// Try to use go mod tidy -diff first (Go 1.21+)
-	diffErr := c.checkModTidyDiff(ctx, repoRoot)
-	if diffErr != nil {
-		// Check if it's because -diff is not supported
-		if !strings.Contains(diffErr.Error(), "not supported") {
-			// -diff is supported but found issues, return the error
-			return diffErr
-		}
-		// -diff not supported, fall back to old method
-	} else {
-		// -diff succeeded, no changes needed
-		return nil
-	}
-
-	// Fall back to running magex deps:tidy and checking for changes
-	// Add timeout for magex command
-	ctx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "magex", "mod:tidy")
-	cmd.Dir = repoRoot
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		output := stdout.String() + stderr.String()
-
-		// Check if it's a context timeout
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return prerrors.NewToolExecutionError(
-				"magex mod:tidy",
-				output,
-				fmt.Sprintf("Mod tidy check timed out after %v. Consider increasing GO_PRE_COMMIT_MOD_TIDY_TIMEOUT or run 'magex mod:tidy' manually.", c.timeout),
-			)
-		}
-
-		// Parse the error for better context
-		if strings.Contains(output, "command not found") || strings.Contains(output, "unknown command") {
-			return prerrors.NewMagexTargetNotFoundError(
-				"mod-tidy",
-				"Create a 'mod:tidy' target in your magex configuration or disable mod-tidy with GO_PRE_COMMIT_ENABLE_MOD_TIDY=false",
-			)
-		}
-
-		if strings.Contains(output, "no go.mod file") {
-			return prerrors.NewToolExecutionError(
-				"magex mod:tidy",
-				output,
-				"No go.mod file found. Initialize a Go module with 'go mod init <module-name>'.",
-			)
-		}
-
-		if strings.Contains(output, "network") || strings.Contains(output, "timeout") {
-			return prerrors.NewToolExecutionError(
-				"magex mod:tidy",
-				output,
-				"Network error downloading modules. Check your internet connection and proxy settings. Try running 'go mod tidy' manually.",
-			)
-		}
-
-		if strings.Contains(output, "checksum mismatch") {
-			return prerrors.NewToolExecutionError(
-				"magex mod:tidy",
-				output,
-				"Module checksum verification failed. Run 'go clean -modcache' and try again, or check for module security issues.",
-			)
-		}
-
-		// Generic failure
-		return prerrors.NewToolExecutionError(
-			"magex mod:tidy",
-			output,
-			"Run 'magex mod:tidy' manually to see detailed error output. Check your build configuration and module dependencies.",
-		)
-	}
-
-	// Check if there are uncommitted changes
-	return c.checkUncommittedChanges(ctx, repoRoot)
 }
 
 // runDirectModTidy runs go mod tidy directly

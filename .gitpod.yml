@@ -11,16 +11,16 @@ tasks:
       echo "🚀 Setting up go-pre-commit development environment..."
       echo "📦 Installing mage build tool..."
       go install github.com/magefile/mage@latest
-      
+
       echo "📥 Downloading dependencies..."
       magex deps:download
-      
+
       echo "🔧 Initial build..."
       magex build
-      
+
       echo "✅ Running initial tests..."
       magex test
-      
+
     command: |
       echo "==============================================="
       echo "🎯 Welcome to go-pre-commit development!"

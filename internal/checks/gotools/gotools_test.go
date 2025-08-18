@@ -55,15 +55,14 @@ func TestFumptCheck_FilterFiles(t *testing.T) {
 	assert.Equal(t, expected, filtered)
 }
 
-func TestFumptCheck_Run_NoMagex(t *testing.T) {
-	// Skip this test if gofumpt or magex are available since they would succeed
+func TestFumptCheck_Run_NoTool(t *testing.T) {
+	// Skip this test if gofumpt is available since it would succeed
 	_, hasGofumpt := exec.LookPath("gofumpt")
-	_, hasMagex := exec.LookPath("magex")
-	if hasGofumpt == nil || hasMagex == nil {
-		t.Skip("gofumpt and/or magex are available - skipping error scenario test")
+	if hasGofumpt == nil {
+		t.Skip("gofumpt is available - skipping error scenario test")
 	}
 
-	// Create a temporary directory without Makefile
+	// Create a temporary directory
 	tmpDir := t.TempDir()
 	oldDir, err := os.Getwd()
 	require.NoError(t, err)
@@ -86,52 +85,8 @@ func TestFumptCheck_Run_NoMagex(t *testing.T) {
 
 	err = check.Run(ctx, []string{"test.go"})
 	require.Error(t, err)
-	// When no Makefile exists and gofumpt is not installed, it should return a ToolNotFoundError
+	// When gofumpt is not installed, it should return a ToolNotFoundError
 	// The error message should indicate that gofumpt is not found
-	assert.Contains(t, err.Error(), "gofumpt")
-}
-
-func TestFumptCheck_Run_NoTarget(t *testing.T) {
-	// Skip this test if gofumpt or magex are available since they would succeed
-	_, hasGofumpt := exec.LookPath("gofumpt")
-	_, hasMagex := exec.LookPath("magex")
-	if hasGofumpt == nil || hasMagex == nil {
-		t.Skip("gofumpt and/or magex are available - skipping error scenario test")
-	}
-
-	// Create a temporary directory with Makefile but no fumpt target
-	tmpDir := t.TempDir()
-	oldDir, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() {
-		if chdirErr := os.Chdir(oldDir); chdirErr != nil {
-			t.Logf("Failed to restore directory: %v", chdirErr)
-		}
-	}()
-
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
-
-	// Initialize git repository
-	ctx := context.Background()
-	require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
-	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", testEmail).Run())
-	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", testUserName).Run())
-
-	// Create a Makefile without fumpt target
-	makefile := `
-test:
-	@echo "test"
-`
-	err = os.WriteFile("Makefile", []byte(makefile), 0o600)
-	require.NoError(t, err)
-
-	check := NewFumptCheck()
-
-	err = check.Run(ctx, []string{"test.go"})
-	require.Error(t, err)
-	// When Makefile exists but has no fumpt target, it falls back to direct gofumpt
-	// If gofumpt is not installed, it should return an error indicating this
 	assert.Contains(t, err.Error(), "gofumpt")
 }
 
@@ -165,7 +120,7 @@ func TestLintCheck_FilterFiles(t *testing.T) {
 	assert.Equal(t, expected, filtered)
 }
 
-func TestLintCheck_Run_NoMagex(t *testing.T) {
+func TestLintCheck_Run_NoTool(t *testing.T) {
 	// Create a temporary directory without Makefile
 	tmpDir := t.TempDir()
 	oldDir, err := os.Getwd()
@@ -246,33 +201,6 @@ func TestModTidyCheck_Run_NoGoMod(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to find repository root")
 }
 
-func TestModTidyCheck_Run_NoMagex(t *testing.T) {
-	// Create a temporary directory with go.mod but no Makefile
-	tmpDir := t.TempDir()
-	oldDir, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() {
-		if chdirErr := os.Chdir(oldDir); chdirErr != nil {
-			t.Logf("Failed to restore directory: %v", chdirErr)
-		}
-	}()
-
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
-
-	// Create a go.mod file
-	err = os.WriteFile("go.mod", []byte(testGoModContent), 0o600)
-	require.NoError(t, err)
-
-	check := NewModTidyCheck()
-	ctx := context.Background()
-
-	err = check.Run(ctx, []string{"test.go"})
-	require.Error(t, err)
-	// ModTidy check will fail to find repository root first
-	assert.Contains(t, err.Error(), "failed to find repository root")
-}
-
 // Comprehensive test suites for each check type
 
 type FumptCheckTestSuite struct {
@@ -333,31 +261,6 @@ func (s *FumptCheckTestSuite) TestNewFumptCheckWithConfig() {
 	s.NotNil(check)
 	s.Equal(sharedCtx, check.sharedCtx)
 	s.Equal(timeout, check.timeout)
-}
-
-func (s *FumptCheckTestSuite) TestRunMagexFumpt() {
-	// Skip this test if magex is not available
-	if _, err := exec.LookPath("magex"); err != nil {
-		s.T().Skip("magex not available")
-	}
-
-	// Create a test go file that doesn't need formatting
-	goFile := `package main
-
-import "fmt"
-
-func main() {
-	fmt.Println("Hello, World!")
-}
-`
-	err := os.WriteFile("test.go", []byte(goFile), 0o600)
-	s.Require().NoError(err)
-
-	check := NewFumptCheck()
-	err = check.Run(context.Background(), []string{"test.go"})
-
-	// Should succeed - either direct fumpt works or magex format fallback works
-	s.NoError(err)
 }
 
 func (s *FumptCheckTestSuite) TestRunDirectFumpt() {
@@ -458,22 +361,6 @@ func (s *LintCheckTestSuite) TestNewLintCheckWithConfig() {
 	s.NotNil(check)
 	s.Equal(sharedCtx, check.sharedCtx)
 	s.Equal(timeout, check.timeout)
-}
-
-func (s *LintCheckTestSuite) TestRunMagexLint() {
-	// Create a Makefile that doesn't require golangci-lint to be installed
-	makefileContent := `lint:
-	@echo "Running lint check"
-	@echo "No linting issues found"
-`
-	err := os.WriteFile("Makefile", []byte(makefileContent), 0o600)
-	s.Require().NoError(err)
-
-	check := NewLintCheck()
-	err = check.Run(context.Background(), []string{"test.go"})
-
-	// Should succeed with target available
-	s.NoError(err)
 }
 
 func (s *LintCheckTestSuite) TestRunDirectLint() {
@@ -611,31 +498,6 @@ func (s *ModTidyCheckTestSuite) TestFilterFilesNoGoFiles() {
 	// Without go files, should return empty
 	filtered := check.FilterFiles(files)
 	s.Empty(filtered)
-}
-
-func (s *ModTidyCheckTestSuite) TestRunMagexModTidy() {
-	// Create a basic Go module
-	goMod := testGoModContent
-	err := os.WriteFile("go.mod", []byte(goMod), 0o600)
-	s.Require().NoError(err)
-
-	// Add and commit the go.mod to git
-	s.Require().NoError(exec.CommandContext(context.Background(), "git", "add", "go.mod").Run())
-	s.Require().NoError(exec.CommandContext(context.Background(), "git", "commit", "-m", "Add go.mod").Run())
-
-	// Create a Makefile that doesn't actually modify files
-	makefileContent := `mod-tidy:
-	@echo "Running mod-tidy check"
-	@echo "All modules are tidy"
-`
-	err = os.WriteFile("Makefile", []byte(makefileContent), 0o600)
-	s.Require().NoError(err)
-
-	check := NewModTidyCheck()
-	err = check.Run(context.Background(), []string{"go.mod"})
-
-	// Should succeed with target available
-	s.NoError(err)
 }
 
 func (s *ModTidyCheckTestSuite) TestRunDirectModTidy() {
@@ -825,30 +687,19 @@ func TestModTidyCheckEdgeCases(t *testing.T) {
 
 // Test fumpt build command error scenarios
 func TestFumptCheckBuildErrorScenarios(t *testing.T) {
-	// Skip this test if gofumpt or magex are available since they would succeed
+	// Skip this test if gofumpt is available since it would succeed
 	_, hasGofumpt := exec.LookPath("gofumpt")
-	_, hasMagex := exec.LookPath("magex")
-	if hasGofumpt == nil || hasMagex == nil {
-		t.Skip("gofumpt and/or magex are available - skipping error scenario test")
+	if hasGofumpt == nil {
+		t.Skip("gofumpt is available - skipping error scenario test")
 	}
 
 	tests := []struct {
-		name            string
-		makefileContent string
-		expectedError   string
-		setupFunc       func(t *testing.T) // Additional setup function
+		name          string
+		expectedError string
+		setupFunc     func(t *testing.T) // Additional setup function
 	}{
 		{
-			name: "magex target not found error",
-			makefileContent: `test:
-	@echo "test"`,
-			expectedError: "gofumpt", // When no fumpt target exists, it falls back to direct gofumpt
-		},
-		{
-			name: "gofumpt not found in make target",
-			makefileContent: `fumpt:
-	@echo "gofumpt: command not found"
-	@exit 1`,
+			name:          "gofumpt not found",
 			expectedError: "gofumpt",
 		},
 		// Additional error scenarios are tested through integration
@@ -871,9 +722,10 @@ func TestFumptCheckBuildErrorScenarios(t *testing.T) {
 			require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", "test@example.com").Run())
 			require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", "Test User").Run())
 
-			// Create Makefile with specific error scenario
-			err = os.WriteFile("Makefile", []byte(tt.makefileContent), 0o600)
-			require.NoError(t, err)
+			// Additional setup if needed
+			if tt.setupFunc != nil {
+				tt.setupFunc(t)
+			}
 
 			check := NewFumptCheck()
 
@@ -915,7 +767,7 @@ func TestFumptCheckDirectErrorScenarios(t *testing.T) {
 				err := os.WriteFile("large.go", []byte(largeFile), 0o600)
 				require.NoError(t, err)
 			},
-			expectedError: "gofumpt",            // Accept either direct gofumpt or magex format error
+			expectedError: "gofumpt",
 			timeout:       1 * time.Millisecond, // Very short timeout
 		},
 	}
@@ -968,16 +820,7 @@ func TestFumptCheckDirectErrorScenarios(t *testing.T) {
 			err = check.Run(ctx, files)
 			if tt.expectedError != "" {
 				require.Error(t, err)
-				// For timeout test, accept either direct gofumpt or magex format error
-				if tt.name == "timeout in direct gofumpt" {
-					errMsg := err.Error()
-					// Should contain either "gofumpt" or "format" (from "magex format")
-					assert.True(t,
-						strings.Contains(errMsg, "gofumpt") || strings.Contains(errMsg, "format"),
-						"Error should contain 'gofumpt' or 'format', got: %s", errMsg)
-				} else {
-					assert.Contains(t, err.Error(), tt.expectedError)
-				}
+				assert.Contains(t, err.Error(), tt.expectedError)
 			}
 		})
 	}
@@ -985,13 +828,11 @@ func TestFumptCheckDirectErrorScenarios(t *testing.T) {
 
 // Test lint build command error scenarios
 func TestLintCheckBuildErrorScenarios(t *testing.T) {
-	// Skip this test if both golangci-lint and magex are available
-	// because in that case, linting will likely succeed
+	// Skip this test if golangci-lint is available since it would succeed
 	_, hasGolangciLint := exec.LookPath("golangci-lint")
-	_, hasMagex := exec.LookPath("magex")
 
-	if hasGolangciLint == nil || hasMagex == nil {
-		t.Skip("golangci-lint and/or magex are available - skipping error scenario test")
+	if hasGolangciLint == nil {
+		t.Skip("golangci-lint is available - skipping error scenario test")
 	}
 
 	tests := []struct {
@@ -1033,7 +874,7 @@ func main() {
 
 			check := NewLintCheck()
 
-			// When both direct and magex fail, we should get an error
+			// When direct tool execution fails, we should get an error
 			err = check.Run(ctx, []string{"test.go"})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)
@@ -1125,18 +966,16 @@ func TestLintCheckDirectErrorScenarios(t *testing.T) {
 // Test mod-tidy build command error scenarios
 func TestModTidyCheckBuildErrorScenarios(t *testing.T) {
 	tests := []struct {
-		name            string
-		makefileContent string
-		goModContent    string
-		expectedError   string
-		timeout         time.Duration
-		setupFunc       func(t *testing.T, tmpDir string)
+		name          string
+		goModContent  string
+		expectedError string
+		timeout       time.Duration
+		setupFunc     func(t *testing.T, tmpDir string)
 	}{
 		{
-			name:            "magex target not found",
-			makefileContent: `test:\n\t@echo "test"`,
-			goModContent:    testGoModContent,
-			expectedError:   "", // No error expected - it falls back to direct method which succeeds
+			name:          "go mod tidy works normally",
+			goModContent:  testGoModContent,
+			expectedError: "", // No error expected - go mod tidy should work normally
 		},
 		// Additional error scenarios tested through integration
 	}
@@ -1162,10 +1001,6 @@ func TestModTidyCheckBuildErrorScenarios(t *testing.T) {
 				err = os.WriteFile("go.mod", []byte(tt.goModContent), 0o600)
 				require.NoError(t, err)
 			}
-
-			// Create Makefile
-			err = os.WriteFile("Makefile", []byte(tt.makefileContent), 0o600)
-			require.NoError(t, err)
 
 			// Additional setup if needed
 			if tt.setupFunc != nil {
@@ -1431,74 +1266,6 @@ func TestStripANSIColors(t *testing.T) {
 	}
 }
 
-// Test environment variable integration and build target detection
-func TestBuildTargetIntegration(t *testing.T) {
-	// Skip if magex is not available
-	if _, err := exec.LookPath("magex"); err != nil {
-		t.Skip("magex not available")
-	}
-
-	tests := []struct {
-		name       string
-		checkType  string
-		targetName string
-		hasTarget  bool
-	}{
-		{
-			name:       "format target exists",
-			checkType:  "fumpt",
-			targetName: "format",
-			hasTarget:  true, // magex has built-in format command
-		},
-		{
-			name:       "lint target exists",
-			checkType:  "lint",
-			targetName: "lint",
-			hasTarget:  true, // magex has built-in lint command
-		},
-		{
-			name:       "mod:tidy target exists",
-			checkType:  "mod-tidy",
-			targetName: "mod:tidy",
-			hasTarget:  true, // magex has built-in mod:tidy command
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			oldDir, err := os.Getwd()
-			require.NoError(t, err)
-			defer func() { _ = os.Chdir(oldDir) }()
-
-			err = os.Chdir(tmpDir)
-			require.NoError(t, err)
-
-			// Initialize git repository
-			ctx := context.Background()
-			require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
-			require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", "test@example.com").Run())
-			require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", "Test User").Run())
-
-			// Test the appropriate check with correct target names
-			switch tt.checkType {
-			case "fumpt":
-				check := NewFumptCheck()
-				hasTarget := check.sharedCtx.HasMagexTarget(ctx, tt.targetName)
-				assert.Equal(t, tt.hasTarget, hasTarget)
-			case "lint":
-				check := NewLintCheck()
-				hasTarget := check.sharedCtx.HasMagexTarget(ctx, tt.targetName)
-				assert.Equal(t, tt.hasTarget, hasTarget)
-			case "mod-tidy":
-				check := NewModTidyCheck()
-				hasTarget := check.sharedCtx.HasMagexTarget(ctx, tt.targetName)
-				assert.Equal(t, tt.hasTarget, hasTarget)
-			}
-		})
-	}
-}
-
 // Test repository root detection failure scenarios
 func TestRepositoryRootFailures(t *testing.T) {
 	tests := []struct {
@@ -1580,11 +1347,10 @@ func TestRepositoryRootFailures(t *testing.T) {
 
 // Additional integration tests to improve coverage of internal functions
 func TestLintCheckWithColoredOutput(t *testing.T) {
-	// Skip this test if golangci-lint or magex are available since they would succeed
+	// Skip this test if golangci-lint is available since it would succeed
 	_, hasGolangciLint := exec.LookPath("golangci-lint")
-	_, hasMagex := exec.LookPath("magex")
-	if hasGolangciLint == nil || hasMagex == nil {
-		t.Skip("golangci-lint and/or magex are available - skipping error scenario test")
+	if hasGolangciLint == nil {
+		t.Skip("golangci-lint is available - skipping error scenario test")
 	}
 
 	// Test that exercises formatLintErrors and stripANSIColors functions
@@ -1708,15 +1474,11 @@ func TestCheckUncommittedChanges(t *testing.T) {
 		diffErr := diffCmd.Run()
 		t.Logf("Go mod tidy -diff: error=%v, stdout='%s', stderr='%s'", diffErr, diffCmd.Stdout, diffCmd.Stderr)
 
-		// Use a custom ModTidy check that skips the -diff check to force the fallback path
+		// Use a ModTidy check
 		check := NewModTidyCheck()
-		// Directly call runMagexModTidy to skip the diff check
-		repoRoot, repoErr := check.sharedCtx.GetRepoRoot(ctx)
-		require.NoError(t, repoErr)
 
 		// Run make mod-tidy manually first
 		makeCmd := exec.CommandContext(ctx, "make", "mod-tidy")
-		makeCmd.Dir = repoRoot
 		makeErr := makeCmd.Run()
 		t.Logf("Make mod-tidy result: %v", makeErr)
 
@@ -1969,94 +1731,5 @@ func TestSpecificErrorPaths(t *testing.T) {
 		err = check.Run(canceledCtx, []string{"go.mod"})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "context")
-	})
-}
-
-// Test to trigger specific magex error paths
-func TestMagexErrorPaths(t *testing.T) {
-	t.Run("fumpt magex target not found with specific error", func(t *testing.T) {
-		// Skip this test if gofumpt or magex are available since they would succeed
-		_, hasGofumpt := exec.LookPath("gofumpt")
-		_, hasMagex := exec.LookPath("magex")
-		if hasGofumpt == nil || hasMagex == nil {
-			t.Skip("gofumpt and/or magex are available - skipping error scenario test")
-		}
-
-		tmpDir := t.TempDir()
-		oldDir, err := os.Getwd()
-		require.NoError(t, err)
-		defer func() { _ = os.Chdir(oldDir) }()
-
-		err = os.Chdir(tmpDir)
-		require.NoError(t, err)
-
-		// Initialize git repository
-		ctx := context.Background()
-		require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
-		require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", "test@example.com").Run())
-		require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", "Test User").Run())
-
-		// Create Makefile that will specifically trigger "No rule to make target"
-		makefileContent := `test:
-	@echo "test"
-
-other:
-	@echo "other"`
-		err = os.WriteFile("Makefile", []byte(makefileContent), 0o600)
-		require.NoError(t, err)
-
-		// Force the test to try magex fumpt by creating a shared context that thinks fumpt exists
-		// We'll directly test the runMagexFumpt function through a mock
-		check := NewFumptCheck()
-
-		// Since there's no fumpt target, HasMagexTarget should return false,
-		// causing the code to fall back to direct fumpt execution
-		hasTarget := check.sharedCtx.HasMagexTarget(ctx, "format")
-		assert.True(t, hasTarget || !hasTarget) // Either result is acceptable with magex
-
-		err = check.Run(ctx, []string{"test.go"})
-		require.Error(t, err)
-		// This should fail with gofumpt not found since no fumpt target exists
-		assert.Contains(t, err.Error(), "gofumpt")
-	})
-
-	t.Run("mod-tidy diff flag not supported path", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		oldDir, err := os.Getwd()
-		require.NoError(t, err)
-		defer func() { _ = os.Chdir(oldDir) }()
-
-		err = os.Chdir(tmpDir)
-		require.NoError(t, err)
-
-		// Initialize git repository
-		ctx := context.Background()
-		require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
-		require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", "test@example.com").Run())
-		require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", "Test User").Run())
-
-		// Create go.mod and commit it
-		goMod := testGoModContent
-		err = os.WriteFile("go.mod", []byte(goMod), 0o600)
-		require.NoError(t, err)
-		require.NoError(t, exec.CommandContext(ctx, "git", "add", "go.mod").Run())
-		require.NoError(t, exec.CommandContext(ctx, "git", "commit", "-m", "Add go.mod").Run())
-
-		// Test the fallback to magex mod-tidy by creating a magex target
-		makefileContent := `mod-tidy:
-	@echo "Running mod tidy..."
-	@echo "No changes needed"`
-		err = os.WriteFile("Makefile", []byte(makefileContent), 0o600)
-		require.NoError(t, err)
-
-		check := NewModTidyCheck()
-		err = check.Run(ctx, []string{"go.mod"})
-
-		// This should succeed as checkModTidyDiff will work or fallback to make
-		if err != nil {
-			t.Logf("Got error (may be expected): %v", err)
-		} else {
-			t.Log("Test passed successfully")
-		}
 	})
 }

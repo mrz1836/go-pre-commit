@@ -39,7 +39,6 @@ func (s *ErrorTestSuite) TestCommonErrors() {
 		{"ErrNotTidy", ErrNotTidy, "go.mod or go.sum are not tidy"},
 		{"ErrWhitespaceIssues", ErrWhitespaceIssues, "whitespace issues found"},
 		{"ErrEOFIssues", ErrEOFIssues, "EOF issues found"},
-		{"ErrMagexTargetNotFound", ErrMagexTargetNotFound, "magex target not found"},
 		{"ErrToolExecutionFailed", ErrToolExecutionFailed, "tool execution failed"},
 		{"ErrGracefulSkip", ErrGracefulSkip, "check gracefully skipped"},
 	}
@@ -135,20 +134,6 @@ func (s *ErrorTestSuite) TestNewToolNotFoundError() {
 	s.True(err.CanSkip)
 }
 
-// TestNewMagexTargetNotFoundError tests the magex target not found error constructor
-func (s *ErrorTestSuite) TestNewMagexTargetNotFoundError() {
-	target := "lint"
-	alternative := "try running golangci-lint directly"
-
-	err := NewMagexTargetNotFoundError(target, alternative)
-
-	s.NotNil(err)
-	s.True(err.Is(ErrMagexTargetNotFound))
-	s.Equal("magex target 'lint' not found", err.Message)
-	s.Equal(alternative, err.Suggestion)
-	s.True(err.CanSkip)
-}
-
 // TestNewToolExecutionError tests the tool execution error constructor
 func (s *ErrorTestSuite) TestNewToolExecutionError() {
 	command := "golangci-lint run"
@@ -168,7 +153,7 @@ func (s *ErrorTestSuite) TestNewToolExecutionError() {
 
 // TestNewGracefulSkipError tests the graceful skip error constructor
 func (s *ErrorTestSuite) TestNewGracefulSkipError() {
-	reason := "magex target not available"
+	reason := "check requirements not met"
 
 	err := NewGracefulSkipError(reason)
 
@@ -234,7 +219,6 @@ func TestErrorComparisons(t *testing.T) {
 	// Test that our predefined errors are distinct
 	assert.NotEqual(t, ErrChecksFailed, ErrNoChecksToRun)
 	assert.NotEqual(t, ErrToolNotFound, ErrLintingIssues)
-	assert.NotEqual(t, ErrMagexTargetNotFound, ErrToolExecutionFailed)
 }
 
 func TestErrorWrappingWithStandardLibrary(t *testing.T) {
@@ -268,12 +252,6 @@ func TestAllConstructors(t *testing.T) {
 			name:        "NewToolNotFoundError",
 			constructor: func() *CheckError { return NewToolNotFoundError("tool", "alt") },
 			expectedErr: ErrToolNotFound,
-			canSkip:     true,
-		},
-		{
-			name:        "NewMagexTargetNotFoundError",
-			constructor: func() *CheckError { return NewMagexTargetNotFoundError("target", "alt") },
-			expectedErr: ErrMagexTargetNotFound,
 			canSkip:     true,
 		},
 		{
