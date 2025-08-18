@@ -106,14 +106,14 @@ jobs:
           set -euo pipefail
           BIN_DIR="$HOME/.cache/go-pre-commit-bin"
           GO_PRE_COMMIT_BIN="$BIN_DIR/go-pre-commit"
-          
+
           # If we restored a cache, copy/link it into GOPATH/bin so the binary works.
           if [[ -f "$GO_PRE_COMMIT_BIN" ]]; then
             echo "✅ Using cached go-pre-commit binary"
             mkdir -p "$(go env GOPATH)/bin"
             cp "$GO_PRE_COMMIT_BIN" "$(go env GOPATH)/bin/"
           fi
-          
+
           # Make sure the binary location is on PATH for *all* subsequent steps.
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
@@ -226,7 +226,7 @@ jobs:
         run: |
           echo "✅ Using cached go-pre-commit binary"
           echo "install_success=true" >> $GITHUB_OUTPUT
-          
+
           # Get version from cached binary
           if [[ -f "$(go env GOPATH)/bin/go-pre-commit" ]]; then
             VERSION=$("$(go env GOPATH)/bin/go-pre-commit" --version 2>&1 | head -1 || echo "${{ env.GO_PRE_COMMIT_VERSION }}")
