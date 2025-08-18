@@ -12,6 +12,7 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/plugins"
 	"github.com/mrz1836/go-pre-commit/internal/shared"
+	"github.com/mrz1836/go-pre-commit/internal/tools"
 )
 
 // Registry manages all available checks
@@ -143,25 +144,58 @@ func (r *Registry) GetChecksByCategory(category string) []Check {
 }
 
 // ValidateCheckDependencies validates that all check dependencies are satisfied
-func (r *Registry) ValidateCheckDependencies(ctx context.Context) []error {
+func (r *Registry) ValidateCheckDependencies(_ context.Context) []error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var errors []error
-	for _, check := range r.checks {
-		metadata := r.convertMetadata(check.Metadata())
-		for _, dependency := range metadata.Dependencies {
-			// Check if magex target exists
-			if !r.sharedCtx.HasMagexTarget(ctx, dependency) {
-				errors = append(errors, &CheckDependencyError{
-					CheckName:      metadata.Name,
-					Dependency:     dependency,
-					DependencyType: "magex_target",
+	var errs []error
+
+	for checkName, check := range r.checks {
+		// Get metadata from the check
+		metadata := check.Metadata()
+		if metadata == nil {
+			continue
+		}
+
+		// Use reflection to check for Dependencies field
+		v := reflect.ValueOf(metadata)
+		if v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+		if v.Kind() != reflect.Struct {
+			continue
+		}
+
+		// Look for Dependencies field
+		depsField := v.FieldByName("Dependencies")
+		if !depsField.IsValid() || depsField.Kind() != reflect.Slice {
+			continue
+		}
+
+		// Check each dependency
+		for i := 0; i < depsField.Len(); i++ {
+			dep := depsField.Index(i)
+			if dep.Kind() != reflect.String {
+				continue
+			}
+
+			depName := dep.String()
+			if depName == "" {
+				continue
+			}
+
+			// Check if the tool is available
+			if !tools.IsInstalled(depName) {
+				errs = append(errs, &CheckDependencyError{
+					CheckName:      checkName,
+					Dependency:     depName,
+					DependencyType: "tool",
 				})
 			}
 		}
 	}
-	return errors
+
+	return errs
 }
 
 // CheckDependencyError represents an error when a check dependency is not satisfied
