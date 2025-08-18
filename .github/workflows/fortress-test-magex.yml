@@ -93,7 +93,6 @@ jobs:
           echo "⬇️ Cache miss – installing MAGE-X..."
           echo "📋 Installing MAGE-X version ${{ env.MAGE_X_VERSION }}..."
           go install github.com/mrz1836/mage-x/cmd/magex@${{ env.MAGE_X_VERSION }}
-          magex update:install
           # Copy the freshly built binary back into the cache directory
           mkdir -p ~/.cache/magex-bin
           cp "$(go env GOPATH)/bin/magex" ~/.cache/magex-bin/
