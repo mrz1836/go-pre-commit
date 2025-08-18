@@ -53,9 +53,6 @@
         <a href=".github/AGENTS.md">
           <img src="https://img.shields.io/badge/AGENTS.md-found-40b814?style=flat&logo=openai" alt="AGENTS.md rules">
         </a><br/>
-        <a href="https://golang.org/">
-          <img src="https://img.shields.io/badge/Pure_Go-100%25-00ADD8?style=flat&logo=go&logoColor=white" alt="Pure Go">
-        </a><br/>
 		<a href=".github/dependabot.yml">
           <img src="https://img.shields.io/badge/dependencies-automatic-blue?logo=dependabot&style=flat" alt="Dependabot">
         </a>
