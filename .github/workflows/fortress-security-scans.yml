@@ -192,7 +192,7 @@ jobs:
           set -euo pipefail
           BIN_DIR="$HOME/.cache/govulncheck-bin"
           GOVULN_BIN="$BIN_DIR/govulncheck"
-          # If we restored a cache, copy/link it into GOPATH/bin so magex works.
+          # If we restored a cache, copy/link it into GOPATH/bin so the binary works.
           if [[ -f "$GOVULN_BIN" ]]; then
             echo "✅ Using cached govulncheck binary"
             mkdir -p "$(go env GOPATH)/bin"
