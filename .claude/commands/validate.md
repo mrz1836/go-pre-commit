@@ -1,5 +1,5 @@
 ---
-allowed-tools: Task, Bash(make test:*), Bash(make lint:*), Bash(go test:*), Bash(git status:*)
+allowed-tools: Task, Bash(magex test:*), Bash(magex lint:*), Bash(go test:*), Bash(git status:*)
 description: Full validation suite with parallel agent execution
 claude-sonnet-4-0
 ---
@@ -8,7 +8,7 @@ claude-sonnet-4-0
 
 ### Pre-validation Status
 - Git status: !`git status --short`
-- Build status: !`make build 2>&1 | tail -5`
+- Build status: !`magex build 2>&1 | tail -5`
 
 ### Comprehensive Validation Suite
 

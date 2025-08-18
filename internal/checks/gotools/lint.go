@@ -81,9 +81,9 @@ func (c *LintCheck) Run(ctx context.Context, files []string) error {
 	err := c.runDirectLint(ctx, files)
 
 	// Only fall back to build tool if direct execution failed and build target exists
-	if err != nil && c.sharedCtx.HasMakeTarget(ctx, "lint") {
-		// Try make lint as fallback
-		err = c.runMakeLint(ctx)
+	if err != nil && c.sharedCtx.HasMagexTarget(ctx, "lint") {
+		// Try magex lint as fallback
+		err = c.runMagexLint(ctx)
 	}
 
 	return err
@@ -100,18 +100,18 @@ func (c *LintCheck) FilterFiles(files []string) []string {
 	return filtered
 }
 
-// runMakeLint runs make lint with proper error handling
-func (c *LintCheck) runMakeLint(ctx context.Context) error {
+// runMagexLint runs magex lint with proper error handling
+func (c *LintCheck) runMagexLint(ctx context.Context) error {
 	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to find repository root: %w", err)
 	}
 
-	// Add timeout for make command
+	// Add timeout for magex command
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "make", "lint")
+	cmd := exec.CommandContext(ctx, "magex", "lint")
 	cmd.Dir = repoRoot
 
 	var stdout, stderr bytes.Buffer
@@ -125,17 +125,17 @@ func (c *LintCheck) runMakeLint(ctx context.Context) error {
 		// Check if it's a context timeout
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return prerrors.NewToolExecutionError(
-				"make lint",
+				"magex lint",
 				output,
-				fmt.Sprintf("Lint check timed out after %v. Consider increasing GO_PRE_COMMIT_LINT_TIMEOUT or run 'make lint' manually to see detailed output.", c.timeout),
+				fmt.Sprintf("Lint check timed out after %v. Consider increasing GO_PRE_COMMIT_LINT_TIMEOUT or run 'magex lint' manually to see detailed output.", c.timeout),
 			)
 		}
 
 		// Parse the error for better context
-		if strings.Contains(output, "No rule to make target") {
-			return prerrors.NewMakeTargetNotFoundError(
+		if strings.Contains(output, "command not found") || strings.Contains(output, "unknown command") {
+			return prerrors.NewMagexTargetNotFoundError(
 				"lint",
-				"Create a 'lint' target in your build configuration or disable linting with GO_PRE_COMMIT_ENABLE_LINT=false",
+				"Create a 'lint' target in your magex configuration or disable linting with GO_PRE_COMMIT_ENABLE_LINT=false",
 			)
 		}
 
@@ -157,17 +157,17 @@ func (c *LintCheck) runMakeLint(ctx context.Context) error {
 			return &prerrors.CheckError{
 				Err:        prerrors.ErrLintingIssues,
 				Message:    formattedOutput,
-				Suggestion: "Fix the linting issues shown above. Run 'make lint' to see full details and 'golangci-lint run --help' for configuration options.",
-				Command:    "make lint",
+				Suggestion: "Fix the linting issues shown above. Run 'magex lint' to see full details and 'golangci-lint run --help' for configuration options.",
+				Command:    "magex lint",
 				Output:     formattedOutput,
 			}
 		}
 
 		// Generic failure
 		return prerrors.NewToolExecutionError(
-			"make lint",
+			"magex lint",
 			output,
-			"Run 'make lint' manually to see detailed error output. Check your build configuration and golangci-lint settings.",
+			"Run 'magex lint' manually to see detailed error output. Check your build configuration and golangci-lint settings.",
 		)
 	}
 

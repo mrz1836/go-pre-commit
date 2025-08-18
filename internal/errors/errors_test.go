@@ -39,7 +39,7 @@ func (s *ErrorTestSuite) TestCommonErrors() {
 		{"ErrNotTidy", ErrNotTidy, "go.mod or go.sum are not tidy"},
 		{"ErrWhitespaceIssues", ErrWhitespaceIssues, "whitespace issues found"},
 		{"ErrEOFIssues", ErrEOFIssues, "EOF issues found"},
-		{"ErrMakeTargetNotFound", ErrMakeTargetNotFound, "make target not found"},
+		{"ErrMagexTargetNotFound", ErrMagexTargetNotFound, "magex target not found"},
 		{"ErrToolExecutionFailed", ErrToolExecutionFailed, "tool execution failed"},
 		{"ErrGracefulSkip", ErrGracefulSkip, "check gracefully skipped"},
 	}
@@ -135,16 +135,16 @@ func (s *ErrorTestSuite) TestNewToolNotFoundError() {
 	s.True(err.CanSkip)
 }
 
-// TestNewMakeTargetNotFoundError tests the make target not found error constructor
-func (s *ErrorTestSuite) TestNewMakeTargetNotFoundError() {
+// TestNewMagexTargetNotFoundError tests the magex target not found error constructor
+func (s *ErrorTestSuite) TestNewMagexTargetNotFoundError() {
 	target := "lint"
 	alternative := "try running golangci-lint directly"
 
-	err := NewMakeTargetNotFoundError(target, alternative)
+	err := NewMagexTargetNotFoundError(target, alternative)
 
 	s.NotNil(err)
-	s.True(err.Is(ErrMakeTargetNotFound))
-	s.Equal("make target 'lint' not found", err.Message)
+	s.True(err.Is(ErrMagexTargetNotFound))
+	s.Equal("magex target 'lint' not found", err.Message)
 	s.Equal(alternative, err.Suggestion)
 	s.True(err.CanSkip)
 }
@@ -168,7 +168,7 @@ func (s *ErrorTestSuite) TestNewToolExecutionError() {
 
 // TestNewGracefulSkipError tests the graceful skip error constructor
 func (s *ErrorTestSuite) TestNewGracefulSkipError() {
-	reason := "make target not available"
+	reason := "magex target not available"
 
 	err := NewGracefulSkipError(reason)
 
@@ -234,7 +234,7 @@ func TestErrorComparisons(t *testing.T) {
 	// Test that our predefined errors are distinct
 	assert.NotEqual(t, ErrChecksFailed, ErrNoChecksToRun)
 	assert.NotEqual(t, ErrToolNotFound, ErrLintingIssues)
-	assert.NotEqual(t, ErrMakeTargetNotFound, ErrToolExecutionFailed)
+	assert.NotEqual(t, ErrMagexTargetNotFound, ErrToolExecutionFailed)
 }
 
 func TestErrorWrappingWithStandardLibrary(t *testing.T) {
@@ -271,9 +271,9 @@ func TestAllConstructors(t *testing.T) {
 			canSkip:     true,
 		},
 		{
-			name:        "NewMakeTargetNotFoundError",
-			constructor: func() *CheckError { return NewMakeTargetNotFoundError("target", "alt") },
-			expectedErr: ErrMakeTargetNotFound,
+			name:        "NewMagexTargetNotFoundError",
+			constructor: func() *CheckError { return NewMagexTargetNotFoundError("target", "alt") },
+			expectedErr: ErrMagexTargetNotFound,
 			canSkip:     true,
 		},
 		{

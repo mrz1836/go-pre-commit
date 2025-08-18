@@ -165,11 +165,11 @@ func (f *Formatter) ParseCommandError(command, output string) (message, suggesti
 	output = strings.TrimSpace(output)
 
 	switch command {
-	case "make lint":
+	case "magex lint":
 		return f.parseLintError(output)
-	case "make fumpt":
+	case "magex format:fumpt":
 		return f.parseFumptError(output)
-	case "make mod-tidy":
+	case "magex deps:tidy":
 		return f.parseModTidyError(output)
 	default:
 		return f.parseGenericCommandError(command, output)
@@ -180,7 +180,7 @@ func (f *Formatter) ParseCommandError(command, output string) (message, suggesti
 func (f *Formatter) parseLintError(output string) (string, string) {
 	if strings.Contains(output, "no such file or directory") {
 		return "golangci-lint binary not found",
-			"Install golangci-lint or ensure it's in your PATH. Run 'make install-lint' if available."
+			"Install golangci-lint with 'go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest' or ensure it's in your PATH."
 	}
 
 	if strings.Contains(output, "config file") {
@@ -211,19 +211,19 @@ func (f *Formatter) parseLintError(output string) (string, string) {
 			}
 
 			return fmt.Sprintf("Found %d linting issue(s)", issueCount),
-				"Fix the issues shown above. Run 'make lint' or 'golangci-lint run' to see full details."
+				"Fix the issues shown above. Run 'magex lint' or 'golangci-lint run' to see full details."
 		}
 	}
 
 	return "Linting failed with unknown error",
-		"Run 'make lint' manually to see detailed output."
+		"Run 'magex lint' manually to see detailed output."
 }
 
 // parseFumptError analyzes gofumpt output
 func (f *Formatter) parseFumptError(output string) (string, string) {
 	if strings.Contains(output, "no such file or directory") {
 		return "gofumpt binary not found",
-			"Install gofumpt with 'go install mvdan.cc/gofumpt@latest' or run 'make install-fumpt' if available."
+			"Install gofumpt with 'go install mvdan.cc/gofumpt@latest'."
 	}
 
 	if strings.Contains(output, "permission denied") {
@@ -268,12 +268,13 @@ func (f *Formatter) parseModTidyError(output string) (string, string) {
 
 // parseGenericCommandError analyzes generic command errors
 func (f *Formatter) parseGenericCommandError(command, output string) (string, string) {
-	target := strings.TrimPrefix(command, "make ")
+	target := strings.TrimPrefix(command, "magex ")
 
-	if strings.Contains(output, "No rule to make target") ||
+	if strings.Contains(output, "command not found") ||
+		strings.Contains(output, "unknown command") ||
 		strings.Contains(output, "No such file or directory") {
 		return fmt.Sprintf("Build target '%s' not found", target),
-			fmt.Sprintf("Check your build configuration for the '%s' target or run 'make help' to see available targets.", target)
+			fmt.Sprintf("Check your magex configuration for the '%s' target or run 'magex help' to see available targets.", target)
 	}
 
 	if strings.Contains(output, "Permission denied") {

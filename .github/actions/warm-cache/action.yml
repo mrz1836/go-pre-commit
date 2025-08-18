@@ -151,8 +151,8 @@ runs:
       run: |
         echo "🔍 Checking for go.sum file..."
         if [ ! -f go.sum ]; then
-          echo "⚠️ go.sum not found, running 'make mod-tidy' to generate it."
-          make mod-tidy
+          echo "⚠️ go.sum not found, running 'magex deps:tidy' to generate it."
+          magex deps:tidy
           echo "✅ go.sum generated successfully"
         else
           echo "✅ go.sum already exists"
@@ -167,13 +167,13 @@ runs:
       run: |
         set -euo pipefail
         echo "⬇️  Downloading modules..."
-        make mod-download
+        magex deps:download
 
         echo "🔧 Pre-building project packages..."
-        make pre-build VERBOSE=${{ inputs.enable-verbose }}
+        magex build:prebuild
 
         echo "🏗️  Building stdlib for host platform…"
-        make install-stdlib
+        magex build:stdlib
 
         echo "✅ Cache warmed for Go ${{ inputs.go-version }}"
 

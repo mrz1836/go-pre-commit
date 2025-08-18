@@ -187,8 +187,8 @@ func (s *ContextTestSuite) TestGetRepoRootTimeout() {
 	s.Empty(root)
 }
 
-// TestHasMakeTarget tests make target detection
-func (s *ContextTestSuite) TestHasMakeTarget() {
+// TestHasMagexTarget tests magex target detection
+func (s *ContextTestSuite) TestHasMagexTarget() {
 	ctx := NewContext()
 
 	// Change to temp directory
@@ -206,23 +206,23 @@ func (s *ContextTestSuite) TestHasMakeTarget() {
 	s.createMakefile([]string{"lint", "test", "build"})
 
 	// Test existing target
-	hasLint := ctx.HasMakeTarget(context.Background(), "lint")
+	hasLint := ctx.HasMagexTarget(context.Background(), "lint")
 	s.True(hasLint)
 
 	// Test non-existing target
-	hasFoo := ctx.HasMakeTarget(context.Background(), "nonexistent")
+	hasFoo := ctx.HasMagexTarget(context.Background(), "nonexistent")
 	s.False(hasFoo)
 
 	// Test that results are cached
-	hasLint2 := ctx.HasMakeTarget(context.Background(), "lint")
+	hasLint2 := ctx.HasMagexTarget(context.Background(), "lint")
 	s.True(hasLint2)
 
-	hasFoo2 := ctx.HasMakeTarget(context.Background(), "nonexistent")
+	hasFoo2 := ctx.HasMagexTarget(context.Background(), "nonexistent")
 	s.False(hasFoo2)
 }
 
-// TestHasMakeTargetNoGitRepo tests behavior when not in git repository
-func (s *ContextTestSuite) TestHasMakeTargetNoGitRepo() {
+// TestHasMagexTargetNoGitRepo tests behavior when not in git repository
+func (s *ContextTestSuite) TestHasMagexTargetNoGitRepo() {
 	ctx := NewContext()
 
 	// Create a non-git directory
@@ -245,12 +245,12 @@ func (s *ContextTestSuite) TestHasMakeTargetNoGitRepo() {
 	s.Require().NoError(err)
 
 	// Test that it returns false when git repo root cannot be found
-	hasTarget := ctx.HasMakeTarget(context.Background(), "lint")
+	hasTarget := ctx.HasMagexTarget(context.Background(), "lint")
 	s.False(hasTarget)
 }
 
-// TestHasMakeTargetTimeout tests timeout handling
-func (s *ContextTestSuite) TestHasMakeTargetTimeout() {
+// TestHasMagexTargetTimeout tests timeout handling
+func (s *ContextTestSuite) TestHasMagexTargetTimeout() {
 	ctx := NewContext()
 
 	// Change to temp directory
@@ -274,12 +274,12 @@ func (s *ContextTestSuite) TestHasMakeTargetTimeout() {
 	// Allow some time for the context to timeout
 	time.Sleep(10 * time.Millisecond)
 
-	hasTarget := ctx.HasMakeTarget(timeoutCtx, "lint")
+	hasTarget := ctx.HasMagexTarget(timeoutCtx, "lint")
 	// Should return false due to timeout
 	s.False(hasTarget)
 }
 
-// TestExecuteBuildTarget tests make target execution
+// TestExecuteBuildTarget tests magex target execution
 func (s *ContextTestSuite) TestExecuteBuildTarget() {
 	ctx := NewContext()
 
@@ -382,7 +382,7 @@ func (s *ContextTestSuite) TestConcurrentAccess() {
 	// Create Makefile
 	s.createMakefile([]string{"lint", "test", "build"})
 
-	// Run multiple goroutines checking make targets
+	// Run multiple goroutines checking magex targets
 	done := make(chan bool, 10)
 	for i := 0; i < 10; i++ {
 		go func(i int) {
@@ -390,7 +390,7 @@ func (s *ContextTestSuite) TestConcurrentAccess() {
 			if i%2 == 0 {
 				target = "test"
 			}
-			hasTarget := ctx.HasMakeTarget(context.Background(), target)
+			hasTarget := ctx.HasMagexTarget(context.Background(), target)
 			s.True(hasTarget)
 			done <- true
 		}(i)
@@ -417,13 +417,13 @@ func TestNewContextUnit(t *testing.T) {
 func TestContextCaching(t *testing.T) {
 	ctx := NewContext()
 
-	// Test that make targets cache is properly initialized
+	// Test that magex targets cache is properly initialized
 	assert.NotNil(t, ctx.buildTargets)
 	assert.Empty(t, ctx.buildTargets)
 }
 
 // Benchmark tests
-func BenchmarkHasMakeTarget(b *testing.B) {
+func BenchmarkHasMagexTarget(b *testing.B) {
 	ctx := NewContext()
 
 	// Create temporary git repo
@@ -452,11 +452,11 @@ func BenchmarkHasMakeTarget(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ctx.HasMakeTarget(context.Background(), "lint")
+		ctx.HasMagexTarget(context.Background(), "lint")
 	}
 }
 
-// Tests for GetAvailableMakeTargets function (currently 0% coverage)
+// Tests for GetAvailableBuildTargets function (currently 0% coverage)
 func TestGetAvailableBuildTargets(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldDir, err := os.Getwd()
@@ -522,13 +522,13 @@ install: build
 	})
 
 	t.Run("with make command failure", func(t *testing.T) {
-		// Remove Makefile to cause make -qp to fail
+		// Remove Makefile to cause magex help to fail
 		_ = os.Remove("Makefile")
 
 		sharedCtx := NewContext()
 		targets, err := sharedCtx.GetAvailableBuildTargets(ctx)
 
-		// Should return fallback targets when make fails
+		// Should return fallback targets when magex fails
 		require.NoError(t, err)
 		expectedFallbacks := []string{"help", "build", "test", "clean", "install"}
 		assert.ElementsMatch(t, expectedFallbacks, targets)
@@ -573,8 +573,8 @@ install: build
 	})
 }
 
-// Tests for parseMakeTargets function (currently 0% coverage)
-func TestParseMakeTargets(t *testing.T) {
+// Tests for parseBuildTargets function (currently 0% coverage)
+func TestParseBuildTargets(t *testing.T) {
 	sharedCtx := NewContext()
 
 	tests := []struct {

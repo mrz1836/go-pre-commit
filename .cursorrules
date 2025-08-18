@@ -23,7 +23,6 @@ All contributors must read `.github/AGENTS.md` for complete guidelines. If any r
 
 ## Dependency Management
 - Manage modules with `go mod tidy` after import changes.
-- Run `make govulncheck` to check for vulnerabilities when dependencies change.
 
 ## Security Reporting
 - Do not open public issues for vulnerabilities.

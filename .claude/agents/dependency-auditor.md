@@ -104,7 +104,7 @@ go get -u github.com/spf13/cobra@latest
 
 # After any update
 go mod tidy
-make test
+magex test
 ```
 
 #### Breaking Changes Assessment
@@ -113,8 +113,8 @@ make test
 go get github.com/package/name@v2
 
 # Test compatibility
-make test
-make lint
+magex test
+magex lint
 
 # Revert if needed
 git checkout go.mod go.sum
@@ -219,7 +219,7 @@ go list -u -m all
 # Monthly update cycle
 go get -u ./...
 go mod tidy
-make test
+magex test
 ```
 
 ## Compliance Checks
@@ -272,7 +272,7 @@ go-licenses report ./... --template=csv > licenses.csv
    git checkout -b security/fix-cve-xxxxx
    go get [package]@[fixed-version]
    go mod tidy
-   make test
+   magex test
    ```
 
 4. **Deploy Fix**

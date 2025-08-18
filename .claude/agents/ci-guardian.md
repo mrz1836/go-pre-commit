@@ -63,7 +63,7 @@ ENABLE_SECURITY_SCAN_GITLEAKS=true
 # Check test output
 - name: Run tests
   run: |
-    make test-ci 2>&1 | tee test-output.log
+    magex test:cover 2>&1 | tee test-output.log
     echo "Exit code: $?"
 
 # Add debugging for flaky tests
@@ -168,7 +168,7 @@ concurrency:
   if: |
     github.event_name == 'push' &&
     github.ref == 'refs/heads/master'
-  run: make expensive-checks
+  run: magex audit:comprehensive
 ```
 
 ## Workflow Security
@@ -233,7 +233,7 @@ gh run download [run-id]
 ```bash
 # Run CI tests locally
 export CI=true
-make test-ci
+magex test:cover
 
 # Simulate GitHub Actions environment
 act -W .github/workflows/fortress.yml
@@ -271,7 +271,7 @@ act -W .github/workflows/fortress.yml
   continue-on-error: false
   run: |
     echo "::group::Running new check"
-    make new-check
+    magex configure:check
     echo "::endgroup::"
 
 - name: Report results
@@ -289,7 +289,7 @@ act -W .github/workflows/fortress.yml
   if: env.ENABLE_NEW_FEATURE == 'true'
   run: |
     echo "Running new feature..."
-    make new-feature
+    magex configure:feature
 ```
 
 ## Example Fix Report

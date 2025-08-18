@@ -10,8 +10,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 )
 
 // BuildTargetInfo contains information about a build target
@@ -22,6 +20,13 @@ type BuildTargetInfo struct {
 	Error       error
 	LastChecked time.Time
 }
+
+var (
+	// ErrMagexNotFound indicates magex is not installed or not found
+	ErrMagexNotFound = errors.New("magex not found or not installed")
+	// ErrMagexTargetTimeout indicates timeout checking magex target
+	ErrMagexTargetTimeout = errors.New("timeout checking magex target")
+)
 
 // Context provides cached repository information and build target availability
 type Context struct {
@@ -58,8 +63,8 @@ func (sc *Context) GetRepoRoot(ctx context.Context) (string, error) {
 	return sc.repoRoot, sc.repoRootErr
 }
 
-// HasMakeTarget checks if a build target exists, with caching
-func (sc *Context) HasMakeTarget(ctx context.Context, target string) bool {
+// HasMagexTarget checks if a magex target exists, with caching
+func (sc *Context) HasMagexTarget(ctx context.Context, target string) bool {
 	info := sc.GetBuildTargetInfo(ctx, target)
 	return info.Exists
 }
@@ -95,8 +100,8 @@ func (sc *Context) GetBuildTargetInfo(ctx context.Context, target string) *Build
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	// Check if build target exists using dry-run
-	cmd := exec.CommandContext(ctx, "make", "-n", target)
+	// Check if magex target exists by listing available commands
+	cmd := exec.CommandContext(ctx, "magex", "help")
 	cmd.Dir = repoRoot
 
 	var stdout, stderr bytes.Buffer
@@ -104,21 +109,24 @@ func (sc *Context) GetBuildTargetInfo(ctx context.Context, target string) *Build
 	cmd.Stderr = &stderr
 
 	err = cmd.Run()
+	output := stdout.String() + stderr.String()
 
 	if err == nil {
-		info.Exists = true
-		// Try to extract description from build help or target comments
-		info.Description = sc.extractTargetDescription(ctx, repoRoot, target)
+		// Check if the target exists in the magex help output
+		info.Exists = strings.Contains(output, target)
+		if info.Exists {
+			// Try to extract description from magex help output
+			info.Description = sc.extractMagexTargetDescription(output, target)
+		}
 	} else {
 		info.Exists = false
 		// Provide helpful error information
-		output := stdout.String() + stderr.String()
-		if strings.Contains(output, "No rule to make target") {
-			info.Error = fmt.Errorf("%w '%s' in build configuration", prerrors.ErrMakeTargetNotFound, target)
+		if strings.Contains(output, "command not found") {
+			info.Error = ErrMagexNotFound
 		} else if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			info.Error = fmt.Errorf("%w '%s'", prerrors.ErrMakeTargetTimeout, target)
+			info.Error = fmt.Errorf("%w '%s'", ErrMagexTargetTimeout, target)
 		} else {
-			info.Error = fmt.Errorf("error checking build target '%s': %w", target, err)
+			info.Error = fmt.Errorf("error checking magex target '%s': %w", target, err)
 		}
 	}
 
@@ -211,6 +219,42 @@ func (sc *Context) extractTargetDescription(ctx context.Context, repoRoot, targe
 	}
 
 	// Help failed (no help target, timeout, or other error) - return empty
+	return ""
+}
+
+// extractMagexTargetDescription extracts description for a magex target from help output
+func (sc *Context) extractMagexTargetDescription(helpOutput, target string) string {
+	lines := strings.Split(helpOutput, "\n")
+	for _, line := range lines {
+		if strings.Contains(line, target) {
+			// Extract description from magex help output format
+			parts := strings.Fields(line)
+			if len(parts) > 1 && parts[0] == target {
+				desc := strings.Join(parts[1:], " ")
+				desc = strings.TrimSpace(desc)
+				if desc != "" {
+					return desc
+				}
+			}
+		}
+	}
+
+	// Fallback descriptions for common magex targets
+	commonTargets := map[string]string{
+		"format":   "Format Go code with gofumpt",
+		"lint":     "Run golangci-lint on Go code",
+		"mod:tidy": "Tidy Go module dependencies",
+		"test":     "Run tests",
+		"build":    "Build the project",
+		"clean":    "Clean build artifacts",
+		"install":  "Install dependencies",
+		"help":     "Show help information",
+	}
+
+	if desc, exists := commonTargets[target]; exists {
+		return desc
+	}
+
 	return ""
 }
 

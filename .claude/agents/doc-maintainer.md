@@ -56,7 +56,7 @@ go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
 # Or clone and build locally
 git clone https://github.com/mrz1836/go-pre-commit.git
 cd go-pre-commit
-make install
+magex install
 \```
 ```
 
@@ -81,15 +81,15 @@ When checks are added/modified:
 
 | Check | Description | Auto-fix | Configuration |
 |-------|-------------|----------|---------------|
-| **fumpt** | Formats Go code | ✅ | Requires `make fumpt` |
-| **lint** | Runs golangci-lint | ❌ | Requires `make lint` |
+| **fumpt** | Formats Go code | ✅ | Requires `magex format` |
+| **lint** | Runs golangci-lint | ❌ | Requires `magex lint` |
 ```
 
-### 4. Update Makefile Commands
-After running `make help`:
+### 4. Update MAGE-X Commands
+After running `magex -l`:
 ```bash
 # Generate updated command list
-make help > commands.txt
+magex -l > commands.txt
 
 # Update README.md between markers
 <!-- make-help-start -->

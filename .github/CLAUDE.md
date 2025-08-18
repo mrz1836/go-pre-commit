@@ -58,12 +58,56 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 ### ⚙️ Technical Requirements
 
 - **Go version:** 1.24+ (check `go.mod`)
+- **Build system:** [Magex](https://github.com/mrz1836/mage-x) - enterprise-grade build automation
 - **Dependencies:** Minimal - Cobra, testify, color, godotenv
 - **Configuration:**
   - `.env.base` contains default configuration that works for most projects
   - `.env.custom` (optional) contains project-specific overrides
   - Custom values override base values when both files are present
 - **Build targets:** All checks work with pure Go
+
+### 🛠️ Magex Build System
+
+This project uses **Magex** for build automation. Magex provides enterprise-grade development tools with a friendly user experience.
+
+**Installation:**
+```bash
+# Install mage (required for magex)
+go install github.com/magefile/mage@latest
+
+# Clone and enter project
+git clone https://github.com/mrz1836/go-pre-commit.git
+cd go-pre-commit
+
+# Magex is ready to use immediately
+magex test
+```
+
+**Essential Commands:**
+```bash
+magex test         # Run all tests
+magex lint         # Run linters (golangci-lint)
+magex format       # Format code (fumpt, goimports)
+magex build        # Build the binary
+magex install      # Install binary to $GOPATH/bin
+magex deps:tidy    # Clean and update dependencies
+magex -l           # List all available commands (260+ total)
+```
+
+**Development Workflow:**
+```bash
+# Start developing
+magex deps:download    # Download dependencies
+magex build           # Initial build
+
+# Make changes, then run quality checks
+magex format && magex lint && magex test
+
+# Advanced commands
+magex test:race       # Run tests with race detection
+magex test:cover      # Generate coverage report
+magex audit:report    # Security and dependency audit
+```
 
 ### ✅ Quick Checklist for Claude
 
@@ -80,14 +124,14 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
    They drive auto‑labeling and CI gates.
 
 4. **Never tag releases**
-   Only repository code‑owners run `make tag` / `make release`.
+   Only repository code‑owners run `magex version` / `magex release`.
 
 5. **Pass all checks before PR**
    ```bash
-   make test          # Run tests with testify
-   make lint          # golangci-lint
-   make fumpt         # Format with gofumpt
-   make mod-tidy      # Clean dependencies
+   magex test         # Run tests with testify
+   magex lint         # golangci-lint
+   magex format       # Format with fumpt, goimports
+   magex deps:tidy    # Clean dependencies
    ```
 
 6. **Environment configuration**
@@ -96,7 +140,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 ### 🧪 Testing Notes
 
 - Tests use **testify** exclusively (no bare `testing` package)
-- Run `make test` for fast tests, `make test-race` for race detection
+- Run `magex test` for fast tests, `magex test:race` for race detection
 - Mock external dependencies for deterministic tests
 - Check implementations have comprehensive test coverage
 

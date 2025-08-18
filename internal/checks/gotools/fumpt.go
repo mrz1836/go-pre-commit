@@ -114,9 +114,9 @@ func (c *FumptCheck) Run(ctx context.Context, files []string) error {
 	err = c.runDirectFumpt(ctx, files)
 
 	// Only fall back to build tool if direct execution failed and build target exists
-	if err != nil && c.sharedCtx.HasMakeTarget(ctx, "fumpt") {
-		// Try make fumpt as fallback
-		err = c.runMakeFumpt(ctx)
+	if err != nil && c.sharedCtx.HasMagexTarget(ctx, "format") {
+		// Try magex format as fallback
+		err = c.runMagexFumpt(ctx)
 	}
 
 	// If formatting succeeded and auto-stage is enabled, stage the modified files
@@ -142,18 +142,18 @@ func (c *FumptCheck) FilterFiles(files []string) []string {
 	return filtered
 }
 
-// runMakeFumpt runs make fumpt with proper error handling
-func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
+// runMagexFumpt runs magex fumpt with proper error handling
+func (c *FumptCheck) runMagexFumpt(ctx context.Context) error {
 	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to find repository root: %w", err)
 	}
 
-	// Add timeout for make command
+	// Add timeout for magex command
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "make", "fumpt")
+	cmd := exec.CommandContext(ctx, "magex", "format")
 	cmd.Dir = repoRoot
 
 	var stdout, stderr bytes.Buffer
@@ -166,17 +166,17 @@ func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
 		// Check if it's a context timeout
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return prerrors.NewToolExecutionError(
-				"make fumpt",
+				"magex format",
 				output,
-				fmt.Sprintf("Fumpt check timed out after %v. Consider increasing GO_PRE_COMMIT_FUMPT_TIMEOUT or run 'make fumpt' manually.", c.timeout),
+				fmt.Sprintf("Fumpt check timed out after %v. Consider increasing GO_PRE_COMMIT_FUMPT_TIMEOUT or run 'magex format' manually.", c.timeout),
 			)
 		}
 
 		// Parse the error for better context
-		if strings.Contains(output, "No rule to make target") {
-			return prerrors.NewMakeTargetNotFoundError(
+		if strings.Contains(output, "command not found") || strings.Contains(output, "unknown command") {
+			return prerrors.NewMagexTargetNotFoundError(
 				"fumpt",
-				"Create a 'fumpt' target in your build configuration or disable fumpt with GO_PRE_COMMIT_ENABLE_FUMPT=false",
+				"Create a 'format' target in your magex configuration or disable fumpt with GO_PRE_COMMIT_ENABLE_FUMPT=false",
 			)
 		}
 
@@ -220,7 +220,7 @@ func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
 		// Enhanced PATH-related error detection
 		if strings.Contains(output, "installation failed or not in PATH") {
 			return prerrors.NewToolExecutionError(
-				"make fumpt",
+				"magex format",
 				output,
 				"gofumpt installation succeeded but the binary is not accessible. This commonly happens in git GUI applications where PATH differs from terminal. Solutions:\n1. Add GOPATH/bin to your system PATH\n2. Restart your git GUI application\n3. Use terminal for git operations\n4. Check that $(go env GOPATH)/bin is in PATH",
 			)
@@ -228,7 +228,7 @@ func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
 
 		if strings.Contains(output, "permission denied") {
 			return prerrors.NewToolExecutionError(
-				"make fumpt",
+				"magex format",
 				output,
 				"Permission denied. Check file permissions and ensure you have write access to all Go files.",
 			)
@@ -236,7 +236,7 @@ func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
 
 		if strings.Contains(output, "syntax error") || strings.Contains(output, "invalid Go syntax") {
 			return prerrors.NewToolExecutionError(
-				"make fumpt",
+				"magex format",
 				output,
 				"Go syntax errors prevent formatting. Fix syntax errors in your Go files before running fumpt.",
 			)
@@ -244,14 +244,14 @@ func (c *FumptCheck) runMakeFumpt(ctx context.Context) error {
 
 		// Enhanced generic failure with better context
 		envHints := []string{
-			"Run 'make fumpt' manually to see detailed error output.",
+			"Run 'magex format' manually to see detailed error output.",
 			"Check your build configuration and gofumpt installation.",
 			"If using a git GUI (Tower, SourceTree, etc.), try using terminal instead.",
 			"Ensure GO_PRE_COMMIT_FUMPT_VERSION is set correctly in .env.base",
 		}
 
 		return prerrors.NewToolExecutionError(
-			"make fumpt",
+			"magex format",
 			output,
 			strings.Join(envHints, "\n"),
 		)

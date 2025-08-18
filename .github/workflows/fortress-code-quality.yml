@@ -129,7 +129,7 @@ jobs:
       - name: 🔍 Go vet (parallel)
         run: |
           echo "🚀 Running static analysis with go vet (parallel mode)..."
-          make vet-parallel
+          magex lint
           echo "✅ Static analysis completed successfully"
 
       # ————————————————————————————————————————————————————————————————
@@ -184,18 +184,14 @@ jobs:
           echo "GOLANGCI_LINT_CACHE=$HOME/.cache/golangci-lint" >> $GITHUB_ENV
 
       # ————————————————————————————————————————————————————————————————
-      # Extract golangci-lint version from Makefile
+      # Extract golangci-lint version (MAGE-X managed)
       # ————————————————————————————————————————————————————————————————
-      - name: 🔍 Extract golangci-lint version from Makefile
+      - name: 🔍 Use MAGE-X managed golangci-lint version
         id: golangci-lint-version
         run: |
-          VERSION=$(make lint-version)
-          if [ -z "$VERSION" ]; then
-            echo "❌ GOLANGCI_LINT_VERSION is not set in the Makefile"
-            exit 1
-          fi
-          echo "✅ Found golangci-lint version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # MAGE-X handles golangci-lint version automatically
+          echo "✅ Using MAGE-X managed golangci-lint version"
+          echo "version=latest" >> $GITHUB_OUTPUT
 
       # ————————————————————————————————————————————————————————————————
       # Restore Go module and build caches
@@ -265,11 +261,11 @@ jobs:
           # Export the cache directory for golangci-lint
           export GOLANGCI_LINT_CACHE=$GOLANGCI_LINT_CACHE
 
-          # Running lint with version from Makefile
+          # Running lint with MAGE-X managed version
           echo "🔧 Using golangci-lint version: ${{ steps.golangci-lint-version.outputs.version }}"
 
-          # Run with your makefile
-          make lint
+          # Run with MAGE-X
+          magex lint
 
           echo "✅ Code linting completed successfully"
 

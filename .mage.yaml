@@ -1,0 +1,25 @@
+project:
+  name: go-pre-commit
+  binary: go-pre-commit
+  module: github.com/mrz1836/go-pre-commit
+  main: ./cmd/go-pre-commit
+
+build:
+  # Custom ldflags with version injection (matching original Makefile)
+  ldflags:
+    - "-s -w"
+    - "-X main.Version={{.Version}}"
+    - "-X main.Commit={{.Commit}}"
+    - "-X main.BuildDate={{.Date}}"
+  flags:
+    - "-trimpath"
+  # Output to same path as original Makefile
+  output: "./cmd/go-pre-commit/go-pre-commit"
+
+# Note: Custom tasks are not supported by MAGE-X.
+# Use standard magex commands instead:
+#   magex build           # Build the binary
+#   magex install         # Install to $GOPATH/bin
+#   magex test            # Run tests
+#   magex build:clean     # Clean build artifacts
+#   magex docs:godocs     # Generate documentation

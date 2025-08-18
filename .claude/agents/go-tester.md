@@ -16,9 +16,9 @@ When invoked:
 
 1. **Initial Test Run**
    ```bash
-   make test           # Fast tests
-   make test-race      # Race detection
-   make test-ci        # Full CI suite
+   magex test          # Fast tests
+   magex test:race     # Race detection
+   magex test:cover    # Coverage tests
    ```
 
 2. **Analyze Failures**
@@ -37,7 +37,7 @@ When invoked:
 
 4. **Test Coverage Analysis**
    ```bash
-   make coverage
+   magex metrics:coverage
    go test -coverprofile=coverage.out ./...
    go tool cover -html=coverage.out
    ```
@@ -135,7 +135,7 @@ func BenchmarkFunctionName(b *testing.B) {
     }
 }
 ```
-Run with: `make bench`
+Run with: `magex bench:run`
 
 ## Collaboration
 
@@ -191,8 +191,8 @@ Location: `internal/validation/`
    - Used sync.WaitGroup correctly
 
 ✅ All tests passing:
-- make test: PASS (2.4s)
-- make test-race: PASS (8.1s)
+- magex test: PASS (2.4s)
+- magex test:race: PASS (8.1s)
 - Coverage: 91.3%
 ```
 

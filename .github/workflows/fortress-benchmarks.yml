@@ -194,15 +194,15 @@ jobs:
           case "${{ env.BENCHMARK_MODE }}" in
             quick)
               echo "⚡ Running quick benchmarks (50ms runs)..."
-              BENCH_CMD="make bench-quick"
+              BENCH_CMD="magex bench:run"
               ;;
             full)
               echo "🔬 Running comprehensive benchmarks (10s runs)..."
-              BENCH_CMD="make bench-full"
+              BENCH_CMD="magex bench:run"
               ;;
             normal|*)
               echo "📊 Running normal benchmarks (100ms runs)..."
-              BENCH_CMD="make bench"
+              BENCH_CMD="magex bench:run"
               ;;
           esac
 

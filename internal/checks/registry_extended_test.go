@@ -372,8 +372,8 @@ func TestRegistry_ValidateCheckDependencies(t *testing.T) {
 		errorMessages = append(errorMessages, err.Error())
 	}
 
-	assert.Contains(t, errorMessages, "check 'check1' requires make_target 'test-target-1' which is not available")
-	assert.Contains(t, errorMessages, "check 'check2' requires make_target 'test-target-2' which is not available")
+	assert.Contains(t, errorMessages, "check 'check1' requires magex_target 'test-target-1' which is not available")
+	assert.Contains(t, errorMessages, "check 'check2' requires magex_target 'test-target-2' which is not available")
 	// Check3 should have 2 errors
 	count := 0
 	for _, msg := range errorMessages {
@@ -415,11 +415,11 @@ func TestRegistry_GetEstimatedDuration(t *testing.T) {
 func TestCheckDependencyError(t *testing.T) {
 	err := &CheckDependencyError{
 		CheckName:      "test-check",
-		Dependency:     "make-target",
-		DependencyType: "make_target",
+		Dependency:     "magex-target",
+		DependencyType: "magex_target",
 	}
 
-	assert.Equal(t, "check 'test-check' requires make_target 'make-target' which is not available", err.Error())
+	assert.Equal(t, "check 'test-check' requires magex_target 'magex-target' which is not available", err.Error())
 }
 
 // Test metadata conversion with various types
@@ -448,13 +448,13 @@ func TestRegistry_ConvertMetadata(t *testing.T) {
 				name:     "builtin",
 				desc:     "Builtin metadata",
 				category: "formatting",
-				deps:     []string{"make-target"},
+				deps:     []string{"magex-target"},
 			},
 			validate: func(t *testing.T, metadata CheckMetadata) {
 				assert.Equal(t, "builtin", metadata.Name)
 				assert.Equal(t, "Builtin metadata", metadata.Description)
 				assert.Equal(t, "formatting", metadata.Category)
-				assert.Equal(t, []string{"make-target"}, metadata.Dependencies)
+				assert.Equal(t, []string{"magex-target"}, metadata.Dependencies)
 				assert.Equal(t, 5*time.Second, metadata.EstimatedDuration)
 			},
 		},

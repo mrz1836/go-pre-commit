@@ -87,9 +87,9 @@ func (c *ModTidyCheck) Run(ctx context.Context, files []string) error {
 	err := c.runDirectModTidy(ctx)
 
 	// Only fall back to build tool if direct execution failed and build target exists
-	if err != nil && c.sharedCtx.HasMakeTarget(ctx, "mod-tidy") {
-		// Try make mod-tidy as fallback
-		err = c.runMakeModTidy(ctx)
+	if err != nil && c.sharedCtx.HasMagexTarget(ctx, "mod:tidy") {
+		// Try magex mod:tidy as fallback
+		err = c.runMagexModTidy(ctx)
 	}
 
 	return err
@@ -127,8 +127,8 @@ func (c *ModTidyCheck) FilterFiles(files []string) []string {
 	return []string{}
 }
 
-// runMakeModTidy runs make mod-tidy
-func (c *ModTidyCheck) runMakeModTidy(ctx context.Context) error {
+// runMagexModTidy runs magex deps:tidy
+func (c *ModTidyCheck) runMagexModTidy(ctx context.Context) error {
 	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to find repository root: %w", err)
@@ -148,12 +148,12 @@ func (c *ModTidyCheck) runMakeModTidy(ctx context.Context) error {
 		return nil
 	}
 
-	// Fall back to running make mod-tidy and checking for changes
-	// Add timeout for make command
+	// Fall back to running magex deps:tidy and checking for changes
+	// Add timeout for magex command
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "make", "mod-tidy")
+	cmd := exec.CommandContext(ctx, "magex", "mod:tidy")
 	cmd.Dir = repoRoot
 
 	var stdout, stderr bytes.Buffer
@@ -166,23 +166,23 @@ func (c *ModTidyCheck) runMakeModTidy(ctx context.Context) error {
 		// Check if it's a context timeout
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return prerrors.NewToolExecutionError(
-				"make mod-tidy",
+				"magex mod:tidy",
 				output,
-				fmt.Sprintf("Mod tidy check timed out after %v. Consider increasing GO_PRE_COMMIT_MOD_TIDY_TIMEOUT or run 'make mod-tidy' manually.", c.timeout),
+				fmt.Sprintf("Mod tidy check timed out after %v. Consider increasing GO_PRE_COMMIT_MOD_TIDY_TIMEOUT or run 'magex mod:tidy' manually.", c.timeout),
 			)
 		}
 
 		// Parse the error for better context
-		if strings.Contains(output, "No rule to make target") {
-			return prerrors.NewMakeTargetNotFoundError(
+		if strings.Contains(output, "command not found") || strings.Contains(output, "unknown command") {
+			return prerrors.NewMagexTargetNotFoundError(
 				"mod-tidy",
-				"Create a 'mod-tidy' target in your build configuration or disable mod-tidy with GO_PRE_COMMIT_ENABLE_MOD_TIDY=false",
+				"Create a 'mod:tidy' target in your magex configuration or disable mod-tidy with GO_PRE_COMMIT_ENABLE_MOD_TIDY=false",
 			)
 		}
 
 		if strings.Contains(output, "no go.mod file") {
 			return prerrors.NewToolExecutionError(
-				"make mod-tidy",
+				"magex mod:tidy",
 				output,
 				"No go.mod file found. Initialize a Go module with 'go mod init <module-name>'.",
 			)
@@ -190,7 +190,7 @@ func (c *ModTidyCheck) runMakeModTidy(ctx context.Context) error {
 
 		if strings.Contains(output, "network") || strings.Contains(output, "timeout") {
 			return prerrors.NewToolExecutionError(
-				"make mod-tidy",
+				"magex mod:tidy",
 				output,
 				"Network error downloading modules. Check your internet connection and proxy settings. Try running 'go mod tidy' manually.",
 			)
@@ -198,7 +198,7 @@ func (c *ModTidyCheck) runMakeModTidy(ctx context.Context) error {
 
 		if strings.Contains(output, "checksum mismatch") {
 			return prerrors.NewToolExecutionError(
-				"make mod-tidy",
+				"magex mod:tidy",
 				output,
 				"Module checksum verification failed. Run 'go clean -modcache' and try again, or check for module security issues.",
 			)
@@ -206,9 +206,9 @@ func (c *ModTidyCheck) runMakeModTidy(ctx context.Context) error {
 
 		// Generic failure
 		return prerrors.NewToolExecutionError(
-			"make mod-tidy",
+			"magex mod:tidy",
 			output,
-			"Run 'make mod-tidy' manually to see detailed error output. Check your build configuration and module dependencies.",
+			"Run 'magex mod:tidy' manually to see detailed error output. Check your build configuration and module dependencies.",
 		)
 	}
 

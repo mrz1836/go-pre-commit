@@ -146,16 +146,13 @@ GO_PRE_COMMIT_TIMEOUT_SECONDS=60
 
 #### 3. Make Target Failures
 ```bash
-# Verify Make targets exist
-make fumpt
-make lint
-make mod-tidy
+# Verify MAGE-X commands exist
+magex format
+magex lint
+magex deps:tidy
 
-# Check Makefile includes
-cat Makefile | grep include
-
-# Test targets individually
-make -n fumpt  # Dry run
+# Check .mage.yaml configuration
+cat .mage.yaml
 ```
 
 #### 4. Auto-staging Not Working
@@ -254,9 +251,9 @@ Configuration:
 - Fail fast: false
 
 Enabled Checks:
-✅ fumpt (make target exists)
-✅ lint (make target exists)
-✅ mod-tidy (make target exists)
+✅ fumpt (magex format available)
+✅ lint (magex lint available)
+✅ mod-tidy (magex deps:tidy available)
 ✅ whitespace (built-in)
 ✅ EOF (built-in)
 

@@ -111,6 +111,14 @@ go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
 go-pre-commit upgrade --force
 ```
 
+### Install MAGE-X build tool
+
+```bash
+# Install MAGE-X for development and building
+go install github.com/mrz1836/mage-x/cmd/magex@latest
+magex update:install
+```
+
 ### Set up in your project
 
 ```bash
@@ -140,7 +148,7 @@ git commit -m "Test commit"
 # ✓ Ensuring files end with newline
 ```
 
-> **Good to know:** `go-pre-commit` is a pure Go solution with *zero* external dependencies.
+> **Good to know:** `go-pre-commit` is a pure Go solution with minimal external dependencies.
 > It's a single Go binary that replaces Python-based pre-commit frameworks.
 > All formatting and linting tools are automatically installed when needed!
 
@@ -526,7 +534,7 @@ git commit -m "Initial commit"
 
 * **Continuous Integration on Autopilot** with [GitHub Actions](https://github.com/features/actions) – every push is built, tested, and reported in minutes.
 * **Pull‑Request Flow That Merges Itself** thanks to [auto‑merge](.github/workflows/auto-merge-on-approval.yml) and hands‑free [Dependabot auto‑merge](.github/workflows/dependabot-auto-merge.yml).
-* **One‑Command Builds** powered by battle‑tested [Make](https://www.gnu.org/software/make) targets for linting, testing, releases, and more.
+* **One‑Command Builds** powered by modern [MAGE-X](https://github.com/mrz1836/mage-x) with 343+ built-in commands for linting, testing, releases, and more.
 * **First‑Class Dependency Management** using native [Go Modules](https://github.com/golang/go/wiki/Modules).
 * **Uniform Code Style** via [gofumpt](https://github.com/mvdan/gofumpt) plus zero‑noise linting with [golangci‑lint](https://github.com/golangci/golangci-lint).
 * **Confidence‑Boosting Tests** with [testify](https://github.com/stretchr/testify), the Go [race detector](https://blog.golang.org/race-detector), crystal‑clear [HTML coverage](https://blog.golang.org/cover) snapshots, and automatic uploads to [Codecov](https://codecov.io/).
@@ -564,7 +572,7 @@ The release process is defined in the [.goreleaser.yml](.goreleaser.yml) configu
 Then create and push a new Git tag using:
 
 ```bash
-make tag version=x.y.z
+magex version:bump bump=patch push
 ```
 
 This process ensures consistent, repeatable releases with properly versioned artifacts and citation metadata.
@@ -578,59 +586,8 @@ This process ensures consistent, repeatable releases with properly versioned art
 View all build commands
 
 ```bash script
-make help
+magex help
 ```
-
-List of all current commands:
-
-<!-- make-help-start -->
-```text
-bench                 ## Run all benchmarks in the Go application
-build-go              ## Build the Go application (locally)
-citation              ## Update version in CITATION.cff (use version=X.Y.Z)
-clean-mods            ## Remove all the Go mod cache
-coverage              ## Show test coverage
-diff                  ## Show git diff and fail if uncommitted changes exist
-fumpt                 ## Run fumpt to format Go code
-generate              ## Run go generate in the base of the repo
-godocs                ## Trigger GoDocs tag sync
-govulncheck-install   ## Install govulncheck (pass VERSION= to override)
-govulncheck           ## Scan for vulnerabilities
-help                  ## Display this help message
-install-go            ## Install using go install with specific version
-install-releaser      ## Install GoReleaser
-install-stdlib        ## Install the Go standard library for the host platform
-install               ## Install the application binary
-lint-version          ## Show the golangci-lint version
-lint                  ## Run the golangci-lint application (install if not found)
-loc                   ## Total lines of code table
-mod-download          ## Download Go module dependencies
-mod-tidy              ## Clean up go.mod and go.sum
-pre-build             ## Pre-build all packages to warm cache
-release-snap          ## Build snapshot binaries
-release-test          ## Run release dry-run (no publish)
-release               ## Run production release (requires github_token)
-tag-remove            ## Remove local and remote tag (use version=X.Y.Z)
-tag-update            ## Force-update tag to current commit (use version=X.Y.Z)
-tag                   ## Create and push a new tag (use version=X.Y.Z)
-test-ci-no-race       ## CI test suite without race detector
-test-ci               ## CI test runs tests with race detection and coverage (no lint - handled separately)
-test-cover-race       ## Runs unit tests with race detector and outputs coverage
-test-cover            ## Unit tests with coverage (no race)
-test-fuzz             ## Run [fuzz tests](#-fuzz-tests) only (no unit tests)
-test-no-lint          ## Run only tests (no lint)
-test-parallel         ## Run tests in parallel (faster for large repos)
-test-race             ## Unit tests with race detector (no coverage)
-test-short            ## Run tests excluding integration tests (no lint)
-test                  ## Default testing uses lint + unit tests (fast)
-uninstall             ## Uninstall the Go binary
-update-linter         ## Upgrade golangci-lint (macOS only)
-update-releaser       ## Reinstall GoReleaser
-update                ## Update dependencies
-vet-parallel          ## Run go vet in parallel (faster for large repos)
-vet                   ## Run go vet only on your module packages
-```
-<!-- make-help-end -->
 
 </details>
 
@@ -675,7 +632,7 @@ This magical file controls everything from:
 To update all dependencies (Go modules, linters, and related tools), run:
 
 ```bash
-make update
+magex deps:update
 ```
 
 This command ensures all dependencies are brought up to date in a single step, including Go modules and any managed tools. It is the recommended way to keep your development environment and CI in sync with the latest versions.
@@ -691,12 +648,12 @@ All unit tests and fuzz tests run via [GitHub Actions](https://github.com/mrz183
 Run all tests (fast):
 
 ```bash script
-make test
+magex test
 ```
 
 Run all tests with race detector (slower):
 ```bash script
-make test-race
+magex test:race
 ```
 
 <details>
@@ -706,7 +663,7 @@ make test-race
 The project includes comprehensive fuzz tests for security-critical components:
 
 ```bash script
-make test-fuzz
+magex test:fuzz
 ```
 
 **Available Fuzz Tests:**
@@ -726,7 +683,7 @@ Fuzz tests help ensure the system handles malformed inputs gracefully without cr
 Run the Go [benchmarks](benchmark_test.go):
 
 ```bash script
-make bench
+magex bench
 ```
 
 <br/>

@@ -192,7 +192,7 @@ jobs:
           set -euo pipefail
           BIN_DIR="$HOME/.cache/govulncheck-bin"
           GOVULN_BIN="$BIN_DIR/govulncheck"
-          # If we restored a cache, copy/link it into GOPATH/bin so Makefile works.
+          # If we restored a cache, copy/link it into GOPATH/bin so magex works.
           if [[ -f "$GOVULN_BIN" ]]; then
             echo "✅ Using cached govulncheck binary"
             mkdir -p "$(go env GOPATH)/bin"
@@ -209,7 +209,7 @@ jobs:
         run: |
           echo "⬇️ Cache miss – installing govulncheck..."
           echo "🔧 Installing govulncheck version ${{ env.GOVULNCHECK_VERSION }}..."
-          make govulncheck-install VERSION=${{ env.GOVULNCHECK_VERSION }}
+          go install golang.org/x/vuln/cmd/govulncheck@${{ env.GOVULNCHECK_VERSION }}
           # Copy the freshly built binary back into the cache directory
           mkdir -p ~/.cache/govulncheck-bin
           cp "$(go env GOPATH)/bin/govulncheck" ~/.cache/govulncheck-bin/
@@ -221,7 +221,7 @@ jobs:
       - name: 🔐 Run govulncheck
         run: |
           echo "🔍 Running vulnerability analysis..."
-          make govulncheck
+          magex deps:audit
           echo "✅ Vulnerability scan completed"
 
       # ————————————————————————————————————————————————————————————————

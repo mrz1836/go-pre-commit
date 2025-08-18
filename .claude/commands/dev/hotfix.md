@@ -1,5 +1,5 @@
 ---
-allowed-tools: Task, Bash(git:*), Edit, Bash(make test:*)
+allowed-tools: Task, Bash(git:*), Edit, Bash(magex test:*)
 argument-hint: <issue-description>
 description: Emergency hotfix workflow
 model: opus

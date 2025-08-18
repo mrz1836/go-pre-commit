@@ -376,7 +376,7 @@ go get -u ./...  # Update to latest minor/patch versions
 go mod tidy
 
 # ✅ Use build commands for common tasks
-make update # updates dependencies and runs go mod tidy
+magex deps:update # updates dependencies and runs go mod tidy
 
 # 🚫 Avoid using `replace` unless absolutely necessary
 # go.mod
@@ -394,7 +394,7 @@ replace github.com/some/dependency => github.com/some/dependency v1.2.3
 
 Write code that performs well by default, and measure when optimization is needed.
 
-* **Use `make bench`** to establish performance baselines
+* **Use `magex bench:run`** to establish performance baselines
 * **Profile with `go tool pprof`** when investigating performance issues
 * **Avoid premature optimization** — write clear code first, optimize bottlenecks later
 * **Use benchmarks** to validate that optimizations actually improve performance
@@ -439,11 +439,8 @@ func processUsers(users []User) []ProcessedUser {
 Code must be cleanly formatted and pass all linters before being committed.
 
 ```bash
-go fmt ./...
-goimports -w .
-gofumpt -w .
-make lint
-go vet ./...
+magex lint:fix
+magex lint
 ```
 
 > Refer to `.golangci.json` for the full set of enabled linters and formatters.
@@ -518,7 +515,7 @@ go test ./...
 
 Or use our build commands:
 ```bash
-make test
+magex test
 ```
 
 > All tests must pass in CI prior to merge.
@@ -951,8 +948,8 @@ We follow **Semantic Versioning (✧ SemVer)**:
 
 | Step | Command                         | Purpose                                                                                            |
 |------|---------------------------------|----------------------------------------------------------------------------------------------------|
-| 1    | `make release-snap`             | Build & upload a **snapshot** (pre‑release) for quick CI validation.                               |
-| 2    | `make tag version=X.Y.Z`        | Create and push a signed Git tag. Triggers GitHub Actions to package the release                   |
+| 1    | `goreleaser release --snapshot` | Build & upload a **snapshot** (pre‑release) for quick CI validation.                               |
+| 2    | `git tag -a vX.Y.Z -m "Release vX.Y.Z" && git push origin vX.Y.Z` | Create and push a signed Git tag. Triggers GitHub Actions to package the release |
 | 3    | GitHub Actions                  | CI runs `goreleaser release` on the tag; artifacts and changelog are published to GitHub Releases. |
 
 > **Note for AI Agents:** Do not create or push tags automatically. Only the repository [codeowners](CODEOWNERS) are authorized to tag and publish official releases.
@@ -1034,9 +1031,9 @@ Current labels are located in `.github/labels.yml` and automatically synced into
 CI automatically runs on every PR to verify:
 
 * Formatting (`go fmt` and `goimports` and `gofumpt`)
-* Linting (`make lint`)
-* Tests (`make test`)
-* Fuzz tests (if applicable) (`make run-fuzz-tests`)
+* Linting (`magex lint`)
+* Tests (`magex test`)
+* Fuzz tests (if applicable) (`magex test:fuzz`)
 * This codebase uses GitHub Actions; test workflows reside in `.github/workflows/fortress.yml` and `.github/workflows/fortress-test-suite.yml`.
 * Pin each external GitHub Action to a **full commit SHA** (e.g., `actions/checkout@2f3b4a2e0e471e13e2ea2bc2a350e888c9cf9b75`) as recommended by GitHub's [security hardening guidance](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-pinned-actions). Dependabot will track and update these pinned versions automatically.
 
@@ -1083,7 +1080,7 @@ Dependency hygiene is critical for security, reproducibility, and developer expe
 
 * Run via build command:
 ```bash
-  make govulncheck
+  magex deps:audit
 ```
 
 * Run [gitleaks](https://github.com/gitleaks/gitleaks) before committing code to detect hardcoded secrets or sensitive data in the repository:

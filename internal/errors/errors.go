@@ -41,8 +41,8 @@ var (
 	// ErrAIAttributionFound is returned when AI attribution is detected
 	ErrAIAttributionFound = errors.New("AI attribution detected")
 
-	// ErrMakeTargetNotFound is returned when a make target is not available
-	ErrMakeTargetNotFound = errors.New("make target not found")
+	// ErrMagexTargetNotFound is returned when a magex target is not available
+	ErrMagexTargetNotFound = errors.New("magex target not found")
 
 	// ErrToolExecutionFailed is returned when a tool execution fails
 	ErrToolExecutionFailed = errors.New("tool execution failed")
@@ -57,8 +57,8 @@ var (
 	ErrHookNotExecutable    = errors.New("hook file is not executable")
 	ErrHookMarkerMissing    = errors.New("installed hook does not contain expected marker")
 
-	// Make-related errors
-	ErrMakeTargetTimeout = errors.New("timeout checking make target")
+	// Magex-related errors
+	ErrMagexTargetTimeout = errors.New("timeout checking magex target")
 )
 
 // CheckError represents an enhanced error with context and suggestions
@@ -125,11 +125,11 @@ func NewToolNotFoundError(tool, alternative string) *CheckError {
 	}
 }
 
-// NewMakeTargetNotFoundError creates an error for missing make targets with graceful degradation
-func NewMakeTargetNotFoundError(target, alternative string) *CheckError {
+// NewMagexTargetNotFoundError creates an error for missing magex targets with graceful degradation
+func NewMagexTargetNotFoundError(target, alternative string) *CheckError {
 	return &CheckError{
-		Err:        ErrMakeTargetNotFound,
-		Message:    fmt.Sprintf("make target '%s' not found", target),
+		Err:        ErrMagexTargetNotFound,
+		Message:    fmt.Sprintf("magex target '%s' not found", target),
 		Suggestion: alternative,
 		CanSkip:    true,
 	}

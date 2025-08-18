@@ -14,7 +14,7 @@
 		"--security-opt",
 		"no-new-privileges:true"
 	],
-	"postCreateCommand": "make lint && go vet ./... && go test ./...",
+	"postCreateCommand": "magex lint && go vet ./... && go test ./...",
 	"customizations": {
 		"vscode": {
 			"settings": {

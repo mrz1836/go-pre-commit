@@ -1,5 +1,5 @@
 ---
-allowed-tools: Task, Bash(go test:*), Bash(make test:*), Read, Write, Edit
+allowed-tools: Task, Bash(go test:*), Bash(magex test:*), Read, Write, Edit
 argument-hint: [package-or-function-name]
 description: Create or fix tests with go-tester agent
 claude-sonnet-4-0

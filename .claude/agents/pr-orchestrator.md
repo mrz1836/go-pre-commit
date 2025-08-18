@@ -38,14 +38,14 @@ Before creating PR, coordinate validation:
 ```bash
 # 1. Run formatting checks
 echo "===> Running formatters..."
-make fumpt
-make lint
-make mod-tidy
+magex format
+magex lint
+magex deps:tidy
 
 # 2. Run tests
 echo "===> Running test suite..."
-make test
-make test-race
+magex test
+magex test:race
 
 # 3. Check for uncommitted changes
 git diff --exit-code
@@ -90,7 +90,7 @@ Related: #123, #145
 ## Testing Performed
 - ✅ Unit tests: TestRunnerParallel, TestWorkerPool
 - ✅ Integration tests: TestParallelCheckExecution
-- ✅ Race detection: `make test-race` passes
+- ✅ Race detection: `magex test:race` passes
 - ✅ Benchmarks show 3x improvement
 - ✅ Manual testing with 1000+ file repository
 

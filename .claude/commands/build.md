@@ -1,48 +1,48 @@
 ---
-allowed-tools: Task, Bash(make:*), Read, Edit
+allowed-tools: Task, Bash(magex:*), Read, Edit
 argument-hint: [target]
-description: Fix Makefile and build issues
+description: Fix MAGE-X and build issues
 model: haiku
 ---
 
 ## 🔨 Fix Build Issues
 
 ### Build Status
-- Make targets: !`make help 2>/dev/null | head -10 || echo "Make not configured"`
-- Build test: !`make build 2>&1 | tail -5`
+- MAGE-X commands: !`magex -l 2>/dev/null | head -10 || echo "MAGE-X not configured"`
+- Build test: !`magex build 2>&1 | tail -5`
 
 ### Build Troubleshooting
 
-Use the **makefile-expert agent** to:
+Use the **magex-expert** agent to:
 
 1. **Diagnose Build Issues**:
-   - Identify failing targets: ${ARGUMENTS:-all}
-   - Check Make syntax errors
+   - Identify failing commands: ${ARGUMENTS:-all}
+   - Check .mage.yaml syntax
    - Verify dependencies
-   - Review variable definitions
+   - Review configuration
 
 2. **Common Fixes**:
-   - Fix tab vs space issues
-   - Correct variable expansion
-   - Add missing PHONY declarations
+   - Fix YAML formatting issues
+   - Correct build configuration
+   - Update dependency versions
    - Fix path issues
-   - Resolve circular dependencies
+   - Resolve command conflicts
 
-3. **Optimize Makefile**:
-   - Improve parallel execution
-   - Add caching where appropriate
-   - Optimize dependency resolution
-   - Clean up redundant targets
+3. **Optimize MAGE-X Config**:
+   - Improve build performance
+   - Configure caching
+   - Optimize command execution
+   - Clean up unused commands
 
-4. **Add New Targets** (if needed):
-   - Create well-documented targets
+4. **Add New Commands** (if needed):
+   - Create well-documented commands
    - Follow project patterns
-   - Include help text
+   - Include descriptions
    - Test thoroughly
 
 5. **Integration**:
    - Ensure CI compatibility
-   - Verify all required targets exist
+   - Verify all required commands exist
    - Check cross-platform compatibility
 
 Provide specific fixes for build issues.

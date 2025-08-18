@@ -27,20 +27,20 @@ git status
 git diff
 
 # Run all tests
-make test
-make test-race
-make test-ci
+magex test
+magex test-race
+magex test-ci
 
 # Run security scans
-make govulncheck
+magex audit:security
 go list -json -deps ./... | nancy sleuth
 
 # Check code quality
-make lint
-make fumpt
+magex lint
+magex format
 
 # Verify build
-make build
+magex build
 ```
 
 #### 2. Version Determination
@@ -78,7 +78,7 @@ git log $(git describe --tags --abbrev=0)..HEAD --oneline
 #### 4. Create Release Tag
 ```bash
 # Create and push tag (ONLY maintainers can do this)
-make tag version=1.2.3
+magex version:bump bump=patch
 
 # This runs:
 # git tag -a v1.2.3 -m "Release v1.2.3"
@@ -125,10 +125,10 @@ release:
 ### Test Release
 ```bash
 # Generate snapshot release (no upload)
-make release-snap
+magex release:snapshot
 
 # Test full release process (dry run)
-make release-test
+magex release:test
 
 # Check generated artifacts
 ls -la dist/
@@ -169,11 +169,8 @@ go-pre-commit uninstall
 ### Standard Release
 For normal version increments:
 ```bash
-# Update version references
-make citation version=1.2.3
-
 # Create tag
-make tag version=1.2.3
+magex version:bump bump=patch
 
 # CI automatically runs goreleaser
 ```
@@ -185,10 +182,10 @@ For critical fixes:
 git checkout -b hotfix/v1.2.4 v1.2.3
 
 # Apply fix
-# ... make changes ...
+# ... make code changes ...
 
 # Fast-track release
-make tag version=1.2.4
+magex version:bump bump=patch
 ```
 
 ### Pre-Release

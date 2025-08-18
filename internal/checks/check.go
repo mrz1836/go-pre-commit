@@ -20,7 +20,7 @@ type CheckMetadata struct {
 	// EstimatedDuration is the expected execution time for this check
 	EstimatedDuration time.Duration
 
-	// Dependencies lists make targets or tools this check requires
+	// Dependencies lists targets or tools this check requires
 	Dependencies []string
 
 	// DefaultTimeout is the default timeout for this check

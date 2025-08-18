@@ -212,16 +212,16 @@ jobs:
 
           if [[ "$RACE" == "true" && "$COVER" == "true" ]]; then
             echo "🏁 Running tests with race detection and coverage analysis..."
-            make test-cover-race VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }} 2>&1 | tee test-output.log
+            magex test:cover-race 2>&1 | tee test-output.log
           elif [[ "$RACE" != "true" && "$COVER" == "true" ]]; then
             echo "🏁 Running tests with coverage analysis..."
-            make test-cover VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }} 2>&1 | tee test-output.log
+            magex test:cover 2>&1 | tee test-output.log
           elif [[ "$RACE" == "true" && "$COVER" != "true" ]]; then
             echo "🏁 Running tests with race detection..."
-            make test-race VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }} 2>&1 | tee test-output.log
+            magex test:race 2>&1 | tee test-output.log
           else
             echo "🏁 Running tests without coverage or race detection..."
-            make test VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }} 2>&1 | tee test-output.log
+            magex test 2>&1 | tee test-output.log
           fi
 
           echo "✅ Tests completed successfully"
@@ -299,7 +299,7 @@ jobs:
         if: matrix.run-fuzz
         run: |
           echo "🎯 Running fuzz tests..."
-          make test-fuzz VERBOSE=${{ env.ENABLE_VERBOSE_TEST_OUTPUT }}
+          magex test:fuzz
           echo "✅ Fuzz tests completed successfully"
 
       # ————————————————————————————————————————————————————————————————
@@ -336,8 +336,8 @@ jobs:
 
           STATS_FILE="test-stats-${{ matrix.os }}-${{ matrix.go-version }}.json"
 
-          # Capture the output of "make loc" and store the markdown summary
-          LOC_OUTPUT_JSON=$(make loc | jq -Rsa .)
+          # Capture the output of "magex metrics:loc" and store the markdown summary
+          LOC_OUTPUT_JSON=$(magex metrics:loc | jq -Rsa .)
 
           cat > "$STATS_FILE" << EOF
           {

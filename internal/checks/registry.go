@@ -151,12 +151,12 @@ func (r *Registry) ValidateCheckDependencies(ctx context.Context) []error {
 	for _, check := range r.checks {
 		metadata := r.convertMetadata(check.Metadata())
 		for _, dependency := range metadata.Dependencies {
-			// Check if make target exists
-			if !r.sharedCtx.HasMakeTarget(ctx, dependency) {
+			// Check if magex target exists
+			if !r.sharedCtx.HasMagexTarget(ctx, dependency) {
 				errors = append(errors, &CheckDependencyError{
 					CheckName:      metadata.Name,
 					Dependency:     dependency,
-					DependencyType: "make_target",
+					DependencyType: "magex_target",
 				})
 			}
 		}

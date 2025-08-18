@@ -282,10 +282,10 @@ jobs:
             echo "🎯 **All pre-commit checks passed successfully using external go-pre-commit tool.**" >> $GITHUB_STEP_SUMMARY
           else
             echo "### ⚠️ Fallback Mode" >> $GITHUB_STEP_SUMMARY
-            echo "The external go-pre-commit tool could not be installed. Using make commands as fallback:" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ make fumpt" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ make lint" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ make mod-tidy" >> $GITHUB_STEP_SUMMARY
+            echo "The external go-pre-commit tool could not be installed. Using magex commands as fallback:" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ magex lint:fix" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ magex lint" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ magex deps:tidy" >> $GITHUB_STEP_SUMMARY
           fi
 
       # ————————————————————————————————————————————————————————————————

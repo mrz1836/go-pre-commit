@@ -83,7 +83,7 @@ on:
         description: "Whether YAML linting is enabled"
         value: ${{ jobs.setup-config.outputs.yaml-lint-enabled }}
       makefile-exists:
-        description: "Whether Makefile exists"
+        description: "Whether .mage.yaml exists"
         value: ${{ jobs.setup-config.outputs.makefile-exists }}
       primary-runner:
         description: "Primary runner OS"
@@ -203,7 +203,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           sparse-checkout: |
-            Makefile
+            .mage.yaml
             go.mod
             go.sum
 
@@ -315,15 +315,15 @@ jobs:
           echo "primary-runner=${{ env.PRIMARY_RUNNER }}" >> $GITHUB_OUTPUT
           echo "secondary-runner=${{ env.SECONDARY_RUNNER }}" >> $GITHUB_OUTPUT
 
-          # Check if Makefile exists
-          if [ -f "Makefile" ]; then
-            echo "makefile-exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Makefile found"
+          # Check if .mage.yaml exists
+          if [ -f ".mage.yaml" ]; then
+            echo "magefile-exists=true" >> $GITHUB_OUTPUT
+            echo "✅ .mage.yaml found"
           else
-            echo "makefile-exists=false" >> $GITHUB_OUTPUT
-            echo "⚠️ No Makefile found"
-            if [ "${{ env.MAKEFILE_REQUIRED }}" == "true" ]; then
-              echo "❌ Makefile is required but not found!"
+            echo "magefile-exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No .mage.yaml found"
+            if [ "${{ env.MAGEFILE_REQUIRED }}" == "true" ]; then
+              echo "❌ .mage.yaml is required but not found!"
               exit 1
             fi
           fi
@@ -548,7 +548,7 @@ jobs:
           echo "## 🔨 Build Requirements" >> $GITHUB_STEP_SUMMARY
           echo "| Requirement | Status | Details |" >> $GITHUB_STEP_SUMMARY
           echo "|-------------|--------|---------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Makefile** | $([ "${{ steps.config.outputs.makefile-exists }}" == "true" ] && echo "✅ Found" || echo "⚠️ Not Found") | Required: $([ "${{ env.MAKEFILE_REQUIRED }}" == "true" ] && echo "Yes" || echo "No") |" >> $GITHUB_STEP_SUMMARY
+          echo "| **.mage.yaml** | $([ "${{ steps.config.outputs.magefile-exists }}" == "true" ] && echo "✅ Found" || echo "⚠️ Not Found") | Required: $([ "${{ env.MAGEFILE_REQUIRED }}" == "true" ] && echo "Yes" || echo "No") |" >> $GITHUB_STEP_SUMMARY
           echo "| **Verbose Output** | $([ "${{ env.ENABLE_VERBOSE_TEST_OUTPUT }}" == "true" ] && echo "✅ Enabled" || echo "❌ Disabled") | Test output verbosity |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "<br><br>" >> $GITHUB_STEP_SUMMARY

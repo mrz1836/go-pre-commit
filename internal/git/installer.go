@@ -69,9 +69,9 @@ if [[ -z "$BINARY_PATH" ]]; then
     done
     echo ""
     echo "To fix this issue:"
-    echo "  1. Install to PATH: make install"
+    echo "  1. Install to PATH: magex install"
     echo "  2. Or install manually: go install ./cmd/go-pre-commit"
-    echo "  3. Or build locally: make build"
+    echo "  3. Or build locally: magex build"
     exit 1
 fi
 

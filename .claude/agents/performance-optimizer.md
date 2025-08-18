@@ -15,7 +15,7 @@ Optimize Go code performance through profiling, benchmarking, and applying perfo
 ### 1. Benchmark Establishment
 ```bash
 # Run current benchmarks
-make bench
+magex bench:run
 
 # Run specific benchmark
 go test -bench=BenchmarkRunner -benchmem ./internal/runner

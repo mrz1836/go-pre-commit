@@ -115,7 +115,7 @@ func Load() (*Config, error) {
 	}
 
 	// Core settings
-	cfg.Enabled = getBoolEnv("ENABLE_GO_PRE_COMMIT", false)
+	cfg.Enabled = getBoolEnv("ENABLE_GO_PRE_COMMIT", true)
 	cfg.LogLevel = getStringEnv("GO_PRE_COMMIT_LOG_LEVEL", "info")
 	cfg.MaxFileSize = int64(getIntEnv("GO_PRE_COMMIT_MAX_FILE_SIZE_MB", 10)) * 1024 * 1024
 	cfg.MaxFilesOpen = getIntEnv("GO_PRE_COMMIT_MAX_FILES_OPEN", 100)
