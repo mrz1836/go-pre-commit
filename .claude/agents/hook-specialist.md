@@ -149,7 +149,7 @@ GO_PRE_COMMIT_TIMEOUT_SECONDS=60
 # Verify MAGE-X commands exist
 magex format:fix
 magex lint
-magex deps:tidy
+magex tidy
 
 # Check .mage.yaml configuration
 cat .mage.yaml
@@ -253,7 +253,7 @@ Configuration:
 Enabled Checks:
 ✅ fumpt (magex format available)
 ✅ lint (magex lint available)
-✅ mod-tidy (magex deps:tidy available)
+✅ mod-tidy (magex tidy available)
 ✅ whitespace (built-in)
 ✅ EOF (built-in)
 

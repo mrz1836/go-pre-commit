@@ -40,7 +40,7 @@ Before creating PR, coordinate validation:
 echo "===> Running formatters..."
 magex format:fix
 magex lint
-magex deps:tidy
+magex tidy
 
 # 2. Run tests
 echo "===> Running test suite..."

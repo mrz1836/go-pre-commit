@@ -43,7 +43,7 @@ magex test:race       # Run tests with race detection
 magex test:cover      # Run tests with coverage
 magex lint            # Run golangci-lint
 magex format          # Format code (fumpt + goimports)
-magex deps:tidy       # Clean and update dependencies
+magex tidy       # Clean and update dependencies
 magex bench:run       # Run benchmarks
 magex build:clean     # Clean build artifacts
 ```

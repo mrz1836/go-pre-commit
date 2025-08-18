@@ -90,7 +90,7 @@ magex lint         # Run linters (golangci-lint)
 magex format       # Format code (fumpt, goimports)
 magex build        # Build the binary
 magex install      # Install binary to $GOPATH/bin
-magex deps:tidy    # Clean and update dependencies
+magex tidy    # Clean and update dependencies
 magex -l           # List all available commands (260+ total)
 ```
 
@@ -131,7 +131,7 @@ magex audit:report    # Security and dependency audit
    magex test         # Run tests with testify
    magex lint         # golangci-lint
    magex format       # Format with fumpt, goimports
-   magex deps:tidy    # Clean dependencies
+   magex tidy    # Clean dependencies
    ```
 
 6. **Environment configuration**
