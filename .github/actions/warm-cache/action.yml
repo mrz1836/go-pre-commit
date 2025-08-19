@@ -99,8 +99,8 @@ runs:
       run: |
         echo "🔍 Checking for go.sum file..."
         if [ ! -f go.sum ]; then
-          echo "⚠️ go.sum not found, running 'magex deps:tidy' to generate it."
-          magex deps:tidy
+          echo "⚠️ go.sum not found, running 'magex tidy' to generate it."
+          magex tidy
           echo "✅ go.sum generated successfully"
         else
           echo "✅ go.sum already exists"

@@ -28,8 +28,8 @@ git diff
 
 # Run all tests
 magex test
-magex test-race
-magex test-ci
+magex test:race
+magex test:coverrace
 
 # Run security scans
 magex audit:security

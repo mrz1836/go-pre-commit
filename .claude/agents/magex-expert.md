@@ -43,19 +43,9 @@ magex test:race       # Run tests with race detection
 magex test:cover      # Run tests with coverage
 magex lint            # Run golangci-lint
 magex format          # Format code (fumpt + goimports)
-magex deps:tidy       # Clean and update dependencies
+magex tidy       # Clean and update dependencies
 magex bench:run       # Run benchmarks
 magex build:clean     # Clean build artifacts
-```
-
-### Advanced Commands:
-```bash
-magex audit:security      # Run security audits
-magex metrics:coverage    # Generate coverage metrics
-magex docs:godocs        # Generate documentation
-magex version:tag        # Tag releases
-magex release:test       # Test release process
-magex release:snapshot   # Create release snapshots
 ```
 
 ## Common Configuration Patterns

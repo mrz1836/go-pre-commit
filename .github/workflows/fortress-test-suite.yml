@@ -154,6 +154,22 @@ jobs:
           echo "✅ Tests completed successfully"
 
       # ————————————————————————————————————————————————————————————————
+      # Fix coverage file naming (magex generates coverage_0.txt)
+      # TODO: Add multi-module coverage support if needed later
+      # ————————————————————————————————————————————————————————————————
+      - name: 🔄 Normalize coverage file name
+        if: inputs.code-coverage-enabled == 'true'
+        run: |
+          if [ -f coverage_0.txt ]; then
+            cp coverage_0.txt coverage.txt
+            echo "✅ Renamed coverage_0.txt to coverage.txt"
+          elif [ -f coverage.txt ]; then
+            echo "✅ Coverage file already exists as coverage.txt"
+          else
+            echo "⚠️ No coverage file found (coverage_0.txt or coverage.txt)"
+          fi
+
+      # ————————————————————————————————————————————————————————————————
       # Test failure analysis and reporting
       # ————————————————————————————————————————————————————————————————
       - name: 🚨 Create Test Failure Summary
@@ -226,7 +242,7 @@ jobs:
         if: matrix.run-fuzz
         run: |
           echo "🎯 Running fuzz tests..."
-          magex test:fuzz
+          magex test:fuzz time=5s
           echo "✅ Fuzz tests completed successfully"
 
       # ————————————————————————————————————————————————————————————————

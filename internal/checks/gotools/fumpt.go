@@ -214,6 +214,10 @@ func (c *FumptCheck) runDirectFumpt(ctx context.Context, files []string) error {
 
 // stageFiles adds modified files to git staging area
 func (c *FumptCheck) stageFiles(ctx context.Context, files []string) error {
+	if ctx == nil {
+		return prerrors.ErrNilContext
+	}
+
 	if len(files) == 0 {
 		return nil
 	}

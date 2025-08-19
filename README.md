@@ -53,9 +53,6 @@
         <a href=".github/AGENTS.md">
           <img src="https://img.shields.io/badge/AGENTS.md-found-40b814?style=flat&logo=openai" alt="AGENTS.md rules">
         </a><br/>
-        <a href="https://golang.org/">
-          <img src="https://img.shields.io/badge/Pure_Go-100%25-00ADD8?style=flat&logo=go&logoColor=white" alt="Pure Go">
-        </a><br/>
 		<a href=".github/dependabot.yml">
           <img src="https://img.shields.io/badge/dependencies-automatic-blue?logo=dependabot&style=flat" alt="Dependabot">
         </a>
@@ -111,6 +108,8 @@ go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
 go-pre-commit upgrade --force
 ```
 
+<br>
+
 ### Install MAGE-X build tool
 
 ```bash
@@ -118,6 +117,8 @@ go-pre-commit upgrade --force
 go install github.com/mrz1836/mage-x/cmd/magex@latest
 magex update:install
 ```
+
+<br>
 
 ### Set up in your project
 
@@ -130,6 +131,8 @@ go-pre-commit install
 
 # That's it! Your pre-commit hooks are now active
 ```
+
+<br>
 
 ### Test it out
 
@@ -500,13 +503,6 @@ git commit -m "Initial commit"
 
 ## 📚 Advanced Documentation
 
-- **Performance** – Parallel execution with configurable workers for blazing-fast checks
-- **CI Integration** – Seamlessly integrates with GitHub Actions via shared configuration
-- **Tool Compatibility** – Works seamlessly with existing Go tools for consistency
-- **Environment Config** – .env.base contains default configuration, .env.custom (optional) contains project-specific overrides for team synchronization
-
-<br/>
-
 <details>
 <summary><strong><code>Repository Features</code></strong></summary>
 <br/>
@@ -667,6 +663,9 @@ magex bench
 
 <br/>
 
+<details>
+<summary><strong><code>Benchmark Results</code></strong></summary>
+
 ### Benchmark Results
 
 | Benchmark                                                                   | Iterations |     ns/op |    B/op | allocs/op | Description                      |
@@ -684,6 +683,8 @@ magex bench
 > These benchmarks demonstrate lightning-fast pre-commit processing with minimal memory overhead.
 > Performance results measured on Apple M1 Max (ARM64) showing microsecond-level execution times for individual checks and sub-second processing for complete commit workflows.
 > The system scales efficiently from small single-file changes to large multi-file commits while maintaining consistent low-latency performance.
+
+</details>
 
 <br/>
 
@@ -858,14 +859,16 @@ For more information about sub-agents, see the [Claude Code documentation](https
 
 This project includes **23 custom slash commands** that leverage our specialized sub-agents for efficient project management. These commands provide streamlined workflows for common development tasks.
 
-<br>
-
-### 🎯 Quick Command Categories
+<details>
+<summary><strong><code>Quick Command Categories</code></strong></summary>
+<br/>
 
 - **Core Commands** (6): `/fix`, `/test`, `/review`, `/docs`, `/clean`, `/validate`
 - **Workflow Commands** (5): `/pr`, `/ci`, `/explain`, `/prd`, `/refactor`
 - **Specialized Commands** (6): `/audit`, `/optimize`, `/release`, `/hooks`, `/build`, `/standards`
 - **Advanced Commands** (6): `/dev:feature`, `/dev:hotfix`, `/dev:debug`, `/go:bench`, `/go:deps`, `/go:profile`
+
+</details>
 
 <details>
 <summary><strong><code>Example Command Usage</code></strong></summary>
@@ -919,9 +922,9 @@ This project includes **23 custom slash commands** that leverage our specialized
 
 </details>
 
-<br>
-
-### 📚 Command Features
+<details>
+<summary><strong><code>Command Features</code></strong></summary>
+<br/>
 
 - **Parallel Execution**: Commands like `/fix`, `/review`, and `/validate` run multiple agents simultaneously
 - **Intelligent Model Selection**: Uses Haiku for simple tasks, Sonnet for standard work, Opus for complex analysis
@@ -929,9 +932,11 @@ This project includes **23 custom slash commands** that leverage our specialized
 - **Multi-Agent Coordination**: Most commands coordinate multiple specialized agents
 - **Comprehensive Output**: Detailed reports with actionable feedback
 
-<br>
+</details>
 
-### 📖 Full Documentation
+<details>
+<summary><strong><code>Full Documentation</code></strong></summary>
+<br/>
 
 For complete command reference, usage examples, and workflow patterns, see:
 
@@ -943,6 +948,8 @@ This comprehensive guide includes:
 - Performance optimization tips
 - Custom command creation guide
 - Troubleshooting help
+
+</details>
 
 <br/>
 

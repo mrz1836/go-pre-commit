@@ -32,7 +32,7 @@ func (s *ErrorTestSuite) TestCommonErrors() {
 	}{
 		{"ErrChecksFailed", ErrChecksFailed, "checks failed"},
 		{"ErrNoChecksToRun", ErrNoChecksToRun, "no checks to run"},
-		{"ErrEnvFileNotFound", ErrEnvFileNotFound, ".github/.env.base not found in any parent directory"},
+		{"ErrEnvFileNotFound", ErrEnvFileNotFound, "failed to find .env.base"},
 		{"ErrRepositoryRootNotFound", ErrRepositoryRootNotFound, "unable to determine repository root"},
 		{"ErrToolNotFound", ErrToolNotFound, "required tool not found"},
 		{"ErrLintingIssues", ErrLintingIssues, "linting issues found"},

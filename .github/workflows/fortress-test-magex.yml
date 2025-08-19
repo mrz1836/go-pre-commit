@@ -31,7 +31,7 @@ jobs:
   # Test MAGE-X (Installation and Command Verification)
   # ----------------------------------------------------------------------------------
   test-magex:
-    name: 📋 Verify & Test MAGE-X
+    name: 🪄 Verify & Test MAGE-X
     runs-on: ${{ inputs.primary-runner }}
     steps:
       # ————————————————————————————————————————————————————————————————
@@ -55,6 +55,7 @@ jobs:
           fetch-depth: 0 # Required for sparse checkout
           sparse-checkout: |
             .github/.env.base
+            .github/actions/setup-magex
             .mage.yaml
             go.mod
             go.sum
@@ -86,12 +87,21 @@ jobs:
           REQUIRED_COMMANDS=(
             "bench"
             "clean"
-            "tidy"
-            "mod:update"
-            "test:coverage"
+            "deps:download"
+            "deps:update"
+            "format:fix"
             "lint"
+            "metrics:coverage"
+            "metrics:loc"
             "test"
+            "test:cover"
+            "test:coverrace"
             "test:fuzz"
+            "test:race"
+            "tidy"
+            "update:install"
+            "version:bump"
+            "vet"
           )
 
           MATCHED_COUNT=0

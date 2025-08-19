@@ -40,12 +40,24 @@ func GetLatestRelease(owner, repo string) (*GitHubRelease, error) {
 	return GetLatestReleaseWithVersion(owner, repo, "dev")
 }
 
+// HTTPClient interface for dependency injection
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 // GetLatestReleaseWithVersion fetches the latest release from GitHub with version info for User-Agent
 func GetLatestReleaseWithVersion(owner, repo, currentVersion string) (*GitHubRelease, error) {
+	return GetLatestReleaseWithVersionAndClient(owner, repo, currentVersion, nil)
+}
+
+// GetLatestReleaseWithVersionAndClient fetches the latest release with optional custom HTTP client
+func GetLatestReleaseWithVersionAndClient(owner, repo, currentVersion string, client HTTPClient) (*GitHubRelease, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
 
-	client := &http.Client{
-		Timeout: 15 * time.Second, // Increased timeout for better reliability
+	if client == nil {
+		client = &http.Client{
+			Timeout: 15 * time.Second, // Increased timeout for better reliability
+		}
 	}
 
 	req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)

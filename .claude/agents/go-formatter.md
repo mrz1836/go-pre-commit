@@ -23,13 +23,13 @@ When invoked:
    goimports -w .
 
    # Strict formatting with fumpt
-   magex format
+   magex format:fix
 
    # Run comprehensive linting
    magex lint
 
    # Fix module issues
-   magex deps:tidy
+   magex tidy
    ```
 
 2. **Fix Whitespace Issues**
@@ -123,9 +123,9 @@ The project uses golangci-lint with configuration in `.golangci.yml`. Key linter
 ### 1. Pre-Commit Formatting
 ```bash
 # Run all formatters before commit
-magex format
+magex format:fix
 magex lint
-magex deps:tidy
+magex tidy
 
 # Check for whitespace issues
 grep -r '[[:space:]]$' --include="*.go" .

@@ -2,22 +2,26 @@
 
 This directory contains example plugins demonstrating how to create custom pre-commit hooks for `go-pre-commit`.
 
+<br>
+
 ## 📚 Plugin Types
 
-### 1. **Shell Script Plugin** (`shell-plugin/`)
+### 1. [**Shell Script Plugin**](shell-plugin) (`shell-plugin/`)
 Simple shell script that checks for TODO comments in code.
 
-### 2. **Python Plugin** (`python-plugin/`)
+### 2. [**Python Plugin**](python-plugin) (`python-plugin/`)
 Python script that validates JSON files for proper formatting.
 
-### 3. **Go Plugin** (`go-plugin/`)
+### 3. [**Go Plugin**](go-plugin) (`go-plugin/`)
 Compiled Go binary that checks for license headers in source files.
 
-### 4. **Docker Plugin** (`docker-plugin/`)
+### 4. [**Docker Plugin**](docker-plugin) (`docker-plugin/`)
 Docker-based plugin for running security scans in an isolated environment.
 
-### 5. **Composite Plugin** (`composite-plugin/`)
-Multi-step plugin that combines different tools for comprehensive checks.
+### 5. [**Composite Plugin**](composite-plugin) (`composite-plugin/`)
+Multistep plugin that combines different tools for comprehensive checks.
+
+<br>
 
 ## 🚀 Quick Start
 
@@ -38,6 +42,8 @@ GO_PRE_COMMIT_ENABLE_PLUGINS=true
 ```bash
 go-pre-commit run
 ```
+
+<br>
 
 ## 📝 Creating Your Own Plugin
 
@@ -97,6 +103,8 @@ Plugins communicate via JSON over stdin/stdout:
 - `1`: Check failed (but not an error)
 - `2+`: Error occurred
 
+<br>
+
 ## 🧪 Testing Your Plugin
 
 Test your plugin locally:
@@ -109,6 +117,8 @@ echo '{"command":"check","files":["test.go"]}' | ./my-plugin/check.sh
 go-pre-commit run --only my-custom-check
 ```
 
+<br>
+
 ## 📚 Best Practices
 
 1. **Keep it Fast**: Plugins should complete within 30 seconds
@@ -118,6 +128,8 @@ go-pre-commit run --only my-custom-check
 5. **Exit Gracefully**: Handle errors and timeouts properly
 6. **Document Well**: Include clear documentation and examples
 
+<br>
+
 ## 🔒 Security Considerations
 
 - Plugins run with the same permissions as `go-pre-commit`
@@ -125,15 +137,19 @@ go-pre-commit run --only my-custom-check
 - Validate all inputs before processing
 - Avoid executing arbitrary commands from user input
 
+<br>
+
 ## 📖 Examples Index
 
-| Plugin | Language | Description | Complexity |
-|--------|----------|-------------|------------|
-| [shell-plugin](shell-plugin/) | Shell | TODO comment checker | Simple |
-| [python-plugin](python-plugin/) | Python | JSON validator | Medium |
-| [go-plugin](go-plugin/) | Go | License header checker | Medium |
-| [docker-plugin](docker-plugin/) | Docker | Security scanner | Advanced |
-| [composite-plugin](composite-plugin/) | Mixed | Multi-step validator | Advanced |
+| Plugin                               | Language | Description            | Complexity |
+|--------------------------------------|----------|------------------------|------------|
+| [shell-plugin](shell-plugin)         | Shell    | TODO comment checker   | Simple     |
+| [python-plugin](python-plugin)       | Python   | JSON validator         | Medium     |
+| [go-plugin](go-plugin)               | Go       | License header checker | Medium     |
+| [docker-plugin](docker-plugin)       | Docker   | Security scanner       | Advanced   |
+| [composite-plugin](composite-plugin) | Mixed    | Multi-step validator   | Advanced   |
+
+<br>
 
 ## 🤝 Contributing
 
@@ -141,6 +157,8 @@ Have a useful plugin? Consider:
 1. Adding it as an example here
 2. Publishing it as a standalone repository
 3. Contributing it to the core if widely useful
+
+<br>
 
 ## 📄 License
 

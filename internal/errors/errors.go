@@ -15,13 +15,19 @@ var (
 	ErrNoChecksToRun = errors.New("no checks to run")
 
 	// ErrEnvFileNotFound is returned when .env.base cannot be found
-	ErrEnvFileNotFound = errors.New(".github/.env.base not found in any parent directory")
+	ErrEnvFileNotFound = errors.New("failed to find .env.base")
 
 	// ErrRepositoryRootNotFound is returned when git repository root cannot be determined
 	ErrRepositoryRootNotFound = errors.New("unable to determine repository root")
 
 	// ErrToolNotFound is returned when a required tool is not available
 	ErrToolNotFound = errors.New("required tool not found")
+
+	// ErrFileNotFound is returned when a file is expected but not found
+	ErrFileNotFound = errors.New("file not found")
+
+	// ErrFileStillExists is returned when a file is expected to be deleted but still exists
+	ErrFileStillExists = errors.New("file expected to be deleted but still exists")
 
 	// ErrFmtIssues is returned when go fmt finds formatting issues
 	ErrFmtIssues = errors.New("formatting issues found")
@@ -46,6 +52,9 @@ var (
 
 	// ErrGracefulSkip is returned when a check is gracefully skipped
 	ErrGracefulSkip = errors.New("check gracefully skipped")
+
+	// ErrNilContext is returned when a nil context is provided
+	ErrNilContext = errors.New("context cannot be nil")
 
 	// Git-related errors
 	ErrNotGitRepository     = errors.New("not a git repository")

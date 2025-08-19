@@ -91,23 +91,24 @@ type Config struct {
 
 // Load reads configuration from .github/.env.base and .github/.env.custom
 func Load() (*Config, error) {
-	// Find .env.base file (required)
+	// Try to find .env.base file (optional - can fall back to env vars)
 	basePath, err := findBaseEnvFile()
-	if err != nil {
-		return nil, fmt.Errorf("failed to find .env.base: %w", err)
-	}
-
-	// Load base environment file
-	if err := godotenv.Load(basePath); err != nil {
-		return nil, fmt.Errorf("failed to load %s: %w", basePath, err)
-	}
-
-	// Load custom environment file if it exists (overrides base)
-	customPath := findCustomEnvFile(basePath)
-	if customPath != "" {
-		if err := godotenv.Overload(customPath); err != nil {
-			return nil, fmt.Errorf("failed to load %s: %w", customPath, err)
+	if err == nil {
+		// Load base environment file if found
+		if loadErr := godotenv.Load(basePath); loadErr != nil {
+			return nil, fmt.Errorf("failed to load %s: %w", basePath, loadErr)
 		}
+
+		// Load custom environment file if it exists (overrides base)
+		customPath := findCustomEnvFile(basePath)
+		if customPath != "" {
+			if overloadErr := godotenv.Overload(customPath); overloadErr != nil {
+				return nil, fmt.Errorf("failed to load %s: %w", customPath, overloadErr)
+			}
+		}
+	} else {
+		// When .env.base file is not found, fail with configuration error
+		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	cfg := &Config{
@@ -119,7 +120,7 @@ func Load() (*Config, error) {
 	cfg.LogLevel = getStringEnv("GO_PRE_COMMIT_LOG_LEVEL", "info")
 	cfg.MaxFileSize = int64(getIntEnv("GO_PRE_COMMIT_MAX_FILE_SIZE_MB", 10)) * 1024 * 1024
 	cfg.MaxFilesOpen = getIntEnv("GO_PRE_COMMIT_MAX_FILES_OPEN", 100)
-	cfg.Timeout = getIntEnv("GO_PRE_COMMIT_TIMEOUT_SECONDS", 300)
+	cfg.Timeout = getIntEnv("GO_PRE_COMMIT_TIMEOUT_SECONDS", 300) // Global timeout in seconds
 
 	// Check configurations
 	cfg.Checks.Fmt = getBoolEnv("GO_PRE_COMMIT_ENABLE_FMT", true)
@@ -237,13 +238,14 @@ func (c *Config) Validate() error {
 
 	// Validate log level
 	validLogLevels := map[string]bool{
+		"trace": true,
 		"debug": true,
 		"info":  true,
 		"warn":  true,
 		"error": true,
 	}
 	if !validLogLevels[strings.ToLower(c.LogLevel)] {
-		errors = append(errors, "GO_PRE_COMMIT_LOG_LEVEL must be one of: debug, info, warn, error")
+		errors = append(errors, fmt.Sprintf("GO_PRE_COMMIT_LOG_LEVEL must be one of: trace, debug, info, warn, error (got: '%s')", c.LogLevel))
 	}
 
 	// Directory validation no longer needed - using PATH-based binary lookup
@@ -453,5 +455,18 @@ func getStringEnv(key, defaultValue string) string {
 	if val == "" {
 		return defaultValue
 	}
-	return val
+	return stripComments(val)
+}
+
+// stripComments removes inline comments from environment variable values
+func stripComments(value string) string {
+	if idx := strings.Index(value, "#"); idx != -1 {
+		// Only strip if the # appears to be a comment (preceded by whitespace or at start)
+		if idx == 0 || strings.TrimSpace(value[:idx]) != value[:idx] {
+			value = value[:idx]
+			return strings.TrimSpace(value)
+		}
+	}
+	// No comment found or # is part of the value, return as-is
+	return value
 }
