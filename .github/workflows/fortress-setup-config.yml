@@ -82,9 +82,9 @@ on:
       yaml-lint-enabled:
         description: "Whether YAML linting is enabled"
         value: ${{ jobs.setup-config.outputs.yaml-lint-enabled }}
-      makefile-exists:
+      magefile-exists:
         description: "Whether .mage.yaml exists"
-        value: ${{ jobs.setup-config.outputs.makefile-exists }}
+        value: ${{ jobs.setup-config.outputs.magefile-exists }}
       primary-runner:
         description: "Primary runner OS"
         value: ${{ jobs.setup-config.outputs.primary-runner }}
@@ -150,7 +150,7 @@ jobs:
       go-versions: ${{ steps.versions.outputs.versions }}
       go-lint-enabled: ${{ steps.config.outputs.go-lint-enabled }}
       yaml-lint-enabled: ${{ steps.config.outputs.yaml-lint-enabled }}
-      makefile-exists: ${{ steps.config.outputs.makefile-exists }}
+      magefile-exists: ${{ steps.config.outputs.magefile-exists }}
       primary-runner: ${{ steps.config.outputs.primary-runner }}
       race-detection-enabled: ${{ steps.config.outputs.race-detection-enabled }}
       secondary-runner: ${{ steps.config.outputs.secondary-runner }}

@@ -211,7 +211,7 @@ go-pre-commit status
 
 - Work with **ci-guardian** for CI integration
 - Coordinate with **go-formatter** for formatting checks
-- Support **makefile-expert** for Make target issues
+- Support **magex-expert** for magex target issues
 
 ## Performance Optimization
 

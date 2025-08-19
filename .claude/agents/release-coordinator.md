@@ -283,7 +283,7 @@ gh release edit v1.2.3 --notes "⚠️ DEPRECATED: Use v1.2.4 instead"
 - Work with **ci-guardian** for release workflow issues
 - Coordinate with **doc-maintainer** for documentation updates
 - Consult **dependency-auditor** for security releases
-- Use **makefile-expert** for build issues
+- Use **magex-expert** for build issues
 
 ## Release Checklist Template
 

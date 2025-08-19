@@ -27,7 +27,7 @@ Use the **ci-guardian agent** to:
    - go-tester for test failures
    - go-formatter for linting issues
    - dependency-auditor for security scans
-   - makefile-expert for build problems
+   - magex-expert for build problems
 
 4. **Optimize performance**:
    - Review caching strategy
