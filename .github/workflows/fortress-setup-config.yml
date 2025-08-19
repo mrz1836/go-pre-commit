@@ -475,7 +475,7 @@ jobs:
           echo "| Feature | Status | Impact |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|--------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| **Benchmarks** | $([ "${{ env.ENABLE_BENCHMARKS }}" == "true" ] && echo "✅ Enabled" || echo "❌ Disabled") | Performance benchmarks will $([ "${{ env.ENABLE_BENCHMARKS }}" == "true" ] && echo "run in **${{ env.BENCHMARK_MODE }}** mode" || echo "be skipped") |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Code Coverage** | $([ "${{ env.ENABLE_CODE_COVERAGE }}" == "true" ] && echo "✅ Enabled" || echo "❌ Disabled") | Code coverage reports will $([ "${{ env.ENABLE_CODE_COVERAGE }}" == "true" ] && echo "be generated with internal GoFortress system (threshold: ${{ env.COVERAGE_FAIL_UNDER }}%, style: ${{ env.COVERAGE_BADGE_STYLE }})" || echo "not be generated") |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Code Coverage** | $([ "${{ env.ENABLE_CODE_COVERAGE }}" == "true" ] && echo "✅ Enabled" || echo "❌ Disabled") | Code coverage reports will $([ "${{ env.ENABLE_CODE_COVERAGE }}" == "true" ] && echo "be generated with internal GoFortress system (threshold: ${{ env.GO_COVERAGE_THRESHOLD }}%, style: ${{ env.GO_COVERAGE_BADGE_STYLE }})" || echo "not be generated") |" >> $GITHUB_STEP_SUMMARY
           echo "| **Fuzz Testing** | $([ "${{ env.ENABLE_FUZZ_TESTING }}" == "true" ] && echo "✅ Enabled" || echo "❌ Disabled") | Fuzz tests will $([ "${{ env.ENABLE_FUZZ_TESTING }}" == "true" ] && echo "run on Linux with primary Go version" || echo "be skipped") |" >> $GITHUB_STEP_SUMMARY
           echo "| **Gitleaks (Secret Scan)** | $([ "${{ env.ENABLE_SECURITY_SCAN_GITLEAKS }}" == "true" ] && echo "✅ Enabled" || echo "❌ Disabled") | Gitleaks will $([ "${{ env.ENABLE_SECURITY_SCAN_GITLEAKS }}" == "true" ] && echo "scan for leaked secrets" || echo "be skipped") |" >> $GITHUB_STEP_SUMMARY
           echo "| **Go Linting** | $([ "${{ env.ENABLE_GO_LINT }}" == "true" ] && echo "✅ Enabled" || echo "❌ Disabled") | golangci-lint via MAGE-x will $([ "${{ env.ENABLE_GO_LINT }}" == "true" ] && echo "analyze code quality" || echo "be skipped") |" >> $GITHUB_STEP_SUMMARY
@@ -514,14 +514,13 @@ jobs:
             else
               echo "| **Coverage System** | \`Internal GoFortress\` | Self-hosted coverage tracking with GitHub Pages |" >> $GITHUB_STEP_SUMMARY
             fi
-            echo "| **Coverage Threshold** | \`${{ env.COVERAGE_FAIL_UNDER }}%\` | Minimum acceptable coverage |" >> $GITHUB_STEP_SUMMARY
-            echo "| **Badge Style** | \`${{ env.COVERAGE_BADGE_STYLE }}\` | Coverage badge appearance |" >> $GITHUB_STEP_SUMMARY
-            echo "| **Badge Logo** | \`${{ env.COVERAGE_BADGE_LOGO }}\` | Badge logo/icon |" >> $GITHUB_STEP_SUMMARY
-            echo "| **Report Theme** | \`${{ env.COVERAGE_REPORT_THEME }}\` | HTML report styling |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Coverage Threshold** | \`${{ env.GO_COVERAGE_THRESHOLD }}%\` | Minimum acceptable coverage |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Badge Style** | \`${{ env.GO_COVERAGE_BADGE_STYLE }}\` | Coverage badge appearance |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Badge Logo** | \`${{ env.GO_COVERAGE_BADGE_LOGO }}\` | Badge logo/icon |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Report Theme** | \`${{ env.GO_COVERAGE_REPORT_THEME }}\` | HTML report styling |" >> $GITHUB_STEP_SUMMARY
             echo "| **PR Comments** | $([ "${{ env.GO_COVERAGE_POST_COMMENTS }}" == "true" ] && echo "✅ Enabled" || echo "❌ Disabled") | Coverage comments on pull requests |" >> $GITHUB_STEP_SUMMARY
-            echo "| **History Retention** | \`${{ env.COVERAGE_HISTORY_RETENTION_DAYS }}\` days | Coverage data retention period |" >> $GITHUB_STEP_SUMMARY
-            echo "| **Badge Branches** | \`${{ env.COVERAGE_BADGE_BRANCHES }}\` | Branches that generate badges |" >> $GITHUB_STEP_SUMMARY
-            echo "| **Exclude Paths** | \`${{ env.COVERAGE_EXCLUDE_PATHS }}\` | Paths excluded from coverage |" >> $GITHUB_STEP_SUMMARY
+            echo "| **History Retention** | \`${{ env.GO_COVERAGE_HISTORY_RETENTION }}\` days | Coverage data retention period |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Exclude Paths** | \`${{ env.GO_COVERAGE_EXCLUDE_PATHS }}\` | Paths excluded from coverage |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "<br><br>" >> $GITHUB_STEP_SUMMARY
           fi
@@ -531,15 +530,16 @@ jobs:
             echo "## 🪝 Pre-Commit System Configuration" >> $GITHUB_STEP_SUMMARY
             echo "| Setting | Value | Description |" >> $GITHUB_STEP_SUMMARY
             echo "|---------|-------|-------------|" >> $GITHUB_STEP_SUMMARY
-            echo "| **Pre-Commit System** | \`GoFortress Native\` | Pure Go implementation, 17x faster execution |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Pre-Commit System** | \`go-pre-commit\` | Pure Go implementation, 17x faster execution |" >> $GITHUB_STEP_SUMMARY
             echo "| **Timeout** | \`${{ env.GO_PRE_COMMIT_TIMEOUT_SECONDS }}\` seconds | Maximum time allowed for all checks |" >> $GITHUB_STEP_SUMMARY
             echo "| **Parallel Workers** | \`${{ env.GO_PRE_COMMIT_PARALLEL_WORKERS }}\` | Concurrent check execution (0 = auto CPU count) |" >> $GITHUB_STEP_SUMMARY
             echo "| **Fail Fast Mode** | $([ "${{ env.GO_PRE_COMMIT_FAIL_FAST }}" == "true" ] && echo "⚡ Enabled" || echo "📝 Disabled") | Stop on first failure vs run all checks |" >> $GITHUB_STEP_SUMMARY
-            echo "| **Enabled Checks** | \`${{ env.GO_PRE_COMMIT_ENABLED_CHECKS }}\` | Active check types (lint, format, security, test) |" >> $GITHUB_STEP_SUMMARY
-            echo "| **Exclude Paths** | \`${{ env.GO_PRE_COMMIT_EXCLUDE_PATHS }}\` | Paths excluded from pre-commit checks |" >> $GITHUB_STEP_SUMMARY
-            echo "| **Exclude Files** | \`${{ env.GO_PRE_COMMIT_EXCLUDE_FILES }}\` | File patterns excluded from checks |" >> $GITHUB_STEP_SUMMARY
-            echo "| **Go Version Required** | \`${{ env.GO_PRE_COMMIT_GO_VERSION_REQUIRED }}\` | Minimum Go version for pre-commit system |" >> $GITHUB_STEP_SUMMARY
-            echo "| **Tool Versions** | golangci-lint: \`${{ env.GO_PRE_COMMIT_GOLANGCI_LINT_VERSION }}\`, gofumpt: \`${{ env.GO_PRE_COMMIT_GOFUMPT_VERSION }}\` | Pinned tool versions for consistency |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Log Level** | \`${{ env.GO_PRE_COMMIT_LOG_LEVEL }}\` | Debug/info logging output level |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Max File Size** | \`${{ env.GO_PRE_COMMIT_MAX_FILE_SIZE_MB }}\` MB | Maximum file size limit for processing |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Max Open Files** | \`${{ env.GO_PRE_COMMIT_MAX_FILES_OPEN }}\` | Maximum concurrent file handles |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Exclude Patterns** | \`${{ env.GO_PRE_COMMIT_EXCLUDE_PATTERNS }}\` | Patterns excluded from pre-commit checks |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Color Output** | $([ "${{ env.GO_PRE_COMMIT_COLOR_OUTPUT }}" == "true" ] && echo "✅ Enabled" || echo "❌ Disabled") | Terminal color support |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Tool Versions** | golangci-lint: \`${{ env.GO_PRE_COMMIT_GOLANGCI_LINT_VERSION }}\`, gofumpt: \`${{ env.GO_PRE_COMMIT_FUMPT_VERSION }}\` | Pinned tool versions for consistency |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "<br><br>" >> $GITHUB_STEP_SUMMARY
           fi
