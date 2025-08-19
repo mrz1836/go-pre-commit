@@ -34,7 +34,13 @@ func (s *ConfigEnvironmentIntegrationTestSuite) SetupSuite() {
 	s.originalWD, err = os.Getwd()
 	s.Require().NoError(err)
 
-	s.tempDir = s.T().TempDir()
+	// Create isolated temp directory outside the repository tree
+	s.tempDir, err = os.MkdirTemp("", "go-pre-commit-integration-test-*")
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = os.RemoveAll(s.tempDir)
+	})
+
 	s.originalEnv = make(map[string]string)
 	s.suiteEnv = make(map[string]string)
 	s.testProjects = make([]string, 0)
@@ -45,6 +51,7 @@ func (s *ConfigEnvironmentIntegrationTestSuite) SetupSuite() {
 	s.saveSuiteEnvironment("GO_PRE_COMMIT_PARALLEL_WORKERS")
 	s.saveSuiteEnvironment("GO_PRE_COMMIT_MAX_FILE_SIZE_MB")
 	s.saveSuiteEnvironment("GO_PRE_COMMIT_MAX_FILES_OPEN")
+	s.saveSuiteEnvironment("GO_PRE_COMMIT_TEST_CONFIG_DIR")
 	s.saveSuiteEnvironment("ENABLE_GO_PRE_COMMIT")
 
 	// Create multiple test project scenarios
@@ -489,6 +496,10 @@ func (s *ConfigEnvironmentIntegrationTestSuite) TestMinimalConfigurationWorkflow
 
 	// Save environment variables that might be modified by config.Load()
 	s.saveEnvironment("GO_PRE_COMMIT_TIMEOUT_SECONDS")
+	s.saveEnvironment("GO_PRE_COMMIT_TEST_CONFIG_DIR")
+
+	// Set test config directory to use this test's config
+	s.Require().NoError(os.Setenv("GO_PRE_COMMIT_TEST_CONFIG_DIR", minimalProject))
 
 	// Test configuration loading
 	cfg, err := config.Load()
@@ -523,6 +534,10 @@ func (s *ConfigEnvironmentIntegrationTestSuite) TestComplexConfigurationWorkflow
 	s.saveEnvironment("GO_PRE_COMMIT_PARALLEL_WORKERS")
 	s.saveEnvironment("GO_PRE_COMMIT_MAX_FILE_SIZE_MB")
 	s.saveEnvironment("GO_PRE_COMMIT_MAX_FILES_OPEN")
+	s.saveEnvironment("GO_PRE_COMMIT_TEST_CONFIG_DIR")
+
+	// Set test config directory to use this test's config
+	s.Require().NoError(os.Setenv("GO_PRE_COMMIT_TEST_CONFIG_DIR", complexProject))
 
 	// Test configuration loading
 	cfg, err := config.Load()

@@ -33,7 +33,13 @@ func (s *E2EIntegrationTestSuite) SetupSuite() {
 	s.originalWD, err = os.Getwd()
 	s.Require().NoError(err)
 
-	s.tempDir = s.T().TempDir()
+	// Create isolated temp directory outside the repository tree
+	s.tempDir, err = os.MkdirTemp("", "go-pre-commit-e2e-test-*")
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = os.RemoveAll(s.tempDir)
+	})
+
 	s.testProject = filepath.Join(s.tempDir, "test-go-project")
 	s.Require().NoError(os.MkdirAll(s.testProject, 0o750))
 
@@ -214,6 +220,12 @@ go.work
 func (s *E2EIntegrationTestSuite) TestCompleteRunnerWorkflow() {
 	// Change to test project directory
 	s.Require().NoError(os.Chdir(s.testProject))
+
+	// Set test config directory to use this test's config
+	s.Require().NoError(os.Setenv("GO_PRE_COMMIT_TEST_CONFIG_DIR", s.testProject))
+	defer func() {
+		_ = os.Unsetenv("GO_PRE_COMMIT_TEST_CONFIG_DIR")
+	}()
 
 	// Test 1: Load configuration
 	cfg, err := config.Load()

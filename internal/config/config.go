@@ -382,6 +382,16 @@ Example .github/.env.custom (optional overrides):
 
 // findBaseEnvFile locates the .github/.env.base file
 func findBaseEnvFile() (string, error) {
+	// Check for test-specific config directory override (used by integration tests)
+	if testConfigDir := os.Getenv("GO_PRE_COMMIT_TEST_CONFIG_DIR"); testConfigDir != "" {
+		envPath := filepath.Join(testConfigDir, ".github", ".env.base")
+		if _, err := os.Stat(envPath); err == nil {
+			return envPath, nil
+		}
+		// If test config dir is set but file doesn't exist, don't walk up
+		return "", prerrors.ErrEnvFileNotFound
+	}
+
 	// First, check if we're already in the right place
 	if _, err := os.Stat(".github/.env.base"); err == nil {
 		return ".github/.env.base", nil
