@@ -555,7 +555,7 @@ commands used across projects.
 building binaries, and updating dependencies. Targets such as `lint`, `test`,
 `test-ci`, and `coverage` are defined here and invoked by the root configuration.
 
-Use `make help` to view the full list of supported commands.
+Use `magex help` to view the full list of supported commands.
 
 <br/>
 
