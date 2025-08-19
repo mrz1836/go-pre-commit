@@ -12,9 +12,9 @@ import (
 //
 //nolint:gochecknoglobals // These are build-time injected variables, required for ldflags
 var (
-	Version   = "dev"
-	Commit    = "none"
-	BuildDate = "unknown"
+	version   = "dev"
+	commit    = "none"
+	buildDate = "unknown"
 )
 
 // BuildInfo encapsulates build-time information
@@ -64,8 +64,8 @@ func (b *BuildInfo) IsModified() bool {
 // getVersionWithFallback returns the version information with fallback to BuildInfo
 func getVersionWithFallback() string {
 	// If version was set via ldflags, use it
-	if Version != "dev" && Version != "" {
-		return Version
+	if version != "dev" && version != "" {
+		return version
 	}
 
 	// Try to get version from build info
@@ -95,8 +95,8 @@ func getVersionWithFallback() string {
 // getCommitWithFallback returns the commit hash with fallback to BuildInfo
 func getCommitWithFallback() string {
 	// If commit was set via ldflags, use it
-	if Commit != "none" && Commit != "" {
-		return Commit
+	if commit != "none" && commit != "" {
+		return commit
 	}
 
 	// Try to get from build info
@@ -126,8 +126,8 @@ func getCommitWithFallback() string {
 // getBuildDateWithFallback returns the build date with fallback to BuildInfo
 func getBuildDateWithFallback() string {
 	// If build date was set via ldflags, use it
-	if BuildDate != "unknown" && BuildDate != "" {
-		return BuildDate
+	if buildDate != "unknown" && buildDate != "" {
+		return buildDate
 	}
 
 	// Try to get from build info
