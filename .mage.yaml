@@ -2,7 +2,7 @@ project:
   name: go-pre-commit
   binary: go-pre-commit
   module: github.com/mrz1836/go-pre-commit
-  main: ./cmd/go-pre-commit
+  main: ./cmd/go-pre-commit/main.go
 
 build:
   # Custom ldflags with version injection
@@ -13,4 +13,4 @@ build:
     - "-X main.buildDate={{.Date}}"
   flags:
     - "-trimpath"
-  output: "./cmd/go-pre-commit/go-pre-commit"
+  output: "./cmd/go-pre-commit"

@@ -10,7 +10,7 @@
         "type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock"
     ],
     "runArgs": ["--cap-drop=ALL", "--security-opt", "no-new-privileges:true"],
-    "postCreateCommand": "magex lint && go vet ./... && go test ./...",
+    "postCreateCommand": "magex lint && magex vet && magex test",
     "customizations": {
         "vscode": {
             "settings": {

@@ -67,8 +67,7 @@ CITATION.cff
 **/.golangci.json
 **/.golangci.yml
 **/.golangci.yaml
-**/.env.base
-**/.env.custom
+**/.env.shared
 **/Makefile
 **/makefile
 **/*.mk
