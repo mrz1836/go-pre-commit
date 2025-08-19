@@ -110,7 +110,7 @@ go-pre-commit upgrade --force
 
 <br>
 
-### Install MAGE-X build tool
+### Install [MAGE-X](https://github.com/mrz1836/mage-x) build tool
 
 ```bash
 # Install MAGE-X for development and building
@@ -129,7 +129,7 @@ cd your-go-project
 # Install the pre-commit hook
 go-pre-commit install
 
-# That's it! Your pre-commit hooks are now active
+# That's it! Your pre-commit hooks are now active!
 ```
 
 <br>
@@ -145,7 +145,7 @@ git commit -m "Test commit"
 # The pre-commit system will automatically run checks:
 # ✓ Checking for AI attribution
 # ✓ Running fumpt formatter
-# ✓ Running golangci-lint
+# ✓ Running linter (golangci-lint)
 # ✓ Running go mod tidy
 # ✓ Fixing trailing whitespace
 # ✓ Ensuring files end with newline
