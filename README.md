@@ -655,7 +655,7 @@ Fuzz tests help ensure the system handles malformed inputs gracefully without cr
 
 ## ⚡ Benchmarks
 
-Run the Go [benchmarks](benchmark_test.go):
+Run the Go [benchmarks](internal/benchmark_test.go):
 
 ```bash script
 magex bench
@@ -670,9 +670,9 @@ magex bench
 
 | Benchmark                                                                   | Iterations |     ns/op |    B/op | allocs/op | Description                      |
 |-----------------------------------------------------------------------------|------------|----------:|--------:|----------:|----------------------------------|
-| [PreCommitSystem_SmallProject](benchmark_test.go)                           | 89,523     |    13,555 |  15,390 |        73 | Small project (3 files)          |
-| [PreCommitSystem_EndToEnd](benchmark_test.go)                               | 44,742     |    24,436 |  36,070 |       111 | Full system (8 files)            |
-| [PreCommitSystem_LargeProject](benchmark_test.go)                           | 24,704     |    48,146 | 108,986 |       229 | Large project (25+ files)        |
+| [PreCommitSystem_SmallProject](internal/benchmark_test.go)                           | 89,523     |    13,555 |  15,390 |        73 | Small project (3 files)          |
+| [PreCommitSystem_EndToEnd](internal/benchmark_test.go)                               | 44,742     |    24,436 |  36,070 |       111 | Full system (8 files)            |
+| [PreCommitSystem_LargeProject](internal/benchmark_test.go)                           | 24,704     |    48,146 | 108,986 |       229 | Large project (25+ files)        |
 | [Runner_New](internal/runner/runner_bench_test.go)                          | 4,086,028  |       293 |     592 |        10 | Runner creation                  |
 | [Runner_SingleCheck](internal/runner/runner_bench_test.go)                  | 187,984    |     6,415 |   7,312 |        33 | Single check execution           |
 | [WhitespaceCheck_SmallFile](internal/checks/builtin/builtin_bench_test.go)  | 6,148,348  |       195 |     128 |         2 | Whitespace check (small file)    |
