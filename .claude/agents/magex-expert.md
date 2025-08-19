@@ -61,9 +61,9 @@ project:
 build:
   ldflags:
     - "-s -w"
-    - "-X main.Version={{.Version}}"
-    - "-X main.Commit={{.Commit}}"
-    - "-X main.BuildDate={{.Date}}"
+    - "-X main.injectedVersion={{.Version}}"
+    - "-X main.injectedCommit={{.Commit}}"
+    - "-X main.injectedBuildDate={{.Date}}"
   flags:
     - "-trimpath"
   output: "./cmd/go-pre-commit/go-pre-commit"
