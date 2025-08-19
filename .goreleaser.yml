@@ -18,9 +18,9 @@ changelog:
 # Builder
 # ---------------------------
 builds:
-  - id: go-pre-commit
-    main: ./cmd/go-pre-commit
-    binary: go-pre-commit
+  - id: go-broadcast
+    main: ./cmd/go-broadcast
+    binary: go-broadcast
     env:
       - CGO_ENABLED=0
     goos:
@@ -40,7 +40,7 @@ builds:
 # Archives
 # ---------------------------
 archives:
-  - id: go-pre-commit
+  - id: go-broadcast
     name_template: >-
       {{- .ProjectName }}_
       {{- .Version }}_

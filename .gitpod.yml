@@ -1,4 +1,4 @@
-# Gitpod workspace configuration for go-pre-commit
+# Gitpod workspace configuration for go-broadcast
 # Uses magex for build automation and development tasks
 # This creates a one-click development environment for contributors
 
@@ -8,7 +8,7 @@ image:
 tasks:
   - name: setup-and-test
     init: |
-      echo "🚀 Setting up go-pre-commit development environment..."
+      echo "🚀 Setting up go-broadcast development environment..."
       echo "📦 Installing MAGE-X build tool..."
       go install github.com/mrz1836/mage-x/cmd/magex@latest
 
@@ -23,7 +23,7 @@ tasks:
 
     command: |
       echo "==============================================="
-      echo "🎯 Welcome to go-pre-commit development!"
+      echo "🎯 Welcome to go-broadcast development!"
       echo "==============================================="
       echo ""
       echo "🛠️  Available magex commands:"

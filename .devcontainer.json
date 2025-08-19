@@ -1,5 +1,5 @@
 {
-    "name": "go-pre-commit dev container",
+    "name": "go-broadcast dev container",
     "image": "mcr.microsoft.com/devcontainers/go:0-1.24-bullseye",
     "features": {
         "ghcr.io/devcontainers/features/github-cli:1": {},
@@ -10,7 +10,7 @@
         "type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock"
     ],
     "runArgs": ["--cap-drop=ALL", "--security-opt", "no-new-privileges:true"],
-    "postCreateCommand": "magex lint && go vet ./... && go test ./...",
+    "postCreateCommand": "magex lint && magex vet && magex test",
     "customizations": {
         "vscode": {
             "settings": {

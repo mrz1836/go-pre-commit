@@ -198,7 +198,7 @@ jobs:
             echo "📦 Package: $GIT_DOMAIN/$REPO_OWNER/$REPO_NAME"
             echo "🏷️ Version: $VERSION_SHORT"
 
-            # Export variables for make godocs
+            # Export variables for godocs
             export GIT_DOMAIN
             export REPO_OWNER
             export REPO_NAME
