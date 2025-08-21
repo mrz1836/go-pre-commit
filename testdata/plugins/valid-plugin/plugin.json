@@ -1,0 +1,19 @@
+{
+  "name": "test-plugin-json",
+  "version": "2.0.0",
+  "description": "JSON test plugin for unit testing",
+  "author": "JSON Test Author",
+  "category": "json-testing",
+  "file_patterns": [
+    "*.json",
+    "*.js"
+  ],
+  "executable": "./json-check.sh",
+  "args": [],
+  "timeout": "45s",
+  "requires_files": false,
+  "dependencies": [
+    "jq",
+    "nodejs"
+  ]
+}

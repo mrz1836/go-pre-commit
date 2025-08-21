@@ -36,8 +36,9 @@ todo.md
 coverage.txt
 coverage.out
 
-# Fuzz Tests
-testdata
+# Fuzz Tests (exclude specific patterns that are generated)
+testdata/fuzz/
+**/fuzz/testdata/
 
 # Node modules
 node_modules/

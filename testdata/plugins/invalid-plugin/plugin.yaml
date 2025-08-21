@@ -1,0 +1,8 @@
+name: ""  # Invalid: empty name
+version: "invalid-version"  # Invalid: not semantic version
+description: ""  # Invalid: empty description
+category: ""  # Invalid: empty category
+file_patterns: []  # Invalid: empty patterns
+executable: ""  # Invalid: empty executable
+timeout: "-1s"  # Invalid: negative timeout
+requires_files: "yes"  # Invalid: should be boolean
