@@ -76,17 +76,9 @@ func LoadVersionsFromEnv() {
 		if t, ok := tools["golangci-lint"]; ok {
 			t.Version = v
 		}
-	} else if v := os.Getenv("GOLANGCI_LINT_VERSION"); v != "" {
-		if t, ok := tools["golangci-lint"]; ok {
-			t.Version = v
-		}
 	}
 
 	if v := os.Getenv("GO_PRE_COMMIT_FUMPT_VERSION"); v != "" {
-		if t, ok := tools["gofumpt"]; ok {
-			t.Version = v
-		}
-	} else if v := os.Getenv("GOFUMPT_VERSION"); v != "" {
 		if t, ok := tools["gofumpt"]; ok {
 			t.Version = v
 		}
