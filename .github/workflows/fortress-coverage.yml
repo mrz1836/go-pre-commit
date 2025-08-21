@@ -1472,7 +1472,7 @@ jobs:
           # Install GitHub Pages .gitignore filter FIRST to prevent tracking unwanted files
           echo ""
           echo "🔧 Installing GitHub Pages .gitignore filter (EARLY APPLICATION)..."
-          GH_PAGES_GITIGNORE="$REPO_ROOT/.github/coverage/gh-pages.gitignore"
+          GH_PAGES_GITIGNORE="$REPO_ROOT/internal/analytics/assets/gh-pages.gitignore"
           if [[ -f "$GH_PAGES_GITIGNORE" ]]; then
             cp "$GH_PAGES_GITIGNORE" .gitignore
             echo "✅ Copied GitHub Pages .gitignore filter"
