@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/mattn/go-isatty"
 )
 
 // Formatter handles all output formatting for the pre-commit system
@@ -48,11 +49,26 @@ func New(opts Options) *Formatter {
 	return f
 }
 
+// ColorMode represents the color output mode
+type ColorMode int
+
+const (
+	// ColorAuto automatically detects the best color setting
+	ColorAuto ColorMode = iota
+	// ColorAlways always enables color output
+	ColorAlways
+	// ColorNever never enables color output
+	ColorNever
+)
+
 // NewDefault creates a formatter with default settings, respecting environment variables
 func NewDefault() *Formatter {
-	// Check for color disable flags
-	colorEnabled := os.Getenv("NO_COLOR") == "" &&
-		os.Getenv("GO_PRE_COMMIT_COLOR_OUTPUT") != "false"
+	return NewWithColorMode(ColorAuto)
+}
+
+// NewWithColorMode creates a formatter with the specified color mode
+func NewWithColorMode(mode ColorMode) *Formatter {
+	colorEnabled := shouldUseColor(mode)
 
 	return New(Options{
 		ColorEnabled: colorEnabled,
@@ -61,11 +77,74 @@ func NewDefault() *Formatter {
 	})
 }
 
+// shouldUseColor determines if color output should be enabled based on the mode
+func shouldUseColor(mode ColorMode) bool {
+	switch mode {
+	case ColorAlways:
+		return true
+	case ColorNever:
+		return false
+	case ColorAuto:
+		// Check explicit disable flags first
+		if os.Getenv("NO_COLOR") != "" {
+			return false
+		}
+		if os.Getenv("GO_PRE_COMMIT_COLOR_OUTPUT") == "false" {
+			return false
+		}
+		// Check for dumb terminal
+		if os.Getenv("TERM") == "dumb" {
+			return false
+		}
+		// Check if running in CI environment
+		if isCI() {
+			return false
+		}
+		// Check if stdout is a TTY
+		return isTTY()
+	default:
+		return false
+	}
+}
+
+// isCI detects if we're running in a CI environment
+func isCI() bool {
+	// Check common CI environment variables
+	ciEnvVars := []string{
+		"CI",
+		"GITHUB_ACTIONS",
+		"GITLAB_CI",
+		"JENKINS_URL",
+		"CIRCLECI",
+		"TRAVIS",
+		"BUILDKITE",
+		"DRONE",
+		"TEAMCITY_VERSION",
+		"TF_BUILD", // Azure DevOps
+		"APPVEYOR",
+		"CODEBUILD_BUILD_ID", // AWS CodeBuild
+	}
+
+	for _, envVar := range ciEnvVars {
+		if value := os.Getenv(envVar); value == "true" || value == "1" || (envVar != "CI" && value != "") {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isTTY checks if stdout is connected to a terminal
+func isTTY() bool {
+	// os.Stdout is already *os.File, no need for type assertion
+	return isatty.IsTerminal(os.Stdout.Fd())
+}
+
 // Success prints a success message with green checkmark
 func (f *Formatter) Success(format string, args ...interface{}) {
 	if f.colorEnabled {
 		c := color.New(color.FgGreen)
-		c.EnableColor()
+		c.SetWriter(f.out)
 		_, _ = c.Fprintf(f.out, "✓ "+format+"\n", args...)
 	} else {
 		_, _ = fmt.Fprintf(f.out, "✓ "+format+"\n", args...)
@@ -76,7 +155,7 @@ func (f *Formatter) Success(format string, args ...interface{}) {
 func (f *Formatter) Error(format string, args ...interface{}) {
 	if f.colorEnabled {
 		c := color.New(color.FgRed)
-		c.EnableColor()
+		c.SetWriter(f.err)
 		_, _ = c.Fprintf(f.err, "✗ "+format+"\n", args...)
 	} else {
 		_, _ = fmt.Fprintf(f.err, "✗ "+format+"\n", args...)
@@ -87,7 +166,7 @@ func (f *Formatter) Error(format string, args ...interface{}) {
 func (f *Formatter) Warning(format string, args ...interface{}) {
 	if f.colorEnabled {
 		c := color.New(color.FgYellow)
-		c.EnableColor()
+		c.SetWriter(f.err)
 		_, _ = c.Fprintf(f.err, "⚠ "+format+"\n", args...)
 	} else {
 		_, _ = fmt.Fprintf(f.err, "⚠ "+format+"\n", args...)
@@ -98,7 +177,7 @@ func (f *Formatter) Warning(format string, args ...interface{}) {
 func (f *Formatter) Info(format string, args ...interface{}) {
 	if f.colorEnabled {
 		c := color.New(color.FgBlue)
-		c.EnableColor()
+		c.SetWriter(f.out)
 		_, _ = c.Fprintf(f.out, "ℹ "+format+"\n", args...)
 	} else {
 		_, _ = fmt.Fprintf(f.out, "ℹ "+format+"\n", args...)
@@ -109,7 +188,7 @@ func (f *Formatter) Info(format string, args ...interface{}) {
 func (f *Formatter) Progress(format string, args ...interface{}) {
 	if f.colorEnabled {
 		c := color.New(color.FgCyan)
-		c.EnableColor()
+		c.SetWriter(f.out)
 		_, _ = c.Fprintf(f.out, "⏳ "+format+"\n", args...)
 	} else {
 		_, _ = fmt.Fprintf(f.out, "⏳ "+format+"\n", args...)
@@ -120,10 +199,10 @@ func (f *Formatter) Progress(format string, args ...interface{}) {
 func (f *Formatter) Header(text string) {
 	if f.colorEnabled {
 		c1 := color.New(color.FgCyan, color.Bold)
-		c1.EnableColor()
+		c1.SetWriter(f.out)
 		_, _ = c1.Fprintf(f.out, "\n%s\n", text)
 		c2 := color.New(color.FgCyan)
-		c2.EnableColor()
+		c2.SetWriter(f.out)
 		_, _ = c2.Fprintf(f.out, "%s\n", strings.Repeat("─", len(text)))
 	} else {
 		_, _ = fmt.Fprintf(f.out, "\n%s\n%s\n", text, strings.Repeat("─", len(text)))
@@ -134,7 +213,7 @@ func (f *Formatter) Header(text string) {
 func (f *Formatter) Subheader(text string) {
 	if f.colorEnabled {
 		c := color.New(color.FgWhite, color.Bold)
-		c.EnableColor()
+		c.SetWriter(f.out)
 		_, _ = c.Fprintf(f.out, "\n%s:\n", text)
 	} else {
 		_, _ = fmt.Fprintf(f.out, "\n%s:\n", text)
@@ -310,7 +389,6 @@ func (f *Formatter) FormatExecutionStats(passed, failed, skipped int, duration t
 	if passed > 0 {
 		if f.colorEnabled {
 			c := color.New(color.FgGreen)
-			c.EnableColor()
 			stats = append(stats, c.Sprintf("%d passed", passed))
 		} else {
 			stats = append(stats, fmt.Sprintf("%d passed", passed))
@@ -320,7 +398,6 @@ func (f *Formatter) FormatExecutionStats(passed, failed, skipped int, duration t
 	if failed > 0 {
 		if f.colorEnabled {
 			c := color.New(color.FgRed)
-			c.EnableColor()
 			stats = append(stats, c.Sprintf("%d failed", failed))
 		} else {
 			stats = append(stats, fmt.Sprintf("%d failed", failed))
@@ -330,7 +407,6 @@ func (f *Formatter) FormatExecutionStats(passed, failed, skipped int, duration t
 	if skipped > 0 {
 		if f.colorEnabled {
 			c := color.New(color.FgYellow)
-			c.EnableColor()
 			stats = append(stats, c.Sprintf("%d skipped", skipped))
 		} else {
 			stats = append(stats, fmt.Sprintf("%d skipped", skipped))
@@ -352,7 +428,6 @@ func (f *Formatter) Highlight(text, highlight string) string {
 		return text
 	}
 	c := color.New(color.FgYellow)
-	c.EnableColor()
 	return strings.ReplaceAll(text, highlight, c.Sprint(highlight))
 }
 
@@ -362,7 +437,7 @@ func (f *Formatter) CodeBlock(text string) {
 	for _, line := range lines {
 		if f.colorEnabled {
 			c := color.New(color.FgWhite, color.Faint)
-			c.EnableColor()
+			c.SetWriter(f.out)
 			_, _ = c.Fprintf(f.out, "    %s\n", line)
 		} else {
 			_, _ = fmt.Fprintf(f.out, "    %s\n", line)
@@ -374,7 +449,7 @@ func (f *Formatter) CodeBlock(text string) {
 func (f *Formatter) SuggestAction(action string) {
 	if f.colorEnabled {
 		c := color.New(color.FgMagenta)
-		c.EnableColor()
+		c.SetWriter(f.out)
 		_, _ = c.Fprintf(f.out, "💡 %s\n", action)
 	} else {
 		_, _ = fmt.Fprintf(f.out, "💡 %s\n", action)

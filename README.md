@@ -189,6 +189,10 @@ GO_PRE_COMMIT_FMT_AUTO_STAGE=true
 GO_PRE_COMMIT_FUMPT_AUTO_STAGE=true
 GO_PRE_COMMIT_GOIMPORTS_AUTO_STAGE=true
 GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true
+
+# Color output settings (auto-detected by default)
+GO_PRE_COMMIT_COLOR_OUTPUT=true             # Enable/disable color output
+NO_COLOR=                                   # Set to any value to disable colors (follows standard)
 ```
 
 **Configuration System:**
@@ -196,6 +200,12 @@ GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true
 - `.env.custom` (optional) contains project-specific overrides
 - Custom values override base values when both files are present
 - Only create `.env.custom` if you need to modify the defaults
+
+**Color Output:**
+- Colors are auto-detected based on terminal capabilities and environment
+- Automatically disabled in CI environments (GitHub Actions, GitLab CI, Jenkins, etc.)
+- Respects standard `NO_COLOR` environment variable
+- Can be controlled via `--color` flag or `GO_PRE_COMMIT_COLOR_OUTPUT` setting
 
 </details>
 
@@ -236,6 +246,12 @@ go-pre-commit run --all-files
 
 # Skip specific checks
 go-pre-commit run --skip lint,mod-tidy
+
+# Color output control
+go-pre-commit run --color=never     # Disable color output
+go-pre-commit run --color=always    # Force color output
+go-pre-commit run --color=auto      # Auto-detect (default)
+go-pre-commit run --no-color        # Same as --color=never
 ```
 
 </details>

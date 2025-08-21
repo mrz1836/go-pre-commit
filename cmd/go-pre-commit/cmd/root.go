@@ -19,8 +19,9 @@ type CLIApp struct {
 
 // AppConfig holds global application configuration
 type AppConfig struct {
-	Verbose bool
-	NoColor bool
+	Verbose   bool
+	NoColor   bool
+	ColorMode string // "auto", "always", "never"
 }
 
 // NewCLIApp creates a new CLI application instance
@@ -64,6 +65,7 @@ Key features:
 			// Get flags and set in app config
 			cb.app.config.Verbose, _ = cmd.Flags().GetBool("verbose")
 			cb.app.config.NoColor, _ = cmd.Flags().GetBool("no-color")
+			cb.app.config.ColorMode, _ = cmd.Flags().GetString("color")
 			cb.initConfig()
 		},
 	}
@@ -75,7 +77,8 @@ Key features:
 
 	// Add persistent flags
 	cmd.PersistentFlags().Bool("verbose", false, "Enable verbose output")
-	cmd.PersistentFlags().Bool("no-color", false, "Disable colored output")
+	cmd.PersistentFlags().Bool("no-color", false, "Disable colored output (same as --color=never)")
+	cmd.PersistentFlags().String("color", "auto", "Control color output: auto, always, never")
 
 	return cmd
 }
@@ -118,9 +121,35 @@ func ResetCommand() {
 
 // initConfig initializes configuration using the app config
 func (cb *CommandBuilder) initConfig() {
-	// Disable color if requested or if not in a terminal
-	if cb.app.config.NoColor || os.Getenv("NO_COLOR") != "" {
+	// Handle color configuration with priority:
+	// 1. --no-color flag (highest priority)
+	// 2. --color flag
+	// 3. Environment variables and auto-detection (handled in formatter)
+	if cb.app.config.NoColor {
 		color.NoColor = true
+	} else {
+		// Let the formatter handle the smart detection
+		// We'll update the formatter creation in run.go to use the color mode
+		switch cb.app.config.ColorMode {
+		case "never":
+			color.NoColor = true
+		case "always":
+			color.NoColor = false
+		case "auto":
+			// Check NO_COLOR environment variable for auto mode
+			if os.Getenv("NO_COLOR") != "" {
+				color.NoColor = true
+			} else {
+				color.NoColor = false
+			}
+		default:
+			// Default to auto mode - check NO_COLOR env var
+			if os.Getenv("NO_COLOR") != "" {
+				color.NoColor = true
+			} else {
+				color.NoColor = false
+			}
+		}
 	}
 
 	// Set up paths relative to repository root

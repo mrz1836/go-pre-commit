@@ -150,9 +150,28 @@ func (cb *CommandBuilder) runChecksWithConfig(runConfig RunConfig, _ *cobra.Comm
 	}
 
 	// Create output formatter with config-based color settings
-	formatter := output.New(output.Options{
-		ColorEnabled: cfg.UI.ColorOutput && !cb.app.config.NoColor,
-	})
+	var formatter *output.Formatter
+	if cb.app.config.NoColor {
+		// --no-color flag takes highest priority
+		formatter = output.NewWithColorMode(output.ColorNever)
+	} else {
+		// Use --color flag or auto-detect
+		switch cb.app.config.ColorMode {
+		case "always":
+			formatter = output.NewWithColorMode(output.ColorAlways)
+		case "never":
+			formatter = output.NewWithColorMode(output.ColorNever)
+		case "auto":
+			formatter = output.NewWithColorMode(output.ColorAuto)
+		default:
+			// Default to auto mode with config override
+			if !cfg.UI.ColorOutput {
+				formatter = output.NewWithColorMode(output.ColorNever)
+			} else {
+				formatter = output.NewWithColorMode(output.ColorAuto)
+			}
+		}
+	}
 
 	// Check if pre-commit system is enabled
 	if !cfg.Enabled {

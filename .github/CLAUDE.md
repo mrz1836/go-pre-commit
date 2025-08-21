@@ -18,6 +18,8 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 **Key commands:**
 - `go-pre-commit install` - Install hooks in repository
 - `go-pre-commit run` - Run checks on staged files
+- `go-pre-commit run --color=never` - Run without color output (CI-friendly)
+- `go-pre-commit run --no-color` - Same as --color=never
 - `go-pre-commit status` - Show configuration and installation status
 - `go-pre-commit upgrade` - Upgrade to the latest version
 - `go-pre-commit uninstall` - Remove installed hooks
@@ -65,6 +67,33 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
   - `.env.custom` (optional) contains project-specific overrides
   - Custom values override base values when both files are present
 - **Build targets:** All checks work with pure Go
+
+### 🎨 Color Output Control
+
+`go-pre-commit` provides comprehensive color output control for better CI/CD integration:
+
+**Smart Auto-Detection:**
+- Automatically detects CI environments and disables colors
+- Respects `NO_COLOR` environment variable (https://no-color.org/)
+- Checks for dumb terminals (`TERM=dumb`)
+- Uses TTY detection to determine terminal capabilities
+
+**Manual Control:**
+```bash
+# Command-line flags (highest priority)
+go-pre-commit run --color=auto      # Smart detection (default)
+go-pre-commit run --color=always    # Force colors
+go-pre-commit run --color=never     # Disable colors
+go-pre-commit run --no-color        # Same as --color=never
+
+# Environment variables
+NO_COLOR=1                          # Disable colors (standard)
+GO_PRE_COMMIT_COLOR_OUTPUT=false    # Disable colors (legacy)
+TERM=dumb                           # Disable colors (terminal detection)
+```
+
+**CI Environment Detection:**
+Automatically detected: GitHub Actions, GitLab CI, Jenkins, CircleCI, Travis CI, BuildKite, Drone, TeamCity, Azure DevOps, AppVeyor, AWS CodeBuild
 
 ### 🛠️ Magex Build System
 
@@ -136,6 +165,13 @@ magex audit:report    # Security and dependency audit
 
 6. **Environment configuration**
    All settings controlled via `GO_PRE_COMMIT_*` variables in `.github/.env.base` (defaults) and `.github/.env.custom` (optional project-specific overrides)
+
+   **Color output priority:**
+   1. Command-line flags (`--color`, `--no-color`)
+   2. `NO_COLOR` environment variable
+   3. `GO_PRE_COMMIT_COLOR_OUTPUT` setting
+   4. CI environment detection
+   5. Terminal/TTY detection
 
 ### 🧪 Testing Notes
 

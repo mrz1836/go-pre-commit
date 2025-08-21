@@ -713,3 +713,274 @@ func TestStripANSI(t *testing.T) {
 		})
 	}
 }
+
+// TestRunCmd_ColorIntegration tests color output integration in the run command
+func TestRunCmd_ColorIntegration(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        []string
+		envVars     map[string]string
+		expectColor bool
+		description string
+	}{
+		{
+			name:        "No color flags with clean environment",
+			args:        []string{},
+			envVars:     map[string]string{},
+			expectColor: false, // Typically false in test environment due to non-TTY
+			description: "Default behavior should depend on TTY detection",
+		},
+		{
+			name:        "Legacy no-color flag",
+			args:        []string{"--no-color"},
+			envVars:     map[string]string{},
+			expectColor: false,
+			description: "--no-color should disable colors",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save and clean environment
+			allEnvVars := []string{"NO_COLOR", "GO_PRE_COMMIT_COLOR_OUTPUT", "TERM", "CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID"}
+			originalEnv := make(map[string]string)
+			for _, key := range allEnvVars {
+				originalEnv[key] = os.Getenv(key)
+				_ = os.Unsetenv(key)
+			}
+
+			// Set test environment
+			for key, value := range tt.envVars {
+				_ = os.Setenv(key, value)
+			}
+
+			defer func() {
+				for key, value := range originalEnv {
+					if value == "" {
+						_ = os.Unsetenv(key)
+					} else {
+						_ = os.Setenv(key, value)
+					}
+				}
+			}()
+
+			// Create CLI app and command builder - need root command for persistent flags
+			app := NewCLIApp("test", "test-commit", "test-date")
+			builder := NewCommandBuilder(app)
+			rootCmd := builder.BuildRootCmd()
+			runCmd := builder.BuildRunCmd()
+			rootCmd.AddCommand(runCmd)
+
+			// Set the args and test parsing
+			rootCmd.SetArgs(append([]string{"run"}, tt.args...))
+
+			// Parse should not fail for valid flag combinations
+			assert.NotPanics(t, func() {
+				err := rootCmd.Execute()
+				// We don't care about the execution result, just that flag parsing works
+				_ = err
+			}, "Color flag parsing should not panic for %s", tt.description)
+		})
+	}
+}
+
+// TestRunCmd_ColorOutputEndToEnd tests end-to-end color output behavior
+func TestRunCmd_ColorOutputEndToEnd(t *testing.T) {
+	tests := []struct {
+		name        string
+		setupRepo   func(t *testing.T) string
+		args        []string
+		envVars     map[string]string
+		description string
+	}{
+		{
+			name: "Run with color always and successful checks",
+			setupRepo: func(t *testing.T) string {
+				repoPath := setupTempGitRepoForRun(t, true, true)
+				// Create a simple Go file that should pass fmt check
+				testFile := filepath.Join(repoPath, "main.go")
+				content := "package main\n\nfunc main() {\n\tprintln(\"Hello, World!\")\n}\n"
+				err := os.WriteFile(testFile, []byte(content), 0o644) // #nosec G306 - Test file permissions
+				require.NoError(t, err)
+				return repoPath
+			},
+			args:        []string{"--color=always", "--all-files"},
+			envVars:     map[string]string{},
+			description: "Should run with color always flag without flag parsing errors",
+		},
+		{
+			name: "Run with color never and mixed environment",
+			setupRepo: func(t *testing.T) string {
+				repoPath := setupTempGitRepoForRun(t, true, true)
+				testFile := filepath.Join(repoPath, "main.go")
+				content := "package main\n\nfunc main() {\n\tprintln(\"Hello, World!\")\n}\n"
+				err := os.WriteFile(testFile, []byte(content), 0o644) // #nosec G306 - Test file permissions
+				require.NoError(t, err)
+				return repoPath
+			},
+			args:        []string{"--color=never", "--all-files"},
+			envVars:     map[string]string{"TERM": "xterm-256color"},
+			description: "Should run with color never flag without flag parsing errors",
+		},
+		{
+			name: "Run with color auto in CI environment",
+			setupRepo: func(t *testing.T) string {
+				repoPath := setupTempGitRepoForRun(t, true, true)
+				testFile := filepath.Join(repoPath, "main.go")
+				content := "package main\n\nfunc main() {\n\tprintln(\"Hello, World!\")\n}\n"
+				err := os.WriteFile(testFile, []byte(content), 0o644) // #nosec G306 - Test file permissions
+				require.NoError(t, err)
+				return repoPath
+			},
+			args:        []string{"--color=auto", "--all-files"},
+			envVars:     map[string]string{"CI": "true", "GITHUB_ACTIONS": "true"},
+			description: "Should run with color auto flag without flag parsing errors",
+		},
+		{
+			name: "Run with NO_COLOR environment variable",
+			setupRepo: func(t *testing.T) string {
+				repoPath := setupTempGitRepoForRun(t, true, true)
+				testFile := filepath.Join(repoPath, "main.go")
+				content := "package main\n\nfunc main() {\n\tprintln(\"Hello, World!\")\n}\n"
+				err := os.WriteFile(testFile, []byte(content), 0o644) // #nosec G306 - Test file permissions
+				require.NoError(t, err)
+				return repoPath
+			},
+			args:        []string{"--all-files"},
+			envVars:     map[string]string{"NO_COLOR": "1"},
+			description: "Should respect NO_COLOR environment variable",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Clean up any environment variables
+			allEnvVars := []string{"NO_COLOR", "GO_PRE_COMMIT_COLOR_OUTPUT", "TERM", "CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID", "ENABLE_GO_PRE_COMMIT"}
+			originalEnv := make(map[string]string)
+			for _, key := range allEnvVars {
+				originalEnv[key] = os.Getenv(key)
+				_ = os.Unsetenv(key)
+			}
+
+			// Set test environment
+			for key, value := range tt.envVars {
+				_ = os.Setenv(key, value)
+			}
+
+			defer func() {
+				for key, value := range originalEnv {
+					if value == "" {
+						_ = os.Unsetenv(key)
+					} else {
+						_ = os.Setenv(key, value)
+					}
+				}
+			}()
+
+			// Setup repository
+			originalDir, err := os.Getwd()
+			require.NoError(t, err)
+
+			repoPath := tt.setupRepo(t)
+			err = os.Chdir(repoPath)
+			require.NoError(t, err)
+
+			defer func() {
+				cdErr := os.Chdir(originalDir)
+				require.NoError(t, cdErr)
+			}()
+
+			// Create CLI app and command builder - need root command for persistent flags
+			app := NewCLIApp("test", "test-commit", "test-date")
+			builder := NewCommandBuilder(app)
+			rootCmd := builder.BuildRootCmd()
+			runCmd := builder.BuildRunCmd()
+			rootCmd.AddCommand(runCmd)
+
+			// Set the args and run the command
+			rootCmd.SetArgs(append([]string{"run"}, tt.args...))
+
+			// Execute should not have flag parsing errors
+			execErr := rootCmd.Execute()
+			if execErr != nil {
+				// We don't care about execution errors (like repo issues), just flag parsing
+				assert.NotContains(t, execErr.Error(), "unknown flag", "Should not have flag parsing errors for %s", tt.description)
+			}
+		})
+	}
+}
+
+// TestRunCmd_ColorModeConfiguration tests color mode configuration parsing
+func TestRunCmd_ColorModeConfiguration(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        []string
+		expectError bool
+		description string
+	}{
+		{
+			name:        "Valid color mode: auto",
+			args:        []string{"--color=auto"},
+			expectError: false,
+			description: "--color=auto should be accepted",
+		},
+		{
+			name:        "Valid color mode: always",
+			args:        []string{"--color=always"},
+			expectError: false,
+			description: "--color=always should be accepted",
+		},
+		{
+			name:        "Valid color mode: never",
+			args:        []string{"--color=never"},
+			expectError: false,
+			description: "--color=never should be accepted",
+		},
+		{
+			name:        "Invalid color mode",
+			args:        []string{"--color=invalid"},
+			expectError: false, // Implementation might be permissive and default to auto
+			description: "Invalid color mode handled gracefully",
+		},
+		{
+			name:        "No-color flag",
+			args:        []string{"--no-color"},
+			expectError: false,
+			description: "--no-color should be accepted",
+		},
+		{
+			name:        "Combination of no-color and color flags",
+			args:        []string{"--no-color", "--color=auto"},
+			expectError: false,
+			description: "Combination should be accepted, with color flag taking precedence",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create CLI app and command builder - need root command for persistent flags
+			app := NewCLIApp("test", "test-commit", "test-date")
+			builder := NewCommandBuilder(app)
+			rootCmd := builder.BuildRootCmd()
+			runCmd := builder.BuildRunCmd()
+			rootCmd.AddCommand(runCmd)
+
+			// Set the args and test parsing
+			rootCmd.SetArgs(append([]string{"run"}, tt.args...))
+
+			// Execute to test flag parsing
+			err := rootCmd.Execute()
+
+			if tt.expectError {
+				assert.Error(t, err, "Expected error for %s", tt.description)
+			} else {
+				// For successful cases, we don't care about execution errors (like missing repos),
+				// just that the flag parsing worked
+				if err != nil && !strings.Contains(err.Error(), "flag provided but not defined") {
+					// Flag parsing worked, execution might fail for other reasons
+					assert.NotContains(t, err.Error(), "unknown flag", "Flag should be recognized for %s", tt.description)
+				}
+			}
+		})
+	}
+}

@@ -92,38 +92,77 @@ func TestBuildRootCmdProperties(t *testing.T) {
 	noColorFlag := cmd.PersistentFlags().Lookup("no-color")
 	require.NotNil(t, noColorFlag)
 	assert.Equal(t, "false", noColorFlag.DefValue)
+
+	// Test color flag
+	colorFlag := cmd.PersistentFlags().Lookup("color")
+	require.NotNil(t, colorFlag)
+	assert.Equal(t, "auto", colorFlag.DefValue)
+	assert.Contains(t, colorFlag.Usage, "Control color output")
 }
 
 func TestBuildRootCmdPersistentPreRun(t *testing.T) {
 	tests := []struct {
-		name            string
-		args            []string
-		expectedVerbose bool
-		expectedNoColor bool
+		name              string
+		args              []string
+		expectedVerbose   bool
+		expectedNoColor   bool
+		expectedColorMode string
 	}{
 		{
-			name:            "no flags",
-			args:            []string{},
-			expectedVerbose: false,
-			expectedNoColor: false,
+			name:              "no flags",
+			args:              []string{},
+			expectedVerbose:   false,
+			expectedNoColor:   false,
+			expectedColorMode: "auto",
 		},
 		{
-			name:            "verbose flag",
-			args:            []string{"--verbose"},
-			expectedVerbose: true,
-			expectedNoColor: false,
+			name:              "verbose flag",
+			args:              []string{"--verbose"},
+			expectedVerbose:   true,
+			expectedNoColor:   false,
+			expectedColorMode: "auto",
 		},
 		{
-			name:            "no-color flag",
-			args:            []string{"--no-color"},
-			expectedVerbose: false,
-			expectedNoColor: true,
+			name:              "no-color flag",
+			args:              []string{"--no-color"},
+			expectedVerbose:   false,
+			expectedNoColor:   true,
+			expectedColorMode: "auto",
 		},
 		{
-			name:            "both flags",
-			args:            []string{"--verbose", "--no-color"},
-			expectedVerbose: true,
-			expectedNoColor: true,
+			name:              "both flags",
+			args:              []string{"--verbose", "--no-color"},
+			expectedVerbose:   true,
+			expectedNoColor:   true,
+			expectedColorMode: "auto",
+		},
+		{
+			name:              "color auto flag",
+			args:              []string{"--color=auto"},
+			expectedVerbose:   false,
+			expectedNoColor:   false,
+			expectedColorMode: "auto",
+		},
+		{
+			name:              "color always flag",
+			args:              []string{"--color=always"},
+			expectedVerbose:   false,
+			expectedNoColor:   false,
+			expectedColorMode: "always",
+		},
+		{
+			name:              "color never flag",
+			args:              []string{"--color=never"},
+			expectedVerbose:   false,
+			expectedNoColor:   false,
+			expectedColorMode: "never",
+		},
+		{
+			name:              "no-color overrides color flag",
+			args:              []string{"--color=always", "--no-color"},
+			expectedVerbose:   false,
+			expectedNoColor:   true,
+			expectedColorMode: "always",
 		},
 	}
 
@@ -148,6 +187,7 @@ func TestBuildRootCmdPersistentPreRun(t *testing.T) {
 			// Check that flags were properly set in app config
 			assert.Equal(t, tt.expectedVerbose, app.config.Verbose)
 			assert.Equal(t, tt.expectedNoColor, app.config.NoColor)
+			assert.Equal(t, tt.expectedColorMode, app.config.ColorMode)
 		})
 	}
 }
@@ -288,32 +328,58 @@ func TestInitConfigNoColorHandling(t *testing.T) {
 	tests := []struct {
 		name        string
 		noColorFlag bool
+		colorMode   string
 		noColorEnv  string
 		expected    bool
 	}{
 		{
 			name:        "no color flag set",
 			noColorFlag: true,
+			colorMode:   "auto",
 			noColorEnv:  "",
 			expected:    true,
 		},
 		{
 			name:        "NO_COLOR env var set",
 			noColorFlag: false,
+			colorMode:   "auto",
 			noColorEnv:  "1",
 			expected:    true,
 		},
 		{
 			name:        "both flag and env set",
 			noColorFlag: true,
+			colorMode:   "auto",
 			noColorEnv:  "1",
 			expected:    true,
 		},
 		{
 			name:        "neither flag nor env set",
 			noColorFlag: false,
+			colorMode:   "auto",
 			noColorEnv:  "",
 			expected:    false,
+		},
+		{
+			name:        "color mode never",
+			noColorFlag: false,
+			colorMode:   "never",
+			noColorEnv:  "",
+			expected:    true,
+		},
+		{
+			name:        "color mode always",
+			noColorFlag: false,
+			colorMode:   "always",
+			noColorEnv:  "1",
+			expected:    false,
+		},
+		{
+			name:        "no-color flag overrides color mode always",
+			noColorFlag: true,
+			colorMode:   "always",
+			noColorEnv:  "",
+			expected:    true,
 		},
 	}
 
@@ -342,6 +408,7 @@ func TestInitConfigNoColorHandling(t *testing.T) {
 			// Create app and set config
 			app := NewCLIApp("1.0.0", "abc123", "2025-01-01")
 			app.config.NoColor = tt.noColorFlag
+			app.config.ColorMode = tt.colorMode
 			builder := NewCommandBuilder(app)
 
 			// Reset color state before test
@@ -670,14 +737,17 @@ func TestAppConfigModification(t *testing.T) {
 	// Initially config should have defaults
 	assert.False(t, app.config.Verbose)
 	assert.False(t, app.config.NoColor)
+	assert.Empty(t, app.config.ColorMode) // Default empty, filled by flag default
 
 	// Modify config directly
 	app.config.Verbose = true
 	app.config.NoColor = true
+	app.config.ColorMode = "never"
 
 	// Verify changes are reflected
 	assert.True(t, app.config.Verbose)
 	assert.True(t, app.config.NoColor)
+	assert.Equal(t, "never", app.config.ColorMode)
 
 	// Verify builder has access to the same config
 	assert.Equal(t, app.config, builder.app.config)
