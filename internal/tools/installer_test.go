@@ -22,8 +22,6 @@ func (s *InstallerTestSuite) SetupTest() {
 		"GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
 		"GO_PRE_COMMIT_FUMPT_VERSION",
 		"GO_PRE_COMMIT_GOIMPORTS_VERSION",
-		"GOLANGCI_LINT_VERSION",
-		"GOFUMPT_VERSION",
 	}
 
 	for _, key := range envVars {
@@ -86,19 +84,6 @@ func (s *InstallerTestSuite) TestLoadVersionsFromEnv() {
 	s.Equal("v1.50.0", tools["golangci-lint"].Version)
 	s.Equal("v0.4.0", tools["gofumpt"].Version)
 	s.Equal("v0.1.0", tools["goimports"].Version)
-	toolsMu.RUnlock()
-}
-
-func (s *InstallerTestSuite) TestLoadVersionsFromEnvFallback() {
-	// Test fallback to non-prefixed vars
-	_ = os.Setenv("GOLANGCI_LINT_VERSION", "v1.45.0")
-	_ = os.Setenv("GOFUMPT_VERSION", "v0.3.0")
-
-	LoadVersionsFromEnv()
-
-	toolsMu.RLock()
-	s.Equal("v1.45.0", tools["golangci-lint"].Version)
-	s.Equal("v0.3.0", tools["gofumpt"].Version)
 	toolsMu.RUnlock()
 }
 
@@ -323,21 +308,6 @@ func (s *InstallerTestSuite) TestToolVersionParsing() {
 	s.Require().Error(err) // Will fail but that's expected
 }
 
-func (s *InstallerTestSuite) TestEnvironmentVariablePrecedence() {
-	// Test GO_PRE_COMMIT_ vars take precedence over base vars
-	_ = os.Setenv("GOLANGCI_LINT_VERSION", "v1.40.0")
-	_ = os.Setenv("GO_PRE_COMMIT_GOLANGCI_LINT_VERSION", "v1.50.0")
-	_ = os.Setenv("GOFUMPT_VERSION", "v0.3.0")
-	_ = os.Setenv("GO_PRE_COMMIT_FUMPT_VERSION", "v0.4.0")
-
-	LoadVersionsFromEnv()
-
-	toolsMu.RLock()
-	s.Equal("v1.50.0", tools["golangci-lint"].Version, "GO_PRE_COMMIT_ should take precedence")
-	s.Equal("v0.4.0", tools["gofumpt"].Version, "GO_PRE_COMMIT_ should take precedence")
-	toolsMu.RUnlock()
-}
-
 func (s *InstallerTestSuite) TestConcurrentToolInstallation() {
 	// Test that concurrent installations don't cause data races
 	done := make(chan bool, 5)
@@ -389,19 +359,6 @@ func (s *InstallerTestSuite) TestGetToolPathCaching() {
 	_, err2 := GetToolPath("cache-test-tool")
 	s.Require().Error(err2)
 	s.Equal(err.Error(), err2.Error())
-}
-
-func (s *InstallerTestSuite) TestLoadVersionsFromEnvEdgeCases() {
-	// Test with empty string values
-	_ = os.Setenv("GO_PRE_COMMIT_GOLANGCI_LINT_VERSION", "")
-	_ = os.Setenv("GOLANGCI_LINT_VERSION", "v1.49.0")
-
-	LoadVersionsFromEnv()
-
-	toolsMu.RLock()
-	// Should use the fallback when primary is empty
-	s.Equal("v1.49.0", tools["golangci-lint"].Version)
-	toolsMu.RUnlock()
 }
 
 func (s *InstallerTestSuite) TestIsInstalledCaching() {
