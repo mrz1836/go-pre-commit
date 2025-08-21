@@ -221,6 +221,9 @@ func (s *E2EIntegrationTestSuite) TestCompleteRunnerWorkflow() {
 	// Change to test project directory
 	s.Require().NoError(os.Chdir(s.testProject))
 
+	// Clear existing environment variables that might override .env.base values
+	s.Require().NoError(os.Unsetenv("GO_PRE_COMMIT_LOG_LEVEL"))
+
 	// Set test config directory to use this test's config
 	s.Require().NoError(os.Setenv("GO_PRE_COMMIT_TEST_CONFIG_DIR", s.testProject))
 	defer func() {

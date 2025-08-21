@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -20,6 +21,7 @@ import (
 type LintCheck struct {
 	sharedCtx *shared.Context
 	timeout   time.Duration
+	buildTags []string
 }
 
 // NewLintCheck creates a new lint check
@@ -75,6 +77,14 @@ func (c *LintCheck) Run(ctx context.Context, files []string) error {
 	// Early return if no files to process
 	if len(files) == 0 {
 		return nil
+	}
+
+	// Check for build tags from environment variable
+	if envTags := os.Getenv("GO_PRE_COMMIT_BUILD_TAGS"); envTags != "" {
+		c.buildTags = strings.Split(envTags, ",")
+		for i, tag := range c.buildTags {
+			c.buildTags[i] = strings.TrimSpace(tag)
+		}
 	}
 
 	// Ensure golangci-lint is installed
@@ -185,9 +195,17 @@ func (c *LintCheck) runLintOnDirectory(ctx context.Context, repoRoot, dir string
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
-	// Run golangci-lint on the directory with --new-from-rev flag to only check changed files
-	args := []string{"run", "--new-from-rev=HEAD~1", filepath.Join(repoRoot, dir)}
-	cmd := exec.CommandContext(ctx, "golangci-lint", args...) //nolint:gosec // Command arguments are validated
+	// Build golangci-lint command arguments
+	args := []string{"run", "--new-from-rev=HEAD~1"}
+
+	// Add build tags if configured
+	if len(c.buildTags) > 0 {
+		args = append(args, "--build-tags", strings.Join(c.buildTags, ","))
+	}
+
+	args = append(args, filepath.Join(repoRoot, dir))
+
+	cmd := exec.CommandContext(ctx, "golangci-lint", args...)
 	cmd.Dir = repoRoot
 
 	var stdout, stderr bytes.Buffer
@@ -204,6 +222,11 @@ func (c *LintCheck) runLintOnDirectory(ctx context.Context, repoRoot, dir string
 				output,
 				fmt.Sprintf("Lint check timed out after %v. Consider increasing GO_PRE_COMMIT_LINT_TIMEOUT.", c.timeout),
 			)
+		}
+
+		// Check if it's build constraints issue
+		if strings.Contains(output, "build constraints exclude all Go files") {
+			return c.handleBuildConstraintsError(ctx, repoRoot, dir, output)
 		}
 
 		// Check if it's configuration issues
@@ -239,6 +262,68 @@ func (c *LintCheck) runLintOnDirectory(ctx context.Context, repoRoot, dir string
 	}
 
 	return nil
+}
+
+// handleBuildConstraintsError handles the case where build constraints exclude all Go files
+func (c *LintCheck) handleBuildConstraintsError(ctx context.Context, repoRoot, dir, originalOutput string) error {
+	// Get all Go files in the directory
+	dirPath := filepath.Join(repoRoot, dir)
+	dirFiles, err := filepath.Glob(filepath.Join(dirPath, "*.go"))
+	if err != nil {
+		return prerrors.NewToolExecutionError(
+			"golangci-lint run",
+			originalOutput,
+			"Failed to scan directory for Go files with build constraints.",
+		)
+	}
+
+	// Detect build tags in the files
+	buildTags := detectBuildTags(dirFiles)
+	if len(buildTags) == 0 {
+		return prerrors.NewToolExecutionError(
+			"golangci-lint run",
+			originalOutput,
+			"Build constraints exclude all Go files. Consider adding 'build-tags' to your .golangci.json configuration.",
+		)
+	}
+
+	// Retry with detected build tags
+	retryArgs := []string{"run", "--new-from-rev=HEAD~1", "--build-tags", strings.Join(buildTags, ",")}
+	retryArgs = append(retryArgs, filepath.Join(repoRoot, dir))
+
+	retryCmd := exec.CommandContext(ctx, "golangci-lint", retryArgs...) //nolint:gosec // Command arguments are validated
+	retryCmd.Dir = repoRoot
+
+	var retryStdout, retryStderr bytes.Buffer
+	retryCmd.Stdout = &retryStdout
+	retryCmd.Stderr = &retryStderr
+
+	if err := retryCmd.Run(); err == nil {
+		// Success with auto-detected build tags
+		return nil
+	}
+
+	// Still failing, provide helpful error with detected tags
+	retryOutput := retryStdout.String() + retryStderr.String()
+
+	// Check if the retry attempt shows linting issues (success case)
+	if strings.Contains(retryOutput, ".go:") && strings.Contains(retryOutput, ":") {
+		formattedOutput := FormatLintErrors(retryOutput)
+		return &prerrors.CheckError{
+			Err:        prerrors.ErrLintingIssues,
+			Message:    formattedOutput,
+			Suggestion: fmt.Sprintf("Fix the linting issues shown above. Run 'golangci-lint run --build-tags %s %s' to see full details.", strings.Join(buildTags, ","), dir),
+			Command:    fmt.Sprintf("golangci-lint run --build-tags %s %s", strings.Join(buildTags, ","), dir),
+			Output:     formattedOutput,
+		}
+	}
+
+	return prerrors.NewToolExecutionError(
+		"golangci-lint run",
+		originalOutput,
+		fmt.Sprintf("Build constraints exclude all Go files. Detected build tags: %v. Consider adding these to your .golangci.json configuration:\n\"build-tags\": %q",
+			buildTags, buildTags),
+	)
 }
 
 // FormatLintErrors extracts and formats specific lint violations for clearer display
@@ -291,6 +376,98 @@ func StripANSIColors(s string) string {
 	// Remove ANSI escape sequences
 	ansiRegex := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	return ansiRegex.ReplaceAllString(s, "")
+}
+
+// detectBuildTags scans files for build constraints and returns unique tags
+func detectBuildTags(files []string) []string {
+	tagSet := make(map[string]bool)
+
+	for _, file := range files {
+		content, err := os.ReadFile(file) //nolint:gosec // File paths are validated by caller
+		if err != nil {
+			continue // Skip files we can't read
+		}
+
+		lines := strings.Split(string(content), "\n")
+		// Only check the first 10 lines for build constraints
+		maxLines := len(lines)
+		if maxLines > 10 {
+			maxLines = 10
+		}
+
+		for i := 0; i < maxLines; i++ {
+			line := strings.TrimSpace(lines[i])
+
+			// Check for //go:build constraints (Go 1.17+)
+			if strings.HasPrefix(line, "//go:build ") {
+				tags := extractTagsFromConstraint(line)
+				for _, tag := range tags {
+					tagSet[tag] = true
+				}
+			}
+			// Check for // +build constraints (legacy)
+			if strings.HasPrefix(line, "// +build ") {
+				tags := extractTagsFromLegacyConstraint(line)
+				for _, tag := range tags {
+					tagSet[tag] = true
+				}
+			}
+		}
+	}
+
+	// Convert to slice and filter out operators
+	var tags []string
+	for tag := range tagSet {
+		// Filter out operators and empty strings
+		if tag != "" && tag != "!" && tag != "||" && tag != "&&" && tag != "(" && tag != ")" {
+			tags = append(tags, tag)
+		}
+	}
+	return tags
+}
+
+// extractTagsFromConstraint extracts build tags from //go:build constraint
+func extractTagsFromConstraint(line string) []string {
+	// Remove //go:build prefix
+	constraint := strings.TrimSpace(strings.TrimPrefix(line, "//go:build"))
+
+	// Split on operators and whitespace
+	var tags []string
+	words := strings.FieldsFunc(constraint, func(r rune) bool {
+		return r == '(' || r == ')' || r == '&' || r == '|' || r == '!' || r == ' ' || r == '\t'
+	})
+
+	for _, word := range words {
+		word = strings.TrimSpace(word)
+		if word != "" && word != "&&" && word != "||" {
+			tags = append(tags, word)
+		}
+	}
+
+	return tags
+}
+
+// extractTagsFromLegacyConstraint extracts build tags from // +build constraint
+func extractTagsFromLegacyConstraint(line string) []string {
+	// Remove // +build prefix
+	constraint := strings.TrimSpace(strings.TrimPrefix(line, "// +build"))
+
+	// Split on whitespace and commas
+	var tags []string
+	words := strings.FieldsFunc(constraint, func(r rune) bool {
+		return r == ' ' || r == '\t' || r == ','
+	})
+
+	for _, word := range words {
+		word = strings.TrimSpace(word)
+		// Remove ! prefix for negative constraints
+		word = strings.TrimPrefix(word, "!")
+		if word != "" {
+			tags = append(tags, word)
+		}
+	}
+
+	return tags
 }
 
 // installGolangciLint installs golangci-lint using the official installation script

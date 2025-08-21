@@ -248,3 +248,165 @@ func Module%dFunc%d() {
 
 	t.Log("Multi-directory linting completed successfully")
 }
+
+// TestLintWithBuildTags tests build tag detection and handling
+func TestLintWithBuildTags(t *testing.T) {
+	// Skip in short mode
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// Create temp directory for test
+	tempDir, err := os.MkdirTemp("", "lint_build_tags_*")
+	require.NoError(t, err)
+	defer func() {
+		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+			t.Logf("Failed to remove temp dir: %v", removeErr)
+		}
+	}()
+
+	oldDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() {
+		if chdirErr := os.Chdir(oldDir); chdirErr != nil {
+			t.Logf("Failed to change back to old dir: %v", chdirErr)
+		}
+	}()
+
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+
+	// Initialize git repo
+	ctx := context.Background()
+	require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", "test@example.com").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", "Test User").Run())
+
+	// Create magefile with build constraint
+	mageContent := `//go:build mage
+
+package main
+
+import (
+	"fmt"
+	"github.com/magefile/mage/sh"
+)
+
+// Build builds the application
+func Build() error {
+	fmt.Println("Building application...")
+	return sh.RunV("go", "build", "./...")
+}
+`
+
+	require.NoError(t, os.WriteFile("magefile.go", []byte(mageContent), 0o600))
+
+	// Create go.mod
+	goModContent := `module testproject
+
+go 1.21
+
+require github.com/magefile/mage v1.15.0
+`
+	require.NoError(t, os.WriteFile("go.mod", []byte(goModContent), 0o600))
+
+	// Create go.sum (empty for this test)
+	require.NoError(t, os.WriteFile("go.sum", []byte(""), 0o600))
+
+	// Commit the magefile
+	require.NoError(t, exec.CommandContext(ctx, "git", "add", ".").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "commit", "-m", "add magefile").Run())
+
+	// Create check
+	sharedCtx := shared.NewContext()
+	check := NewLintCheckWithSharedContext(sharedCtx)
+
+	// Test: Run lint on magefile.go (should auto-detect mage build tag)
+	err = check.Run(ctx, []string{"magefile.go"})
+	// The check should either succeed or provide a helpful error about build tags
+	if err != nil {
+		t.Logf("Build tag test result: %v", err)
+		// Should not get the generic "build constraints exclude all Go files" error
+		require.NotContains(t, err.Error(), "build constraints exclude all Go files in")
+		// Should either succeed or provide guidance about build tags
+	}
+
+	t.Log("Build tag handling test completed")
+}
+
+// TestBuildTagDetection tests the build tag detection functions
+func TestBuildTagDetection(t *testing.T) {
+	// Create temp files with different build constraints
+	tempDir, err := os.MkdirTemp("", "build_tag_detection_*")
+	require.NoError(t, err)
+	defer func() {
+		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+			t.Logf("Failed to remove temp dir: %v", removeErr)
+		}
+	}()
+
+	// Test file with //go:build mage
+	mageFile := filepath.Join(tempDir, "magefile.go")
+	mageContent := `//go:build mage
+
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("mage build")
+}
+`
+	require.NoError(t, os.WriteFile(mageFile, []byte(mageContent), 0o600))
+
+	// Test file with //go:build integration
+	integrationFile := filepath.Join(tempDir, "integration_test.go")
+	integrationContent := `//go:build integration
+
+package main
+
+import "testing"
+
+func TestIntegration(t *testing.T) {
+	t.Log("integration test")
+}
+`
+	require.NoError(t, os.WriteFile(integrationFile, []byte(integrationContent), 0o600))
+
+	// Test file with legacy // +build tag
+	legacyFile := filepath.Join(tempDir, "legacy.go")
+	legacyContent := `// +build tools
+
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("legacy build tag")
+}
+`
+	require.NoError(t, os.WriteFile(legacyFile, []byte(legacyContent), 0o600))
+
+	// Test detectBuildTags function
+	files := []string{mageFile, integrationFile, legacyFile}
+	tags := detectBuildTags(files)
+
+	// Should detect mage, integration, and tools tags
+	expectedTags := map[string]bool{
+		"mage":        false,
+		"integration": false,
+		"tools":       false,
+	}
+
+	for _, tag := range tags {
+		if _, exists := expectedTags[tag]; exists {
+			expectedTags[tag] = true
+		}
+	}
+
+	for tag, found := range expectedTags {
+		require.True(t, found, "Expected to find build tag: %s", tag)
+	}
+
+	t.Logf("Detected build tags: %v", tags)
+}

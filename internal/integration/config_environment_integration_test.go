@@ -536,6 +536,13 @@ func (s *ConfigEnvironmentIntegrationTestSuite) TestComplexConfigurationWorkflow
 	s.saveEnvironment("GO_PRE_COMMIT_MAX_FILES_OPEN")
 	s.saveEnvironment("GO_PRE_COMMIT_TEST_CONFIG_DIR")
 
+	// Clear existing environment variables that might override .env.base values
+	s.Require().NoError(os.Unsetenv("GO_PRE_COMMIT_TIMEOUT_SECONDS"))
+	s.Require().NoError(os.Unsetenv("GO_PRE_COMMIT_PARALLEL_WORKERS"))
+	s.Require().NoError(os.Unsetenv("GO_PRE_COMMIT_MAX_FILE_SIZE_MB"))
+	s.Require().NoError(os.Unsetenv("GO_PRE_COMMIT_MAX_FILES_OPEN"))
+	s.Require().NoError(os.Unsetenv("GO_PRE_COMMIT_LOG_LEVEL"))
+
 	// Set test config directory to use this test's config
 	s.Require().NoError(os.Setenv("GO_PRE_COMMIT_TEST_CONFIG_DIR", complexProject))
 
