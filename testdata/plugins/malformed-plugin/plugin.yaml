@@ -1,13 +1,5 @@
 name: malformed-plugin
 version: 1.0.0
 description: "Plugin with malformed YAML"
-invalid_yaml_structure:
-  - key1
-    - nested_without_parent
-  - key2:
-    value_without_key
-malformed_list:
-  item1
-  item2 without dash
-badly_indented:
+invalid_field: [unclosed_bracket
 category: "test"
