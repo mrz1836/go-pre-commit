@@ -1,5 +1,0 @@
-name: malformed-plugin
-version: 1.0.0
-description: "Plugin with malformed YAML"
-invalid_field: [unclosed_bracket
-category: "test"

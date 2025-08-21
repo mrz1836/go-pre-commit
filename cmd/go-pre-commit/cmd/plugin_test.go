@@ -23,10 +23,29 @@ func TestLoadManifestFromDir(t *testing.T) {
 	}{
 		{
 			name: "valid YAML manifest",
-			setupFunc: func(_ *testing.T) string {
-				return filepath.Join("..", "..", "..", "testdata", "plugins", "valid-plugin")
+			setupFunc: func(t *testing.T) string {
+				tmpDir := t.TempDir()
+				yamlContent := `name: test-plugin
+version: "1.0.0"
+description: "Test plugin for unit testing"
+author: "Test Author"
+category: "testing"
+file_patterns:
+  - "*.test"
+  - "*.spec"
+executable: "./test-check.sh"
+args: []
+timeout: "30s"
+requires_files: true
+dependencies:
+  - "bash"
+  - "grep"`
+				err := os.WriteFile(filepath.Join(tmpDir, "plugin.yaml"), []byte(yamlContent), 0o600)
+				require.NoError(t, err)
+				return tmpDir
 			},
 			expectedName: "test-plugin",
+			cleanup:      true,
 		},
 		{
 			name: "valid JSON manifest",
@@ -86,10 +105,19 @@ requires_files: true`
 		},
 		{
 			name: "malformed YAML",
-			setupFunc: func(_ *testing.T) string {
-				return filepath.Join("..", "..", "..", "testdata", "plugins", "malformed-plugin")
+			setupFunc: func(t *testing.T) string {
+				tmpDir := t.TempDir()
+				malformedYAML := `name: malformed-plugin
+version: 1.0.0
+description: "Plugin with malformed YAML"
+invalid_field: [unclosed_bracket
+category: "test"`
+				err := os.WriteFile(filepath.Join(tmpDir, "plugin.yaml"), []byte(malformedYAML), 0o600)
+				require.NoError(t, err)
+				return tmpDir
 			},
 			expectedError: "failed to parse plugin.yaml",
+			cleanup:       true,
 		},
 		{
 			name: "nonexistent directory",
