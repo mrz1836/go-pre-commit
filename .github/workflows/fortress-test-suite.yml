@@ -269,8 +269,20 @@ jobs:
 
           STATS_FILE="test-stats-${{ matrix.os }}-${{ matrix.go-version }}.json"
 
-          # Capture the output of "magex metrics:loc" and store the markdown summary
-          LOC_OUTPUT_JSON=$(magex metrics:loc | jq -Rsa .)
+          # Capture the output of "magex metrics:loc" and extract key information
+          # Remove all ANSI codes and non-ASCII characters like emoji
+          LOC_OUTPUT_RAW=$(magex metrics:loc 2>/dev/null | \
+            sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' | \
+            iconv -c -f utf-8 -t ascii//IGNORE)
+
+          # Extract test files count
+          TEST_FILES_COUNT=$(echo "$LOC_OUTPUT_RAW" | grep "Test Files" | grep -oE '[0-9]+' | head -1)
+          # Extract go files count
+          GO_FILES_COUNT=$(echo "$LOC_OUTPUT_RAW" | grep "Go Files" | grep -oE '[0-9]+' | head -1)
+          # Extract total count
+          TOTAL_COUNT=$(echo "$LOC_OUTPUT_RAW" | grep "Total lines of code:" | grep -oE '[0-9]+')
+          # Get current date
+          CURRENT_DATE=$(date +"%Y-%m-%d")
 
           cat > "$STATS_FILE" << EOF
           {
@@ -286,7 +298,10 @@ jobs:
             "coverage_enabled": ${{ inputs.code-coverage-enabled }},
             "fuzz_run": false,
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "loc_summary": $LOC_OUTPUT_JSON
+            "loc_test_files": ${TEST_FILES_COUNT:-0},
+            "loc_go_files": ${GO_FILES_COUNT:-0},
+            "loc_total": ${TOTAL_COUNT:-0},
+            "loc_date": "$CURRENT_DATE"
           }
           EOF
 
