@@ -593,7 +593,7 @@ jobs:
   # ----------------------------------------------------------------------------------
   validate-test-results:
     name: 🔍 Validate Test Results
-    needs: [test-go]
+    needs: [test-go, fuzz-tests]
     if: always() # Always run to check results even if jobs continued on error
     permissions:
       contents: read # Read repository content for validation
