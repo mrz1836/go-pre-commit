@@ -128,6 +128,7 @@ jobs:
       # Run tests and coverage
       # ————————————————————————————————————————————————————————————————
       - name: 🧪 Run tests
+        id: run-tests
         continue-on-error: true
         run: |
           # Safely assign values to shell vars
@@ -160,6 +161,7 @@ jobs:
 
           # Store the exit code for later steps
           echo "TEST_EXIT_CODE=$TEST_EXIT_CODE" >> $GITHUB_ENV
+          echo "test-exit-code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
 
           if [[ $TEST_EXIT_CODE -eq 0 ]]; then
             echo "✅ Tests completed successfully"
@@ -256,6 +258,8 @@ jobs:
         id: test-summary
         if: always()
         run: |
+          # Get the test exit code from the test step output
+          TEST_EXIT_CODE="${{ steps.run-tests.outputs.test-exit-code }}"
           TEST_END=$(date +%s)
           TEST_DURATION=$((TEST_END - ${{ steps.test-timer.outputs.test-start }}))
           TEST_COUNT=0
@@ -460,6 +464,7 @@ jobs:
       # Run fuzz tests
       # ————————————————————————————————————————————————————————————————
       - name: 🎯 Run fuzz tests
+        id: run-fuzz-tests
         continue-on-error: true
         run: |
           echo "🎯 Running fuzz tests in parallel..."
@@ -468,6 +473,7 @@ jobs:
 
           # Store the exit code for later steps
           echo "FUZZ_EXIT_CODE=$FUZZ_EXIT_CODE" >> $GITHUB_ENV
+          echo "fuzz-exit-code=$FUZZ_EXIT_CODE" >> $GITHUB_OUTPUT
 
           if [[ $FUZZ_EXIT_CODE -eq 0 ]]; then
             echo "✅ Fuzz tests completed successfully"
@@ -546,6 +552,8 @@ jobs:
         id: fuzz-summary
         if: always()
         run: |
+          # Get the fuzz test exit code from the fuzz test step output
+          FUZZ_EXIT_CODE="${{ steps.run-fuzz-tests.outputs.fuzz-exit-code }}"
           FUZZ_END=$(date +%s)
           FUZZ_DURATION=$((FUZZ_END - ${{ steps.fuzz-timer.outputs.fuzz-start }}))
           FUZZ_TEST_COUNT=0
