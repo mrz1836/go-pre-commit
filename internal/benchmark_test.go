@@ -336,7 +336,9 @@ func BenchmarkPreCommitSystem_IndividualChecks(b *testing.B) {
 func setupTestRepo(b *testing.B) string {
 	tmpDir := b.TempDir()
 
-	cmd := exec.Command("git", "init")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "init")
 	cmd.Dir = tmpDir
 	if err := cmd.Run(); err != nil {
 		b.Fatal(err)
