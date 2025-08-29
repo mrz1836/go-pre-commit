@@ -93,8 +93,8 @@ func BenchmarkRepository_GetFileContent(b *testing.B) {
 
 	repo := NewRepository(root)
 
-	// Use this test file
-	testFile := "repository_test.go"
+	// Use a test file that exists in the repository
+	testFile := "README.md"
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -144,7 +144,12 @@ func BenchmarkInstaller_InstallHook(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	installer := NewInstaller(tmpDir, "/tmp/go-pre-commit")
+	sharedDir := filepath.Join(tmpDir, "pre-commit")
+	if err := os.MkdirAll(sharedDir, 0o750); err != nil {
+		b.Fatal(err)
+	}
+
+	installer := NewInstaller(tmpDir, sharedDir)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -173,7 +178,12 @@ func BenchmarkInstaller_IsHookInstalled(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	installer := NewInstaller(tmpDir, "/tmp/go-pre-commit")
+	sharedDir := filepath.Join(tmpDir, "pre-commit")
+	if err := os.MkdirAll(sharedDir, 0o750); err != nil {
+		b.Fatal(err)
+	}
+
+	installer := NewInstaller(tmpDir, sharedDir)
 
 	// Install a hook once
 	err = installer.InstallHook("pre-commit", false)
