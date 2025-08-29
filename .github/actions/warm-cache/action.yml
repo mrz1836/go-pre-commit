@@ -107,23 +107,44 @@ runs:
         fi
 
     # ────────────────────────────────────────────────────────────────────────────
-    # Warm the caches only when we had a miss
+    # Ensure cache directories exist
     # ────────────────────────────────────────────────────────────────────────────
-    - name: 🚀 Warm cache (miss only)
+    - name: 📁 Ensure cache directories exist
+      shell: bash
+      run: |
+        echo "📁 Ensuring cache directories exist..."
+        mkdir -p "$GOMODCACHE"
+        mkdir -p "$GOCACHE"
+        mkdir -p "$GOCACHE/test"
+        echo "✅ Cache directories created successfully"
+
+    # ────────────────────────────────────────────────────────────────────────────
+    # Download modules when module cache missed
+    # ────────────────────────────────────────────────────────────────────────────
+    - name: ⬇️ Download modules (module cache miss)
+      if: steps.setup-go.outputs.module-cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "⬇️ Module cache miss - downloading modules..."
+        magex deps:download
+        echo "✅ Modules downloaded successfully"
+
+    # ────────────────────────────────────────────────────────────────────────────
+    # Warm build cache when build cache missed
+    # ────────────────────────────────────────────────────────────────────────────
+    - name: 🏗️ Warm build cache (build cache miss)
       if: steps.setup-go.outputs.build-cache-hit != 'true'
       shell: bash
       run: |
         set -euo pipefail
-        echo "⬇️  Downloading modules..."
-        magex deps:download
-
-        echo "🔧 Pre-building project packages..."
+        echo "🔧 Build cache miss - pre-building packages..."
         magex build:prebuild
 
-        echo "🏗️  Building stdlib for host platform…"
+        echo "🏗️ Building stdlib for host platform…"
         magex install:stdlib
 
-        echo "✅ Cache warmed for Go ${{ inputs.go-version }}"
+        echo "✅ Build cache warmed for Go ${{ inputs.go-version }}"
 
     # ────────────────────────────────────────────────────────────────────────────
     # Save the build cache we just created
@@ -135,8 +156,17 @@ runs:
         path: |
           ~/.cache/go-build
           ~/.cache/go-build/test
-        # This is the first key, which does NOT have test cache, this will be used as a fail-over
         key: ${{ inputs.matrix-os }}-gobuild-${{ inputs.go-version }}-${{ hashFiles('**/go.sum') }}
+
+    # ────────────────────────────────────────────────────────────────────────────
+    # Save the Go module cache we just populated
+    # ────────────────────────────────────────────────────────────────────────────
+    - name: 💾 Save Go module cache
+      if: steps.setup-go.outputs.module-cache-hit != 'true'
+      uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.0.2
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ inputs.matrix-os }}-gomod-${{ hashFiles('**/go.sum') }}
 
     # ————————————————————————————————————————————————————————————————
     # Track cache performance (no outputs - use artifacts instead)
@@ -156,6 +186,8 @@ runs:
           "gobuild_cache_hit": ${{ steps.setup-go.outputs.build-cache-hit == 'true' && 'true' || 'false' }},
           "cache_size_gomod": "$(du -sh $GOMODCACHE 2>/dev/null | cut -f1 || echo '0')",
           "cache_size_gobuild": "$(du -sh $GOCACHE 2>/dev/null | cut -f1 || echo '0')",
+          "workflow": "cache-warm",
+          "job_name": "warm-cache",
           "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         }
         EOF
