@@ -470,7 +470,10 @@ func BenchmarkMain(b *testing.B) {
 	}()
 
 	// Discard output during benchmark
-	devNull, _ := os.Open(os.DevNull)
+	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		b.Fatalf("failed to open devnull: %v", err)
+	}
 	os.Stdout = devNull
 	os.Stderr = devNull
 	defer func() {
@@ -479,8 +482,8 @@ func BenchmarkMain(b *testing.B) {
 		}
 	}()
 
-	// Set args for list command (fast operation)
-	os.Args = []string{"go-pre-commit", "list"}
+	// Use help command for fast execution
+	os.Args = []string{"go-pre-commit", "--help"}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
