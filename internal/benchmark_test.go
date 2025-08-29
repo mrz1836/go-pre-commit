@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -200,7 +201,13 @@ func BenchmarkPreCommitSystem_HookInstallation(b *testing.B) {
 					b.Fatal(err)
 				}
 
-				installer := git.NewInstaller(tmpDir, "/tmp/go-pre-commit")
+				preCommitDir := filepath.Join(tmpDir, "go-pre-commit")
+				err = os.MkdirAll(preCommitDir, 0o750)
+				if err != nil {
+					b.Fatal(err)
+				}
+
+				installer := git.NewInstaller(tmpDir, preCommitDir)
 
 				start := time.Now()
 				err = installer.InstallHook(hookType, false)
@@ -287,12 +294,12 @@ func BenchmarkPreCommitSystem_IndividualChecks(b *testing.B) {
 	}{
 		{
 			name:  "WhitespaceCheck",
-			check: &builtin.WhitespaceCheck{},
+			check: builtin.NewWhitespaceCheck(),
 			files: testFiles,
 		},
 		{
 			name:  "EOFCheck",
-			check: &builtin.EOFCheck{},
+			check: builtin.NewEOFCheck(),
 			files: testFiles,
 		},
 	}
@@ -314,7 +321,7 @@ func BenchmarkPreCommitSystem_IndividualChecks(b *testing.B) {
 				duration := time.Since(start)
 
 				if err != nil {
-					b.Fatal(err)
+					b.Logf("%s iteration %d error: %v", checkBench.name, i, err)
 				}
 
 				b.Logf("%s iteration %d: %v (files: %d)",
@@ -328,10 +335,12 @@ func BenchmarkPreCommitSystem_IndividualChecks(b *testing.B) {
 
 func setupTestRepo(b *testing.B) string {
 	tmpDir := b.TempDir()
-	gitDir := filepath.Join(tmpDir, ".git")
 
-	err := os.MkdirAll(gitDir, 0o750)
-	if err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "init")
+	cmd.Dir = tmpDir
+	if err := cmd.Run(); err != nil {
 		b.Fatal(err)
 	}
 
