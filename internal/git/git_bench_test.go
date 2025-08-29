@@ -145,7 +145,8 @@ func BenchmarkInstaller_InstallHook(b *testing.B) {
 	}
 
 	sharedDir := filepath.Join(tmpDir, "pre-commit")
-	if err := os.MkdirAll(sharedDir, 0o750); err != nil {
+	err = os.MkdirAll(sharedDir, 0o750)
+	if err != nil {
 		b.Fatal(err)
 	}
 
@@ -179,7 +180,8 @@ func BenchmarkInstaller_IsHookInstalled(b *testing.B) {
 	}
 
 	sharedDir := filepath.Join(tmpDir, "pre-commit")
-	if err := os.MkdirAll(sharedDir, 0o750); err != nil {
+	err = os.MkdirAll(sharedDir, 0o750)
+	if err != nil {
 		b.Fatal(err)
 	}
 
