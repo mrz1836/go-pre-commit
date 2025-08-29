@@ -435,7 +435,16 @@ func BenchmarkMain(b *testing.B) {
 	}()
 
 	// Discard output
-	os.Stdout, _ = os.Open(os.DevNull)
+	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		b.Fatalf("failed to open devnull: %v", err)
+	}
+	os.Stdout = devNull
+	defer func() {
+		if err := devNull.Close(); err != nil {
+			b.Logf("failed to close devnull: %v", err)
+		}
+	}()
 
 	// Mock fast validator
 	testDeps := getDependencies()
