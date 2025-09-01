@@ -13,7 +13,7 @@
 #  🏗️ Quality Battlements: Static analysis and comprehensive linting
 #  ⚔️ Testing Garrison: Multi-OS, multi-version matrices with race detection
 #  🎯 Performance Watchtowers: Real-time metrics and cache optimization
-#  🚀 Release Citadel: Automated versioning and changelog generation
+#  🚀 Release Citadel: Automated deployments with GoReleaser and GoDocs
 #
 #  Maintainer: @mrz1836
 #
@@ -110,7 +110,7 @@ jobs:
   # Test MAGE-X
   # ----------------------------------------------------------------------------------
   test-magex:
-    name: 🪄 Test MAGE-X
+    name: 🪄 Verify & Test MAGE-X
     needs: [load-env, setup]
     permissions:
       contents: read # Read repository content for magex testing
@@ -218,8 +218,6 @@ jobs:
       primary-runner: ${{ needs.setup.outputs.primary-runner }}
       go-primary-version: ${{ needs.setup.outputs.go-primary-version }}
       pre-commit-enabled: ${{ needs.setup.outputs.pre-commit-enabled }}
-    secrets:
-      github-token: ${{ secrets.GH_PAT_TOKEN != '' && secrets.GH_PAT_TOKEN || secrets.GITHUB_TOKEN }}
   # ----------------------------------------------------------------------------------
   # Test Suite
   # ----------------------------------------------------------------------------------
@@ -376,7 +374,7 @@ jobs:
       github-token: ${{ secrets.GH_PAT_TOKEN != '' && secrets.GH_PAT_TOKEN || secrets.GITHUB_TOKEN }}
       slack-webhook: ${{ secrets.SLACK_WEBHOOK || '' }}
     permissions:
-      contents: write
+      contents: write # Required: goreleaser needs to create GitHub releases
   # ----------------------------------------------------------------------------------
   # Workflow Completion Report
   # ----------------------------------------------------------------------------------
