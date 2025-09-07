@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PR #34 - mrz1836/go-pre-commit Coverage Report</title>
+    <meta name="description" content="Detailed coverage analysis for mrz1836/go-pre-commit">
+
+    
+    <link rel="icon" type="image/x-icon" href="./assets/images/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="./assets/images/favicon.svg">
+    <link rel="shortcut icon" href="./assets/images/favicon.ico">
+    <link rel="manifest" href="./assets/site.webmanifest">
+
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" as="style">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    
+    <link rel="stylesheet" href="./assets/css/coverage.css">
+
+    
+    <meta property="og:title" content="mrz1836/go-pre-commit Coverage Report">
+    <meta property="og:description" content="Code coverage analysis for mrz1836/go-pre-commit">
+    <meta property="og:type" content="website">
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-S5GDNEL3WM"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-S5GDNEL3WM');
+    </script>
+
+</head>
+<body>
+    
+    <nav class="nav-header">
+        <div class="nav-container">
+            <a href="https://mrz1836.github.io/go-pre-commit/" class="nav-title-link">
+                <div class="nav-title">go-pre-commit</div>
+            </a>
+            <div class="nav-actions">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" placeholder="Search packages and files..." id="searchInput">
+                </div>
+                <div class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 18c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    
+    <header class="header">
+        <div class="header-content">
+            <div class="header-main">
+                <h1>PR #34 Coverage Report</h1>
+                <p class="subtitle">
+                        go-pre-commit •
+                    Detailed coverage analysis • <span class="dynamic-timestamp" data-timestamp="2025-09-07T22:37:23Z">Generated 2025-09-07 22:37:23 UTC</span>
+                </p>
+            </div>
+
+            
+            <div class="repo-info">
+            <a href="https://github.com/mrz1836/go-pre-commit" class="repo-link" target="_blank">
+                <span class="repo-icon">📦</span>
+                mrz1836/go-pre-commit
+            </a>
+            <span class="repo-separator">•</span>
+            <span class="branch-info">
+                <span class="branch-icon">🌿</span>
+                34/merge
+            </span>
+            <span class="repo-separator">•</span>
+            <a href="https://github.com/mrz1836/go-pre-commit/pull/34" class="commit-link" target="_blank">
+                <span class="commit-icon">🔀</span>
+                PR #34
+            </a>
+            <span class="repo-separator">•</span>
+            <a href="https://github.com/mrz1836/go-pre-commit/commit/174aa9b5f8e8d5ce8ac723fece62dd022b7b0670" class="commit-link" target="_blank">
+                <span class="commit-icon">🔗</span>
+                174aa9b
+            </a>
+
+            <div class="repo-actions">
+                <button class="action-btn secondary small" onclick="copyBadgeURL(event, 'https:\/\/mrz1836.github.io\/go-pre-commit\/coverage.svg')">
+                    <span class="btn-icon">🏷️</span>
+                    <span class="btn-text">Badge</span>
+                </button>
+                <button class="action-btn secondary small" onclick="window.location.reload()">
+                    <span class="btn-icon">🔄</span>
+                    <span class="btn-text">Refresh</span>
+                </button>
+            </div>
+            </div>
+        </div>
+    </header>
+
+    
+    <main class="main-content">
+        
+        <section class="summary-section">
+            <h2>Coverage Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h3>Overall Coverage</h3>
+                    <div class="coverage-bar large">
+                        <div class="coverage-fill warning"
+                             style="width: 82.83433133732535%"></div>
+                    </div>
+                    <div class="coverage-stats">
+                        <span class="coverage-value">82.8%</span>
+                        <span class="coverage-label">2,490 of 3,006 lines across 29 files</span>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <h3>Package Distribution</h3>
+                    <div class="distribution-chart">
+                        <div class="chart-placeholder">
+                            <span class="chart-icon">📊</span>
+                            <span class="chart-text">16 packages</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        
+        <section class="packages-section">
+            <h2>Package Coverage</h2>
+            <div class="packages-container">
+                <div class="package-card" data-package="builtin">
+                    <div class="package-header" onclick="togglePackage('builtin')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">builtin</span>
+                            <span class="package-stats">125 / 128 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage excellent">
+                                97.7%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill excellent"
+                                     style="width: 97.65625%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-builtin" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/checks/builtin/eof.go" class="file-name" target="_blank" rel="noopener noreferrer">eof.go</a>
+                                <span class="file-stats">91 / 91 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage excellent">
+                                    100.0%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill excellent"
+                                         style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/checks/builtin/whitespace.go" class="file-name" target="_blank" rel="noopener noreferrer">whitespace.go</a>
+                                <span class="file-stats">258 / 267 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage excellent">
+                                    96.6%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill excellent"
+                                         style="width: 96.62921348314607%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="checks">
+                    <div class="package-header" onclick="togglePackage('checks')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">checks</span>
+                            <span class="package-stats">116 / 129 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage success">
+                                89.9%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill success"
+                                     style="width: 89.92248062015504%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-checks" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/checks/registry.go" class="file-name" target="_blank" rel="noopener noreferrer">registry.go</a>
+                                <span class="file-stats">227 / 254 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage success">
+                                    89.4%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill success"
+                                         style="width: 89.37007874015748%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="cmd">
+                    <div class="package-header" onclick="togglePackage('cmd')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">cmd</span>
+                            <span class="package-stats">479 / 733 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage low">
+                                65.3%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill low"
+                                     style="width: 65.34788540245566%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-cmd" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/cmd/go-pre-commit/cmd/install.go" class="file-name" target="_blank" rel="noopener noreferrer">install.go</a>
+                                <span class="file-stats">60 / 91 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage low">
+                                    65.9%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill low"
+                                         style="width: 65.93406593406593%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/cmd/go-pre-commit/cmd/plugin.go" class="file-name" target="_blank" rel="noopener noreferrer">plugin.go</a>
+                                <span class="file-stats">167 / 387 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage danger">
+                                    43.2%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill danger"
+                                         style="width: 43.15245478036176%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/cmd/go-pre-commit/cmd/root.go" class="file-name" target="_blank" rel="noopener noreferrer">root.go</a>
+                                <span class="file-stats">148 / 151 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage excellent">
+                                    98.0%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill excellent"
+                                         style="width: 98.01324503311258%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/cmd/go-pre-commit/cmd/run.go" class="file-name" target="_blank" rel="noopener noreferrer">run.go</a>
+                                <span class="file-stats">382 / 478 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage warning">
+                                    79.9%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill warning"
+                                         style="width: 79.9163179916318%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/cmd/go-pre-commit/cmd/status.go" class="file-name" target="_blank" rel="noopener noreferrer">status.go</a>
+                                <span class="file-stats">86 / 126 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage low">
+                                    68.3%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill low"
+                                         style="width: 68.25396825396825%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/cmd/go-pre-commit/cmd/uninstall.go" class="file-name" target="_blank" rel="noopener noreferrer">uninstall.go</a>
+                                <span class="file-stats">57 / 73 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage warning">
+                                    78.1%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill warning"
+                                         style="width: 78.08219178082192%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/cmd/go-pre-commit/cmd/upgrade.go" class="file-name" target="_blank" rel="noopener noreferrer">upgrade.go</a>
+                                <span class="file-stats">174 / 277 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage danger">
+                                    62.8%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill danger"
+                                         style="width: 62.8158844765343%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="config">
+                    <div class="package-header" onclick="togglePackage('config')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">config</span>
+                            <span class="package-stats">139 / 150 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage success">
+                                92.7%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill success"
+                                     style="width: 92.66666666666666%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-config" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/config/config.go" class="file-name" target="_blank" rel="noopener noreferrer">config.go</a>
+                                <span class="file-stats">254 / 352 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage low">
+                                    72.2%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill low"
+                                         style="width: 72.1590909090909%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="errors">
+                    <div class="package-header" onclick="togglePackage('errors')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">errors</span>
+                            <span class="package-stats">11 / 11 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage excellent">
+                                100.0%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill excellent"
+                                     style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-errors" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/errors/errors.go" class="file-name" target="_blank" rel="noopener noreferrer">errors.go</a>
+                                <span class="file-stats">48 / 48 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage excellent">
+                                    100.0%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill excellent"
+                                         style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="git">
+                    <div class="package-header" onclick="togglePackage('git')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">git</span>
+                            <span class="package-stats">297 / 354 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage warning">
+                                83.9%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill warning"
+                                     style="width: 83.89830508474576%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-git" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/git/files.go" class="file-name" target="_blank" rel="noopener noreferrer">files.go</a>
+                                <span class="file-stats">439 / 458 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage excellent">
+                                    95.9%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill excellent"
+                                         style="width: 95.85152838427948%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/git/installer.go" class="file-name" target="_blank" rel="noopener noreferrer">installer.go</a>
+                                <span class="file-stats">116 / 226 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage danger">
+                                    51.3%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill danger"
+                                         style="width: 51.32743362831859%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/git/repository.go" class="file-name" target="_blank" rel="noopener noreferrer">repository.go</a>
+                                <span class="file-stats">101 / 110 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage success">
+                                    91.8%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill success"
+                                         style="width: 91.81818181818183%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="go-pre-commit">
+                    <div class="package-header" onclick="togglePackage('go-pre-commit')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">go-pre-commit</span>
+                            <span class="package-stats">35 / 66 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage danger">
+                                53.0%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill danger"
+                                     style="width: 53.03030303030303%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-go-pre-commit" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/cmd/go-pre-commit/main.go" class="file-name" target="_blank" rel="noopener noreferrer">main.go</a>
+                                <span class="file-stats">17 / 23 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage low">
+                                    73.9%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill low"
+                                         style="width: 73.91304347826086%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/cmd/go-pre-commit/version.go" class="file-name" target="_blank" rel="noopener noreferrer">version.go</a>
+                                <span class="file-stats">54 / 132 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage danger">
+                                    40.9%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill danger"
+                                         style="width: 40.909090909090914%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="gotools">
+                    <div class="package-header" onclick="togglePackage('gotools')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">gotools</span>
+                            <span class="package-stats">261 / 320 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage warning">
+                                81.6%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill warning"
+                                     style="width: 81.5625%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-gotools" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/checks/gotools/fumpt.go" class="file-name" target="_blank" rel="noopener noreferrer">fumpt.go</a>
+                                <span class="file-stats">151 / 182 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage warning">
+                                    83.0%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill warning"
+                                         style="width: 82.96703296703298%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/checks/gotools/lint.go" class="file-name" target="_blank" rel="noopener noreferrer">lint.go</a>
+                                <span class="file-stats">298 / 378 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage warning">
+                                    78.8%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill warning"
+                                         style="width: 78.83597883597884%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/checks/gotools/mod_tidy.go" class="file-name" target="_blank" rel="noopener noreferrer">mod_tidy.go</a>
+                                <span class="file-stats">148 / 253 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage danger">
+                                    58.5%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill danger"
+                                         style="width: 58.498023715415016%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="output">
+                    <div class="package-header" onclick="togglePackage('output')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">output</span>
+                            <span class="package-stats">157 / 164 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage excellent">
+                                95.7%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill excellent"
+                                     style="width: 95.73170731707317%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-output" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/output/formatter.go" class="file-name" target="_blank" rel="noopener noreferrer">formatter.go</a>
+                                <span class="file-stats">357 / 371 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage excellent">
+                                    96.2%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill excellent"
+                                         style="width: 96.22641509433963%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="plugins">
+                    <div class="package-header" onclick="togglePackage('plugins')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">plugins</span>
+                            <span class="package-stats">150 / 170 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage success">
+                                88.2%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill success"
+                                     style="width: 88.23529411764706%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-plugins" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/plugins/plugin.go" class="file-name" target="_blank" rel="noopener noreferrer">plugin.go</a>
+                                <span class="file-stats">121 / 174 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage low">
+                                    69.5%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill low"
+                                         style="width: 69.54022988505747%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/plugins/registry.go" class="file-name" target="_blank" rel="noopener noreferrer">registry.go</a>
+                                <span class="file-stats">172 / 189 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage success">
+                                    91.0%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill success"
+                                         style="width: 91.005291005291%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="production-validation">
+                    <div class="package-header" onclick="togglePackage('production-validation')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">production-validation</span>
+                            <span class="package-stats">37 / 41 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage success">
+                                90.2%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill success"
+                                     style="width: 90.2439024390244%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-production-validation" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/cmd/production-validation/main.go" class="file-name" target="_blank" rel="noopener noreferrer">main.go</a>
+                                <span class="file-stats">74 / 86 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage success">
+                                    86.0%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill success"
+                                         style="width: 86.04651162790698%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="runner">
+                    <div class="package-header" onclick="togglePackage('runner')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">runner</span>
+                            <span class="package-stats">149 / 164 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage success">
+                                90.9%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill success"
+                                     style="width: 90.85365853658537%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-runner" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/runner/runner.go" class="file-name" target="_blank" rel="noopener noreferrer">runner.go</a>
+                                <span class="file-stats">302 / 334 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage success">
+                                    90.4%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill success"
+                                         style="width: 90.41916167664671%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="shared">
+                    <div class="package-header" onclick="togglePackage('shared')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">shared</span>
+                            <span class="package-stats">11 / 11 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage excellent">
+                                100.0%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill excellent"
+                                     style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-shared" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/shared/context.go" class="file-name" target="_blank" rel="noopener noreferrer">context.go</a>
+                                <span class="file-stats">19 / 19 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage excellent">
+                                    100.0%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill excellent"
+                                         style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="tools">
+                    <div class="package-header" onclick="togglePackage('tools')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">tools</span>
+                            <span class="package-stats">98 / 110 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage success">
+                                89.1%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill success"
+                                     style="width: 89.0909090909091%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-tools" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/tools/installer.go" class="file-name" target="_blank" rel="noopener noreferrer">installer.go</a>
+                                <span class="file-stats">179 / 206 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage success">
+                                    86.9%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill success"
+                                         style="width: 86.89320388349515%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="validation">
+                    <div class="package-header" onclick="togglePackage('validation')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">validation</span>
+                            <span class="package-stats">351 / 362 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage excellent">
+                                97.0%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill excellent"
+                                     style="width: 96.96132596685084%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-validation" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/validation/production_readiness_report.go" class="file-name" target="_blank" rel="noopener noreferrer">production_readiness_report.go</a>
+                                <span class="file-stats">754 / 788 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage excellent">
+                                    95.7%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill excellent"
+                                         style="width: 95.68527918781726%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="package-card" data-package="version">
+                    <div class="package-header" onclick="togglePackage('version')">
+                        <div class="package-info">
+                            <span class="package-toggle">▶</span>
+                            <span class="package-name">version</span>
+                            <span class="package-stats">74 / 93 lines</span>
+                        </div>
+                        <div class="package-coverage">
+                            <span class="coverage-percentage warning">
+                                79.6%
+                            </span>
+                            <div class="coverage-bar mini">
+                                <div class="coverage-fill warning"
+                                     style="width: 79.56989247311827%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="package-files" id="package-version" style="display: none;">
+                        <div class="file-item">
+                            <div class="file-info">
+                                <span class="file-icon">📄</span>
+                                <a href="https://github.com/mrz1836/go-pre-commit/blob/34/merge/internal/version/version.go" class="file-name" target="_blank" rel="noopener noreferrer">version.go</a>
+                                <span class="file-stats">140 / 182 lines</span>
+                            </div>
+                            <div class="file-coverage">
+                                <span class="coverage-percentage warning">
+                                    76.9%
+                                </span>
+                                <div class="coverage-bar mini">
+                                    <div class="coverage-fill warning"
+                                         style="width: 76.92307692307693%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-info">
+                <div class="footer-version">
+                    <a href="https://github.com/mrz1836/go-pre-commit/releases/tag/v1.1.15" target="_blank" class="version-link">
+                        <span class="version-icon">🏷️</span>
+                        <span class="version-text">v1.1.15</span>
+                    </a>
+                </div>
+                <span class="footer-separator">•</span>
+                <div class="footer-powered">
+                    <span class="powered-text">Powered by</span>
+                    <a href="https://github.com/mrz1836/go-coverage" target="_blank" class="go-coverage-link">
+                        <span class="coverage-icon">📊</span>
+                        <span class="coverage-text">go-coverage</span>
+                    </a>
+                </div>
+                <span class="footer-separator">•</span>
+                <div class="footer-timestamp">
+                    <span class="timestamp-icon">🕐</span>
+                    <span class="timestamp-text dynamic-timestamp" data-timestamp="2025-09-07T22:37:23Z">Generated 2025-09-07 22:37:23 UTC</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script src="./assets/js/coverage-time.js"></script>
+	<script src="./assets/js/theme.js"></script>
+
+</body>
+</html>
