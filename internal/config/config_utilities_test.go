@@ -528,6 +528,7 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 				cfg.Performance.ParallelWorkers = 4
 				cfg.ToolVersions.Fumpt = "latest"
 				cfg.ToolVersions.GolangciLint = "latest"
+				cfg.ToolInstallation.Timeout = 300
 				return cfg
 			},
 			expectError: false,
@@ -551,10 +552,11 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 				cfg.CheckTimeouts.EOF = 30
 				cfg.CheckTimeouts.AIDetection = 30
 				cfg.Performance.ParallelWorkers = 4
+				cfg.ToolInstallation.Timeout = 0 // Invalid
 				return cfg
 			},
 			expectError: true,
-			errorCount:  3, // timeout, fmt timeout, fumpt timeout
+			errorCount:  4, // timeout, tool install timeout, fmt timeout, fumpt timeout
 			description: "Should reject invalid timeout values",
 		},
 		{
@@ -574,6 +576,7 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 				cfg.CheckTimeouts.EOF = 30
 				cfg.CheckTimeouts.AIDetection = 30
 				cfg.Performance.ParallelWorkers = -1 // Invalid
+				cfg.ToolInstallation.Timeout = 300
 				return cfg
 			},
 			expectError: true,
@@ -599,6 +602,7 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 				cfg.Performance.ParallelWorkers = 4
 				cfg.ToolVersions.Fumpt = "invalid-version"     // Invalid
 				cfg.ToolVersions.GolangciLint = "also-invalid" // Invalid
+				cfg.ToolInstallation.Timeout = 300
 				return cfg
 			},
 			expectError: true,
@@ -622,6 +626,7 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 				cfg.CheckTimeouts.EOF = 30
 				cfg.CheckTimeouts.AIDetection = 30
 				cfg.Performance.ParallelWorkers = 4
+				cfg.ToolInstallation.Timeout = 300
 				cfg.Git.ExcludePatterns = []string{"valid", "", "  ", "another-valid"} // Two empty patterns
 				return cfg
 			},

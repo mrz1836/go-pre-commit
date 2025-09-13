@@ -30,7 +30,7 @@ func TestLoad(t *testing.T) {
 	assert.Equal(t, "debug", cfg.LogLevel)
 	assert.Equal(t, int64(10*1024*1024), cfg.MaxFileSize)
 	assert.Equal(t, 100, cfg.MaxFilesOpen)
-	assert.Equal(t, 120, cfg.Timeout)
+	assert.Equal(t, 300, cfg.Timeout)
 
 	// Check that checks are enabled by default
 	assert.True(t, cfg.Checks.Fumpt)
