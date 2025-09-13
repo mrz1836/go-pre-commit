@@ -4,6 +4,7 @@ package runner
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/checks"
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
+	"github.com/mrz1836/go-pre-commit/internal/tools"
 )
 
 // Runner executes pre-commit checks
@@ -31,6 +33,7 @@ type Options struct {
 	FailFast            bool
 	ProgressCallback    ProgressCallback
 	GracefulDegradation bool
+	DebugTimeout        bool
 }
 
 // Results contains the results of a check run
@@ -61,6 +64,14 @@ type ProgressCallback func(checkName, status string)
 
 // New creates a new Runner
 func New(cfg *config.Config, repoRoot string) *Runner {
+	if cfg == nil {
+		return nil
+	}
+
+	// Configure tool installation timeout from config
+	toolTimeout := time.Duration(cfg.ToolInstallation.Timeout) * time.Second
+	tools.SetInstallTimeout(toolTimeout)
+
 	return &Runner{
 		config:   cfg,
 		repoRoot: repoRoot,
@@ -91,8 +102,18 @@ func (r *Runner) Run(ctx context.Context, opts Options) (*Results, error) {
 	}
 
 	// Create context with timeout
-	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(r.config.Timeout)*time.Second)
+	globalTimeout := time.Duration(r.config.Timeout) * time.Second
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, globalTimeout)
 	defer cancel()
+
+	// Debug timeout information
+	if opts.DebugTimeout {
+		fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] Global timeout set to: %v\n", globalTimeout)
+		fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] Tool installation timeout: %v\n", time.Duration(r.config.ToolInstallation.Timeout)*time.Second)
+		if r.config.Environment.IsCI {
+			fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] CI environment detected: %s (auto-adjust: %t)\n", r.config.Environment.CIProvider, r.config.Environment.AutoAdjustTimers)
+		}
+	}
 
 	// Run checks
 	results := &Results{
@@ -107,7 +128,7 @@ func (r *Runner) Run(ctx context.Context, opts Options) (*Results, error) {
 				opts.ProgressCallback(check.Name(), "running")
 			}
 
-			result := r.runCheck(ctxWithTimeout, check, opts.Files, opts.GracefulDegradation)
+			result := r.runCheck(ctxWithTimeout, check, opts.Files, opts.GracefulDegradation, opts.DebugTimeout)
 			results.CheckResults = append(results.CheckResults, result)
 
 			if result.Success {
@@ -146,7 +167,7 @@ func (r *Runner) Run(ctx context.Context, opts Options) (*Results, error) {
 					opts.ProgressCallback(c.Name(), "running")
 				}
 
-				result := r.runCheck(ctxWithTimeout, c, opts.Files, opts.GracefulDegradation)
+				result := r.runCheck(ctxWithTimeout, c, opts.Files, opts.GracefulDegradation, opts.DebugTimeout)
 				resultsChan <- result
 			}(check)
 		}
@@ -181,8 +202,14 @@ func (r *Runner) Run(ctx context.Context, opts Options) (*Results, error) {
 }
 
 // runCheck executes a single check
-func (r *Runner) runCheck(ctx context.Context, check checks.Check, files []string, gracefulDegradation bool) CheckResult {
+func (r *Runner) runCheck(ctx context.Context, check checks.Check, files []string, gracefulDegradation, debugTimeout bool) CheckResult {
 	start := time.Now()
+
+	if debugTimeout {
+		checkName := check.Name()
+		timeout := r.getCheckTimeout(checkName)
+		fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] Starting check '%s' with timeout: %v\n", checkName, timeout)
+	}
 
 	// Filter files for this check
 	filteredFiles := check.FilterFiles(files)
@@ -208,17 +235,35 @@ func (r *Runner) runCheck(ctx context.Context, check checks.Check, files []strin
 	if err != nil {
 		result.Error = err.Error()
 
-		// Check if this is an enhanced CheckError with context
-		var checkErr *prerrors.CheckError
-		if errors.As(err, &checkErr) {
-			result.Suggestion = checkErr.Suggestion
-			result.CanSkip = checkErr.CanSkip
-			result.Command = checkErr.Command
-			result.Output = checkErr.Output
+		// Check if this is a timeout error first
+		var timeoutErr *prerrors.TimeoutError
+		if errors.As(err, &timeoutErr) {
+			result.Suggestion = timeoutErr.Error() // The TimeoutError already contains helpful message
+			if debugTimeout {
+				fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] Check '%s' failed with TimeoutError: %v\n", check.Name(), timeoutErr.Error())
+			}
+		} else if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			// General timeout - create a timeout error with context
+			timeout := time.Duration(r.config.Timeout) * time.Second
+			timeoutErr := prerrors.NewCheckTimeoutError(check.Name(), timeout, result.Duration)
+			result.Error = timeoutErr.Error()
+			result.Suggestion = timeoutErr.Error()
+			if debugTimeout {
+				fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] Check '%s' hit context deadline: elapsed=%v, timeout=%v\n", check.Name(), result.Duration, timeout)
+			}
+		} else {
+			// Check if this is an enhanced CheckError with context
+			var checkErr *prerrors.CheckError
+			if errors.As(err, &checkErr) {
+				result.Suggestion = checkErr.Suggestion
+				result.CanSkip = checkErr.CanSkip
+				result.Command = checkErr.Command
+				result.Output = checkErr.Output
 
-			// If graceful degradation is enabled and this error can be skipped
-			if gracefulDegradation && checkErr.CanSkip {
-				result.Success = true // Mark as success but with warning info
+				// If graceful degradation is enabled and this error can be skipped
+				if gracefulDegradation && checkErr.CanSkip {
+					result.Success = true // Mark as success but with warning info
+				}
 			}
 		}
 	}
@@ -278,6 +323,30 @@ func (r *Runner) determineChecks(opts Options) ([]checks.Check, error) {
 	}
 
 	return checksToRun, nil
+}
+
+// getCheckTimeout returns the timeout for a specific check
+func (r *Runner) getCheckTimeout(checkName string) time.Duration {
+	switch checkName {
+	case "fmt":
+		return time.Duration(r.config.CheckTimeouts.Fmt) * time.Second
+	case "fumpt":
+		return time.Duration(r.config.CheckTimeouts.Fumpt) * time.Second
+	case "goimports":
+		return time.Duration(r.config.CheckTimeouts.Goimports) * time.Second
+	case "lint":
+		return time.Duration(r.config.CheckTimeouts.Lint) * time.Second
+	case "mod-tidy":
+		return time.Duration(r.config.CheckTimeouts.ModTidy) * time.Second
+	case "whitespace":
+		return time.Duration(r.config.CheckTimeouts.Whitespace) * time.Second
+	case "eof":
+		return time.Duration(r.config.CheckTimeouts.EOF) * time.Second
+	case "ai_detection":
+		return time.Duration(r.config.CheckTimeouts.AIDetection) * time.Second
+	default:
+		return time.Duration(r.config.Timeout) * time.Second
+	}
 }
 
 // isCheckEnabled checks if a check is enabled in the configuration

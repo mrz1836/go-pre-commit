@@ -81,6 +81,18 @@ type Config struct {
 		ColorOutput bool // GO_PRE_COMMIT_COLOR_OUTPUT (default: true)
 	}
 
+	// Tool installation settings
+	ToolInstallation struct {
+		Timeout int // GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT (default: 300)
+	}
+
+	// Environment detection
+	Environment struct {
+		IsCI             bool   // Detected if running in CI
+		CIProvider       string // Which CI provider (github, gitlab, jenkins, etc.)
+		AutoAdjustTimers bool   // GO_PRE_COMMIT_AUTO_ADJUST_CI_TIMEOUTS (default: true)
+	}
+
 	// Plugin settings
 	Plugins struct {
 		Enabled   bool   // GO_PRE_COMMIT_ENABLE_PLUGINS
@@ -172,6 +184,18 @@ func Load() (*Config, error) {
 	// UI settings
 	cfg.UI.ColorOutput = getBoolEnv("GO_PRE_COMMIT_COLOR_OUTPUT", true)
 
+	// Tool installation settings
+	cfg.ToolInstallation.Timeout = getIntEnv("GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT", 300)
+
+	// Environment detection
+	cfg.Environment.IsCI, cfg.Environment.CIProvider = detectCIEnvironment()
+	cfg.Environment.AutoAdjustTimers = getBoolEnv("GO_PRE_COMMIT_AUTO_ADJUST_CI_TIMEOUTS", true)
+
+	// Apply CI-specific timeout adjustments if enabled
+	if cfg.Environment.IsCI && cfg.Environment.AutoAdjustTimers {
+		applyCITimeoutAdjustments(cfg)
+	}
+
 	// Plugin settings
 	cfg.Plugins.Enabled = getBoolEnv("GO_PRE_COMMIT_ENABLE_PLUGINS", false)
 	cfg.Plugins.Directory = getStringEnv("GO_PRE_COMMIT_PLUGIN_DIR", ".pre-commit-plugins")
@@ -192,6 +216,10 @@ func (c *Config) Validate() error {
 	// Validate timeouts
 	if c.Timeout <= 0 {
 		errors = append(errors, "GO_PRE_COMMIT_TIMEOUT_SECONDS must be greater than 0")
+	}
+
+	if c.ToolInstallation.Timeout <= 0 {
+		errors = append(errors, "GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT must be greater than 0")
 	}
 
 	if c.CheckTimeouts.Fmt <= 0 {
@@ -315,6 +343,8 @@ Core Settings:
   GO_PRE_COMMIT_MAX_FILE_SIZE_MB=10         Maximum file size to process (MB)
   GO_PRE_COMMIT_MAX_FILES_OPEN=100          Maximum files to keep open
   GO_PRE_COMMIT_TIMEOUT_SECONDS=300         Global timeout in seconds
+  GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT=300   Tool installation timeout in seconds
+  GO_PRE_COMMIT_AUTO_ADJUST_CI_TIMEOUTS=true   Auto-adjust timeouts for CI environments
 
 Check Configuration:
   GO_PRE_COMMIT_ENABLE_FMT=true             Enable go fmt formatting
@@ -441,6 +471,71 @@ func getBoolEnv(key string, defaultValue bool) bool {
 		return defaultValue
 	}
 	return b
+}
+
+// detectCIEnvironment detects if we're running in a CI environment and which provider
+func detectCIEnvironment() (bool, string) {
+	// Common CI environment variables and their providers
+	ciEnvs := map[string]string{
+		"GITHUB_ACTIONS":        "github-actions",
+		"GITLAB_CI":             "gitlab",
+		"JENKINS_URL":           "jenkins",
+		"BUILDKITE":             "buildkite",
+		"CIRCLECI":              "circleci",
+		"TRAVIS":                "travis",
+		"APPVEYOR":              "appveyor",
+		"AZURE_HTTP_USER_AGENT": "azure-devops",
+		"TEAMCITY_VERSION":      "teamcity",
+		"DRONE":                 "drone",
+		"SEMAPHORE":             "semaphore",
+		"CODEBUILD_BUILD_ID":    "aws-codebuild",
+	}
+
+	for envVar, provider := range ciEnvs {
+		if os.Getenv(envVar) != "" {
+			return true, provider
+		}
+	}
+
+	// Generic CI detection
+	if os.Getenv("CI") != "" {
+		return true, "unknown"
+	}
+
+	return false, ""
+}
+
+// applyCITimeoutAdjustments adjusts timeouts for CI environments where network and disk I/O may be slower
+func applyCITimeoutAdjustments(cfg *Config) {
+	// Increase tool installation timeout in CI (network downloads can be slow)
+	if cfg.ToolInstallation.Timeout == 300 { // Only adjust if using default
+		cfg.ToolInstallation.Timeout = 600 // 10 minutes for CI
+	}
+
+	// Increase global timeout if using default
+	if cfg.Timeout == 300 {
+		cfg.Timeout = 600 // 10 minutes for CI
+	}
+
+	// Increase lint timeout as it's often the slowest check
+	if cfg.CheckTimeouts.Lint == 60 { // Only adjust if using default
+		cfg.CheckTimeouts.Lint = 180 // 3 minutes for lint in CI
+	}
+
+	// Slightly increase other check timeouts
+	adjustTimeout := func(current *int, defaultVal, newVal int) { //nolint:unparam // defaultVal provides flexibility for different defaults
+		if *current == defaultVal {
+			*current = newVal
+		}
+	}
+
+	adjustTimeout(&cfg.CheckTimeouts.Fmt, 30, 60)
+	adjustTimeout(&cfg.CheckTimeouts.Fumpt, 30, 60)
+	adjustTimeout(&cfg.CheckTimeouts.Goimports, 30, 60)
+	adjustTimeout(&cfg.CheckTimeouts.ModTidy, 30, 90)
+	adjustTimeout(&cfg.CheckTimeouts.Whitespace, 30, 45)
+	adjustTimeout(&cfg.CheckTimeouts.EOF, 30, 45)
+	adjustTimeout(&cfg.CheckTimeouts.AIDetection, 30, 60)
 }
 
 func getIntEnv(key string, defaultValue int) int {
