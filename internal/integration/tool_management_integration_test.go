@@ -76,7 +76,7 @@ go 1.21
 	// Create comprehensive tool configuration
 	envContent := `# Tool management configuration
 ENABLE_GO_PRE_COMMIT=true
-GO_PRE_COMMIT_TIMEOUT_SECONDS=120
+GO_PRE_COMMIT_TIMEOUT_SECONDS=300
 GO_PRE_COMMIT_ENABLE_FMT=true
 GO_PRE_COMMIT_ENABLE_FUMPT=true
 GO_PRE_COMMIT_ENABLE_LINT=true

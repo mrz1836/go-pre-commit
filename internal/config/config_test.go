@@ -199,7 +199,7 @@ ENABLE_GO_PRE_COMMIT=false
 GO_PRE_COMMIT_LOG_LEVEL=debug
 GO_PRE_COMMIT_MAX_FILE_SIZE_MB=5
 GO_PRE_COMMIT_MAX_FILES_OPEN=50
-GO_PRE_COMMIT_TIMEOUT_SECONDS=120
+GO_PRE_COMMIT_TIMEOUT_SECONDS=300
 GO_PRE_COMMIT_ENABLE_FUMPT=false
 GO_PRE_COMMIT_ENABLE_LINT=false
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
@@ -229,7 +229,7 @@ GO_PRE_COMMIT_COLOR_OUTPUT=false
 	s.Equal("debug", cfg.LogLevel)
 	s.Equal(int64(5*1024*1024), cfg.MaxFileSize)
 	s.Equal(50, cfg.MaxFilesOpen)
-	s.Equal(120, cfg.Timeout)
+	s.Equal(300, cfg.Timeout)
 
 	// Check configurations
 	s.False(cfg.Checks.Fumpt)

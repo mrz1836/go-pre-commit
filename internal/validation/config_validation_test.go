@@ -274,7 +274,7 @@ func (s *ConfigValidationTestSuite) TestEnvironmentVariablePrecedence() {
 	envFile := filepath.Join(githubDir, ".env.base")
 	baseConfig := `ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=info
-GO_PRE_COMMIT_TIMEOUT_SECONDS=120
+GO_PRE_COMMIT_TIMEOUT_SECONDS=300
 GO_PRE_COMMIT_PARALLEL_WORKERS=2
 GO_PRE_COMMIT_ENABLE_FUMPT=true
 GO_PRE_COMMIT_ENABLE_LINT=false
