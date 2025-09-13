@@ -42,6 +42,21 @@ func (s *ToolManagementIntegrationTestSuite) TearDownSuite() {
 	_ = os.Chdir(s.originalWD)
 }
 
+// SetupTest clears CI environment variables before each test
+func (s *ToolManagementIntegrationTestSuite) SetupTest() {
+	// Clear CI-related environment variables to ensure clean test state
+	ciEnvVars := []string{
+		"CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "BUILDKITE",
+		"CIRCLECI", "TRAVIS", "APPVEYOR", "AZURE_HTTP_USER_AGENT",
+		"TEAMCITY_VERSION", "DRONE", "SEMAPHORE", "CODEBUILD_BUILD_ID",
+		"GO_PRE_COMMIT_AUTO_ADJUST_CI_TIMEOUTS", "GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT",
+	}
+
+	for _, envVar := range ciEnvVars {
+		_ = os.Unsetenv(envVar)
+	}
+}
+
 // TearDownTest ensures we're back in the original directory
 func (s *ToolManagementIntegrationTestSuite) TearDownTest() {
 	_ = os.Chdir(s.originalWD)

@@ -332,7 +332,7 @@ GO_PRE_COMMIT_LOG_LEVEL=info
 	// Save original environment
 	originalEnvs := make(map[string]string)
 	envVars := []string{
-		"GITHUB_ACTIONS", "GO_PRE_COMMIT_AUTO_ADJUST_CI_TIMEOUTS",
+		"CI", "GITHUB_ACTIONS", "GO_PRE_COMMIT_AUTO_ADJUST_CI_TIMEOUTS",
 		"GO_PRE_COMMIT_TIMEOUT_SECONDS", "GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT",
 	}
 
