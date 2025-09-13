@@ -3,6 +3,7 @@ package validation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,11 @@ import (
 
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
+)
+
+// Error variables
+var (
+	ErrRunnerCreationFailed = errors.New("failed to create runner with provided configuration")
 )
 
 // ProductionReadinessReport represents a comprehensive validation report
@@ -464,6 +470,9 @@ func (v *ProductionReadinessValidator) measureAveragePerformance(cfg *config.Con
 
 	for i := 0; i < iterations; i++ {
 		r := runner.New(cfg, v.tempDir)
+		if r == nil {
+			return 0, ErrRunnerCreationFailed
+		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		start := time.Now()

@@ -27,6 +27,7 @@ type RunConfig struct {
 	GracefulDegradation bool
 	ShowProgress        bool
 	Quiet               bool
+	DebugTimeout        bool
 }
 
 // BuildRunCmd creates the run command
@@ -120,6 +121,11 @@ Available checks:
 				return err
 			}
 
+			config.DebugTimeout, err = cmd.Flags().GetBool("debug-timeout")
+			if err != nil {
+				return err
+			}
+
 			return cb.runChecksWithConfig(config, cmd, args)
 		},
 	}
@@ -135,6 +141,7 @@ Available checks:
 	cmd.Flags().Bool("graceful", false, "Skip checks that can't run instead of failing")
 	cmd.Flags().Bool("progress", true, "Show progress indicators during execution")
 	cmd.Flags().BoolP("quiet", "q", false, "Suppress progress messages, show only errors and results")
+	cmd.Flags().Bool("debug-timeout", false, "Enable detailed timeout debugging information")
 
 	return cmd
 }
@@ -228,6 +235,7 @@ func (cb *CommandBuilder) runChecksWithConfig(runConfig RunConfig, _ *cobra.Comm
 		Parallel:            runConfig.Parallel,
 		FailFast:            runConfig.FailFast,
 		GracefulDegradation: runConfig.GracefulDegradation,
+		DebugTimeout:        runConfig.DebugTimeout,
 	}
 
 	// Set up progress callback if progress is enabled and not in quiet mode

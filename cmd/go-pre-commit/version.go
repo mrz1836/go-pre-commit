@@ -63,8 +63,8 @@ func (b *BuildInfo) IsModified() bool {
 
 // getVersionWithFallback returns the version information with fallback to BuildInfo
 func getVersionWithFallback() string {
-	// If version was set via ldflags, use it
-	if version != "dev" && version != "" {
+	// If version was set via ldflags and it's not a template placeholder, use it
+	if version != "dev" && version != "" && !isTemplateString(version) {
 		return version
 	}
 
@@ -94,8 +94,8 @@ func getVersionWithFallback() string {
 
 // getCommitWithFallback returns the commit hash with fallback to BuildInfo
 func getCommitWithFallback() string {
-	// If commit was set via ldflags, use it
-	if commit != "none" && commit != "" {
+	// If commit was set via ldflags and it's not a template placeholder, use it
+	if commit != "none" && commit != "" && !isTemplateString(commit) {
 		return commit
 	}
 
@@ -125,8 +125,8 @@ func getCommitWithFallback() string {
 
 // getBuildDateWithFallback returns the build date with fallback to BuildInfo
 func getBuildDateWithFallback() string {
-	// If build date was set via ldflags, use it
-	if buildDate != "unknown" && buildDate != "" {
+	// If build date was set via ldflags and it's not a template placeholder, use it
+	if buildDate != "unknown" && buildDate != "" && !isTemplateString(buildDate) {
 		return buildDate
 	}
 
@@ -199,4 +199,9 @@ func GetBuildDate() string {
 func IsModified() bool {
 	bi := &BuildInfo{}
 	return bi.IsModified()
+}
+
+// isTemplateString checks if a string contains unsubstituted template syntax
+func isTemplateString(s string) bool {
+	return strings.Contains(s, "{{") && strings.Contains(s, "}}")
 }
