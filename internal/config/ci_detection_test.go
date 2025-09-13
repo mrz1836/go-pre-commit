@@ -3,6 +3,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -308,6 +309,25 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 func TestLoad_CIAutoAdjustments(t *testing.T) {
 	// This test verifies that the config loading process properly detects CI
 	// and applies timeout adjustments when auto-adjust is enabled
+
+	// Create isolated test directory with .env.base file
+	tmpDir := t.TempDir()
+	originalWD, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Create .github/.env.base in test directory
+	githubDir := filepath.Join(tmpDir, ".github")
+	require.NoError(t, os.MkdirAll(githubDir, 0o750))
+	envFile := filepath.Join(githubDir, ".env.base")
+	envContent := `# Test environment configuration
+ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_LOG_LEVEL=info
+`
+	require.NoError(t, os.WriteFile(envFile, []byte(envContent), 0o600))
+
+	// Change to test directory and restore after test
+	require.NoError(t, os.Chdir(tmpDir))
+	defer func() { _ = os.Chdir(originalWD) }()
 
 	// Save original environment
 	originalEnvs := make(map[string]string)

@@ -11,14 +11,57 @@ import (
 )
 
 func TestLoad(t *testing.T) {
-	// Save current working directory
+	// Clean environment to avoid interference from other tests
+	envVarsToClean := []string{
+		"GO_PRE_COMMIT_LOG_LEVEL", "ENABLE_GO_PRE_COMMIT",
+		"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
+		"GO_PRE_COMMIT_TIMEOUT_SECONDS", "GO_PRE_COMMIT_ENABLE_FUMPT",
+		"GO_PRE_COMMIT_ENABLE_LINT", "GO_PRE_COMMIT_ENABLE_MOD_TIDY",
+		"GO_PRE_COMMIT_ENABLE_WHITESPACE", "GO_PRE_COMMIT_ENABLE_EOF",
+	}
+
+	originalEnvs := make(map[string]string)
+	for _, envVar := range envVarsToClean {
+		originalEnvs[envVar] = os.Getenv(envVar)
+		_ = os.Unsetenv(envVar)
+	}
+
+	defer func() {
+		for envVar, value := range originalEnvs {
+			if value != "" {
+				_ = os.Setenv(envVar, value)
+			} else {
+				_ = os.Unsetenv(envVar)
+			}
+		}
+	}()
+
+	// Create isolated test directory with .env.base file
+	tmpDir := t.TempDir()
 	originalWD, err := os.Getwd()
 	require.NoError(t, err)
-	defer func() { _ = os.Chdir(originalWD) }()
 
-	// Change to repository root for test
-	err = os.Chdir("../..")
-	require.NoError(t, err)
+	// Create .github/.env.base in test directory with test configuration
+	githubDir := filepath.Join(tmpDir, ".github")
+	require.NoError(t, os.MkdirAll(githubDir, 0o750))
+	envFile := filepath.Join(githubDir, ".env.base")
+	envContent := `# Test environment configuration
+ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_LOG_LEVEL=debug
+GO_PRE_COMMIT_MAX_FILE_SIZE_MB=10
+GO_PRE_COMMIT_MAX_FILES_OPEN=100
+GO_PRE_COMMIT_TIMEOUT_SECONDS=300
+GO_PRE_COMMIT_ENABLE_FUMPT=true
+GO_PRE_COMMIT_ENABLE_LINT=true
+GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
+GO_PRE_COMMIT_ENABLE_WHITESPACE=true
+GO_PRE_COMMIT_ENABLE_EOF=true
+`
+	require.NoError(t, os.WriteFile(envFile, []byte(envContent), 0o600))
+
+	// Change to test directory and restore after test
+	require.NoError(t, os.Chdir(tmpDir))
+	defer func() { _ = os.Chdir(originalWD) }()
 
 	// Test loading configuration
 	cfg, err := Load()
