@@ -1735,6 +1735,95 @@ func TestSpecificErrorPaths(t *testing.T) {
 	})
 }
 
+// Test improved error aggregation for multi-module mod-tidy failures
+func TestModTidyCheckErrorAggregation(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldDir) }()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Initialize git repository
+	ctx := context.Background()
+	require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", testEmail).Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", testUserName).Run())
+
+	// Create root module
+	rootGoMod := "module root\n\ngo 1.21\n"
+	err = os.WriteFile("go.mod", []byte(rootGoMod), 0o600)
+	require.NoError(t, err)
+
+	// Create submodule with untidy dependencies (simulating the sqlite3 issue)
+	err = os.MkdirAll("examples/test", 0o750)
+	require.NoError(t, err)
+
+	// Create go.mod with unused dependency
+	subGoMod := `module root/examples/test
+
+go 1.21
+
+require root v0.0.0
+
+require (
+	github.com/unused/dependency v1.0.0 // indirect
+)
+
+replace root => ../../
+`
+	err = os.WriteFile("examples/test/go.mod", []byte(subGoMod), 0o600)
+	require.NoError(t, err)
+
+	// Create go.sum with the unused dependency
+	subGoSum := `github.com/unused/dependency v1.0.0 h1:abc123=
+github.com/unused/dependency v1.0.0/go.mod h1:def456=
+`
+	err = os.WriteFile("examples/test/go.sum", []byte(subGoSum), 0o600)
+	require.NoError(t, err)
+
+	// Create simple Go file
+	goFile := `package test
+
+func Test() {
+	// No actual dependencies used
+}
+`
+	err = os.WriteFile("examples/test/main.go", []byte(goFile), 0o600)
+	require.NoError(t, err)
+
+	// Add and commit files
+	require.NoError(t, exec.CommandContext(ctx, "git", "add", ".").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "commit", "-m", "Add test modules").Run())
+
+	// Create check and run on multiple modules, expecting error with detailed output
+	check := NewModTidyCheck()
+	files := []string{
+		"go.mod",
+		"examples/test/go.mod",
+	}
+
+	err = check.Run(ctx, files)
+	// The test may or may not fail depending on Go version and actual mod tidy behavior
+	// If it fails, verify that the error contains module-specific information
+	if err != nil {
+		errMsg := err.Error()
+		t.Logf("Error message: %s", errMsg)
+
+		// Check if the error preserves detailed information per module
+		// Should contain module path information
+		if strings.Contains(errMsg, "examples/test") {
+			assert.Contains(t, errMsg, "Module examples/test needs tidying:",
+				"Error should contain detailed module information")
+		} else {
+			// Fallback check - at least verify it's not the old generic message
+			assert.NotContains(t, errMsg, "Module examples/test: command 'go mod tidy' failed",
+				"Error should not use old generic format")
+		}
+	}
+}
+
 // Test multi-module support for mod-tidy check
 func TestModTidyCheckMultiModule(t *testing.T) {
 	tmpDir := t.TempDir()

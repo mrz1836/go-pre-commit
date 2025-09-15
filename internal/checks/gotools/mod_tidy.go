@@ -158,7 +158,17 @@ func (c *ModTidyCheck) runDirectModTidy(ctx context.Context, files []string) err
 			if relPath == "" {
 				relPath = "."
 			}
-			allErrors = append(allErrors, fmt.Sprintf("Module %s: %v", relPath, err))
+
+			// Check if this is a CheckError with detailed output
+			var checkErr *prerrors.CheckError
+			if errors.As(err, &checkErr) && checkErr.Output != "" {
+				// Include the detailed output in a structured format
+				errorMsg := fmt.Sprintf("Module %s needs tidying:\n%s", relPath, checkErr.Output)
+				allErrors = append(allErrors, errorMsg)
+			} else {
+				// Fallback to simple format for other error types
+				allErrors = append(allErrors, fmt.Sprintf("Module %s: %v", relPath, err))
+			}
 		}
 	}
 
