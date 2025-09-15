@@ -349,14 +349,14 @@ Plugins are external executables (scripts or binaries) that integrate seamlessly
 
 ### Quick Setup
 
-1. **Enable plugins** in your configuration files:
+**Enable plugins** in your configuration files:
 ```bash
 # Add to .env.custom to override defaults
 GO_PRE_COMMIT_ENABLE_PLUGINS=true
 GO_PRE_COMMIT_PLUGIN_DIR=.pre-commit-plugins
 ```
 
-2. **Install an example plugin**:
+**Install an example plugin**:
 ```bash
 # Copy an example plugin to your project
 cp -r examples/shell-plugin .pre-commit-plugins/
@@ -365,7 +365,7 @@ cp -r examples/shell-plugin .pre-commit-plugins/
 go-pre-commit plugin add examples/shell-plugin
 ```
 
-3. **Run checks** (plugins run alongside built-in checks):
+**Run checks** (plugins run alongside built-in checks):
 ```bash
 go-pre-commit run
 ```
