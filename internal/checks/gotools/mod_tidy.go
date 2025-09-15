@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -84,7 +85,7 @@ func (c *ModTidyCheck) Run(ctx context.Context, files []string) error {
 	}
 
 	// Run go mod tidy directly (no tools to install, it's built into go)
-	return c.runDirectModTidy(ctx)
+	return c.runDirectModTidy(ctx, files)
 }
 
 // FilterFiles filters to only go.mod and go.sum files or when .go files change
@@ -119,15 +120,65 @@ func (c *ModTidyCheck) FilterFiles(files []string) []string {
 	return []string{}
 }
 
-// runDirectModTidy runs go mod tidy directly
-func (c *ModTidyCheck) runDirectModTidy(ctx context.Context) error {
+// runDirectModTidy runs go mod tidy directly on modules
+func (c *ModTidyCheck) runDirectModTidy(ctx context.Context, files []string) error {
 	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to find repository root: %w", err)
 	}
 
+	// Group files by their module directory
+	modulesByDir := make(map[string][]string)
+	for _, file := range files {
+		dir := filepath.Dir(file)
+		// Find the Go module root for this file
+		moduleRoot := findGoModuleRoot(filepath.Join(repoRoot, dir), repoRoot)
+		if moduleRoot == "" {
+			// Try to check if the file is go.mod or go.sum itself
+			if strings.HasSuffix(file, "go.mod") || strings.HasSuffix(file, "go.sum") {
+				moduleRoot = filepath.Join(repoRoot, dir)
+			}
+		}
+		if moduleRoot != "" {
+			modulesByDir[moduleRoot] = append(modulesByDir[moduleRoot], file)
+		}
+	}
+
+	// If no modules found, try to run from repo root (legacy behavior)
+	if len(modulesByDir) == 0 {
+		return c.runModTidyOnModule(ctx, repoRoot)
+	}
+
+	// Run mod tidy on each module
+	var allErrors []string
+	for moduleDir := range modulesByDir {
+		err := c.runModTidyOnModule(ctx, moduleDir)
+		if err != nil {
+			relPath, _ := filepath.Rel(repoRoot, moduleDir)
+			if relPath == "" {
+				relPath = "."
+			}
+			allErrors = append(allErrors, fmt.Sprintf("Module %s: %v", relPath, err))
+		}
+	}
+
+	// If there were any errors, aggregate and return them
+	if len(allErrors) > 0 {
+		combinedErrors := strings.Join(allErrors, "\n\n")
+		return prerrors.NewToolExecutionError(
+			"go mod tidy",
+			combinedErrors,
+			"Fix the mod tidy issues shown above. Run 'go mod tidy' in each module directory.",
+		)
+	}
+
+	return nil
+}
+
+// runModTidyOnModule runs go mod tidy on a specific module directory
+func (c *ModTidyCheck) runModTidyOnModule(ctx context.Context, moduleDir string) error {
 	// Try to use go mod tidy -diff first (Go 1.21+)
-	diffErr := c.checkModTidyDiff(ctx, repoRoot)
+	diffErr := c.checkModTidyDiff(ctx, moduleDir)
 	if diffErr != nil {
 		// Check if it's because -diff is not supported
 		if !strings.Contains(diffErr.Error(), "not supported") {
@@ -146,7 +197,7 @@ func (c *ModTidyCheck) runDirectModTidy(ctx context.Context) error {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "mod", "tidy")
-	cmd.Dir = repoRoot
+	cmd.Dir = moduleDir
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -205,17 +256,17 @@ func (c *ModTidyCheck) runDirectModTidy(ctx context.Context) error {
 	}
 
 	// Check if there are uncommitted changes
-	return c.checkUncommittedChanges(ctx, repoRoot)
+	return c.checkUncommittedChanges(ctx, moduleDir)
 }
 
 // checkModTidyDiff uses go mod tidy -diff to check if changes would be made (Go 1.21+)
-func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, repoRoot string) error {
+func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, moduleDir string) error {
 	// Add timeout for go mod tidy -diff command
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "mod", "tidy", "-diff")
-	cmd.Dir = repoRoot
+	cmd.Dir = moduleDir
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -301,14 +352,18 @@ func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, repoRoot string) er
 
 // checkUncommittedChanges checks if go mod tidy made any changes
 // This is a fallback method when go mod tidy -diff is not available
-func (c *ModTidyCheck) checkUncommittedChanges(ctx context.Context, repoRoot string) error {
+func (c *ModTidyCheck) checkUncommittedChanges(ctx context.Context, moduleDir string) error {
 	// Add short timeout for git diff
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
+	// Get relative paths to go.mod and go.sum from the module directory
+	goModPath := filepath.Join(moduleDir, "go.mod")
+	goSumPath := filepath.Join(moduleDir, "go.sum")
+
 	// Check for new untracked files (like go.sum created for the first time)
-	statusCmd := exec.CommandContext(ctx, "git", "status", "--porcelain", "go.mod", "go.sum")
-	statusCmd.Dir = repoRoot
+	statusCmd := exec.CommandContext(ctx, "git", "status", "--porcelain", goModPath, goSumPath) //nolint:gosec // paths are controlled
+	statusCmd.Dir = moduleDir
 
 	var statusOutput bytes.Buffer
 	statusCmd.Stdout = &statusOutput

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -1040,7 +1041,7 @@ func TestModTidyCheckDirectErrorScenarios(t *testing.T) {
 			setupFunc: func(_ *testing.T, _ string) {
 				// Don't create go.mod file
 			},
-			expectedError: "command 'go mod tidy -diff' failed", // Actual error from NewToolExecutionError when no go.mod
+			expectedError: "command 'go mod tidy' failed", // Actual error from NewToolExecutionError when no go.mod
 		},
 		{
 			name: "timeout in direct mod tidy",
@@ -1050,8 +1051,8 @@ func TestModTidyCheckDirectErrorScenarios(t *testing.T) {
 				err := os.WriteFile("go.mod", []byte(goMod), 0o600)
 				require.NoError(t, err)
 			},
-			expectedError: "command 'go mod tidy -diff' failed", // Actual error format from NewToolExecutionError
-			timeout:       1 * time.Millisecond,                 // Very short timeout
+			expectedError: "command 'go mod tidy' failed", // Actual error format from NewToolExecutionError
+			timeout:       1 * time.Millisecond,           // Very short timeout
 		},
 	}
 
@@ -1731,5 +1732,141 @@ func TestSpecificErrorPaths(t *testing.T) {
 		err = check.Run(canceledCtx, []string{"go.mod"})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "context")
+	})
+}
+
+// Test multi-module support for mod-tidy check
+func TestModTidyCheckMultiModule(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldDir) }()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Initialize git repository
+	ctx := context.Background()
+	require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", testEmail).Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", testUserName).Run())
+
+	// Create a multi-module repository structure
+	// Root module
+	rootGoMod := "module root\n\ngo 1.21\n"
+	err = os.WriteFile("go.mod", []byte(rootGoMod), 0o600)
+	require.NoError(t, err)
+
+	// Sub-module 1
+	err = os.MkdirAll("module1", 0o750)
+	require.NoError(t, err)
+	module1GoMod := "module module1\n\ngo 1.21\n"
+	err = os.WriteFile("module1/go.mod", []byte(module1GoMod), 0o600)
+	require.NoError(t, err)
+
+	// Sub-module 2
+	err = os.MkdirAll("module2", 0o750)
+	require.NoError(t, err)
+	module2GoMod := "module module2\n\ngo 1.21\n"
+	err = os.WriteFile("module2/go.mod", []byte(module2GoMod), 0o600)
+	require.NoError(t, err)
+
+	// Nested module
+	err = os.MkdirAll("nested/submodule", 0o750)
+	require.NoError(t, err)
+	nestedGoMod := "module nested/submodule\n\ngo 1.21\n"
+	err = os.WriteFile("nested/submodule/go.mod", []byte(nestedGoMod), 0o600)
+	require.NoError(t, err)
+
+	// Add and commit all files
+	require.NoError(t, exec.CommandContext(ctx, "git", "add", ".").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "commit", "-m", "Add multi-module structure").Run())
+
+	check := NewModTidyCheck()
+
+	t.Run("single module", func(t *testing.T) {
+		// Test running mod-tidy on just one module
+		err := check.Run(ctx, []string{"go.mod"})
+		assert.NoError(t, err)
+	})
+
+	t.Run("multiple modules", func(t *testing.T) {
+		// Test running mod-tidy on files from multiple modules
+		files := []string{
+			"go.mod",
+			"module1/go.mod",
+			"module2/go.mod",
+		}
+		err := check.Run(ctx, files)
+		assert.NoError(t, err)
+	})
+
+	t.Run("nested module", func(t *testing.T) {
+		// Test running mod-tidy on nested module
+		err := check.Run(ctx, []string{"nested/submodule/go.mod"})
+		assert.NoError(t, err)
+	})
+
+	t.Run("mixed files from different modules", func(t *testing.T) {
+		// Test with go.sum files and go.mod files from different modules
+		files := []string{
+			"go.mod",
+			"module1/go.mod",
+			"module2/go.mod",
+			"nested/submodule/go.mod",
+		}
+		err := check.Run(ctx, files)
+		assert.NoError(t, err)
+	})
+}
+
+// Test that isGoModule and findGoModuleRoot helper functions work correctly
+func TestModTidyHelperFunctions(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldDir) }()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Create module structure
+	err = os.MkdirAll("project/subdir", 0o750)
+	require.NoError(t, err)
+
+	// Create go.mod in project directory
+	goMod := "module project\n\ngo 1.21\n"
+	err = os.WriteFile("project/go.mod", []byte(goMod), 0o600)
+	require.NoError(t, err)
+
+	t.Run("isGoModule tests", func(t *testing.T) {
+		// Should find go.mod in project directory
+		assert.True(t, isGoModule("project"))
+
+		// Should not find go.mod in subdir
+		assert.False(t, isGoModule("project/subdir"))
+
+		// Should not find go.mod in non-existent directory
+		assert.False(t, isGoModule("nonexistent"))
+	})
+
+	t.Run("findGoModuleRoot tests", func(t *testing.T) {
+		// Should find module root when starting from subdir
+		moduleRoot := findGoModuleRoot(filepath.Join(tmpDir, "project/subdir"), tmpDir)
+		assert.Equal(t, filepath.Join(tmpDir, "project"), moduleRoot)
+
+		// Should find module root when starting from module root itself
+		moduleRoot = findGoModuleRoot(filepath.Join(tmpDir, "project"), tmpDir)
+		assert.Equal(t, filepath.Join(tmpDir, "project"), moduleRoot)
+
+		// Should return empty when no module found
+		moduleRoot = findGoModuleRoot(filepath.Join(tmpDir, "nonexistent"), tmpDir)
+		assert.Empty(t, moduleRoot)
+
+		// Should stop at repo root and return empty
+		err = os.MkdirAll("outside", 0o750)
+		require.NoError(t, err)
+		moduleRoot = findGoModuleRoot(filepath.Join(tmpDir, "outside"), tmpDir)
+		assert.Empty(t, moduleRoot)
 	})
 }
