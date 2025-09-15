@@ -541,3 +541,163 @@ func ConcurrentFunc%d() {
 		}
 	}
 }
+
+// TestGoModuleSubdirectoryHandling tests the new Go module handling in subdirectories
+func (s *LintMultiDirTestSuite) TestGoModuleSubdirectoryHandling() {
+	// Create a structure with a Go module in a subdirectory
+	s.Require().NoError(os.MkdirAll("project/worker/cmd", 0o750))
+	s.Require().NoError(os.MkdirAll("project/worker/internal/service", 0o750))
+	s.Require().NoError(os.MkdirAll("project/docs", 0o750))
+
+	// Create go.mod in the subdirectory
+	goModContent := `module example.com/worker
+
+go 1.21
+
+require github.com/stretchr/testify v1.8.4
+`
+	s.Require().NoError(os.WriteFile("project/worker/go.mod", []byte(goModContent), 0o600))
+
+	// Create Go files in the module
+	mainContent := `package main
+
+import (
+	"fmt"
+	"example.com/worker/internal/service"
+)
+
+func main() {
+	svc := service.New("test")
+	fmt.Printf("Service: %s\n", svc.Name())
+}
+`
+	s.Require().NoError(os.WriteFile("project/worker/cmd/main.go", []byte(mainContent), 0o600))
+
+	serviceContent := `package service
+
+type Service struct {
+	name string
+}
+
+func New(name string) *Service {
+	return &Service{name: name}
+}
+
+func (s *Service) Name() string {
+	return s.name
+}
+`
+	s.Require().NoError(os.WriteFile("project/worker/internal/service/service.go", []byte(serviceContent), 0o600))
+
+	// Create orphaned Go file (not in module)
+	orphanedContent := `package docs
+
+// This file is not part of the Go module
+func DocumentationHelper() {
+	// helper
+}
+`
+	s.Require().NoError(os.WriteFile("project/docs/helper.go", []byte(orphanedContent), 0o600))
+
+	// Commit files
+	ctx := context.Background()
+	s.Require().NoError(exec.CommandContext(ctx, "git", "add", ".").Run())
+	s.Require().NoError(exec.CommandContext(ctx, "git", "commit", "-m", "go module subdirectory").Run())
+
+	// Test linting files from Go module subdirectory
+	files := []string{
+		"project/worker/cmd/main.go",
+		"project/worker/internal/service/service.go",
+	}
+
+	err := s.check.runDirectLint(ctx, files)
+	if err != nil {
+		s.T().Logf("Go module subdirectory lint result: %v", err)
+		// Should not fail due to module resolution issues
+		s.NotContains(err.Error(), "no go files to analyze")
+		s.NotContains(err.Error(), "could not import")
+	}
+}
+
+// TestOrphanedFilesSkipping tests that orphaned Go files are skipped
+func (s *LintMultiDirTestSuite) TestOrphanedFilesSkipping() {
+	// Create orphaned Go files (no go.mod anywhere)
+	s.Require().NoError(os.MkdirAll("standalone/utils", 0o750))
+	s.Require().NoError(os.MkdirAll("scripts", 0o750))
+
+	orphanedContent1 := `package utils
+
+func Utility() {
+	// utility function
+}
+`
+	s.Require().NoError(os.WriteFile("standalone/utils/util.go", []byte(orphanedContent1), 0o600))
+
+	orphanedContent2 := `package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Standalone script")
+}
+`
+	s.Require().NoError(os.WriteFile("scripts/script.go", []byte(orphanedContent2), 0o600))
+
+	// Commit files
+	ctx := context.Background()
+	s.Require().NoError(exec.CommandContext(ctx, "git", "add", ".").Run())
+	s.Require().NoError(exec.CommandContext(ctx, "git", "commit", "-m", "orphaned files").Run())
+
+	// Test linting orphaned files - should be skipped silently
+	files := []string{
+		"standalone/utils/util.go",
+		"scripts/script.go",
+	}
+
+	err := s.check.runDirectLint(ctx, files)
+	// Should succeed (orphaned files are skipped)
+	s.NoError(err, "Orphaned Go files should be skipped without error")
+}
+
+// TestMixedGoModuleAndOrphanedFiles tests mixed scenarios
+func (s *LintMultiDirTestSuite) TestMixedGoModuleAndOrphanedFiles() {
+	// Create a Go module
+	s.Require().NoError(os.MkdirAll("mymodule/pkg", 0o750))
+	s.Require().NoError(os.WriteFile("mymodule/go.mod", []byte("module example.com/mymodule\n"), 0o600))
+
+	moduleContent := `package pkg
+
+func ModuleFunc() {
+	// module function
+}
+`
+	s.Require().NoError(os.WriteFile("mymodule/pkg/module.go", []byte(moduleContent), 0o600))
+
+	// Create orphaned files
+	s.Require().NoError(os.MkdirAll("orphaned", 0o750))
+	orphanedContent := `package orphaned
+
+func OrphanedFunc() {
+	// orphaned function
+}
+`
+	s.Require().NoError(os.WriteFile("orphaned/orphaned.go", []byte(orphanedContent), 0o600))
+
+	// Commit files
+	ctx := context.Background()
+	s.Require().NoError(exec.CommandContext(ctx, "git", "add", ".").Run())
+	s.Require().NoError(exec.CommandContext(ctx, "git", "commit", "-m", "mixed files").Run())
+
+	// Test linting mixed files
+	files := []string{
+		"mymodule/pkg/module.go", // Should be linted
+		"orphaned/orphaned.go",   // Should be skipped
+	}
+
+	err := s.check.runDirectLint(ctx, files)
+	if err != nil {
+		s.T().Logf("Mixed files lint result: %v", err)
+		// Should handle the module file and skip orphaned
+		s.NotContains(err.Error(), "no go files to analyze")
+	}
+}

@@ -203,10 +203,38 @@ func (c *LintCheck) runLintOnDirectory(ctx context.Context, repoRoot, dir string
 		args = append(args, "--build-tags", strings.Join(c.buildTags, ","))
 	}
 
-	args = append(args, filepath.Join(repoRoot, dir))
+	// Determine the target directory and working directory
+	targetDir := filepath.Join(repoRoot, dir)
+	workingDir := repoRoot
+	lintTarget := targetDir
+
+	// Check if the target directory contains a Go module
+	if isGoModule(targetDir) {
+		// If target directory is a Go module, run golangci-lint from within it
+		// This ensures proper module resolution and dependency handling
+		workingDir = targetDir
+		lintTarget = "./..."
+	} else {
+		// Check if this directory is within a Go module in a subdirectory
+		moduleRoot := findGoModuleRoot(targetDir, repoRoot)
+		if moduleRoot != "" && moduleRoot != repoRoot {
+			// Calculate the relative path from module root to target directory
+			relPath, err := filepath.Rel(moduleRoot, targetDir)
+			if err == nil {
+				workingDir = moduleRoot
+				lintTarget = "./" + relPath
+			}
+		} else if moduleRoot == "" {
+			// This directory is not part of any Go module - skip linting
+			// Go files outside of modules can't be properly linted by golangci-lint
+			return nil
+		}
+	}
+
+	args = append(args, lintTarget)
 
 	cmd := exec.CommandContext(ctx, "golangci-lint", args...)
-	cmd.Dir = repoRoot
+	cmd.Dir = workingDir
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -468,6 +496,38 @@ func extractTagsFromLegacyConstraint(line string) []string {
 	}
 
 	return tags
+}
+
+// isGoModule checks if a directory contains a go.mod file, indicating it's a Go module
+func isGoModule(dir string) bool {
+	goModPath := filepath.Join(dir, "go.mod")
+	_, err := os.Stat(goModPath)
+	return err == nil
+}
+
+// findGoModuleRoot finds the nearest Go module root by walking up the directory tree from targetDir
+// Returns the module root path, or empty string if no module is found within repoRoot
+func findGoModuleRoot(targetDir, repoRoot string) string {
+	current := targetDir
+
+	for {
+		// Check if current directory contains go.mod
+		if isGoModule(current) {
+			return current
+		}
+
+		// Move up one directory
+		parent := filepath.Dir(current)
+
+		// Stop if we've reached the repo root or filesystem root
+		if parent == current || !strings.HasPrefix(parent, repoRoot) {
+			break
+		}
+
+		current = parent
+	}
+
+	return ""
 }
 
 // installGolangciLint installs golangci-lint using the official installation script

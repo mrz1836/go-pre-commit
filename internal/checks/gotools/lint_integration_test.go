@@ -334,6 +334,238 @@ require github.com/magefile/mage v1.15.0
 	t.Log("Build tag handling test completed")
 }
 
+// TestGoModuleSubdirectoryIntegration tests linting Go modules in subdirectories
+func TestGoModuleSubdirectoryIntegration(t *testing.T) {
+	// Skip in short mode
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// Create temp directory for test
+	tempDir, err := os.MkdirTemp("", "lint_gomodule_integration_*")
+	require.NoError(t, err)
+	defer func() {
+		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+			t.Logf("Failed to remove temp dir: %v", removeErr)
+		}
+	}()
+
+	oldDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() {
+		if chdirErr := os.Chdir(oldDir); chdirErr != nil {
+			t.Logf("Failed to change back to old dir: %v", chdirErr)
+		}
+	}()
+
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+
+	// Initialize git repo
+	ctx := context.Background()
+	require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", "test@example.com").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", "Test User").Run())
+
+	// Create a repository structure similar to whisper project
+	// with a Go module in a subdirectory
+	require.NoError(t, os.MkdirAll("worker-app/cmd/worker", 0o750))
+	require.NoError(t, os.MkdirAll("worker-app/internal/tasks", 0o750))
+	require.NoError(t, os.MkdirAll("other-files/docs", 0o750))
+
+	// Create go.mod in the subdirectory
+	goModContent := `module example.com/worker
+
+go 1.21
+
+require (
+	github.com/stretchr/testify v1.8.4
+)
+`
+	require.NoError(t, os.WriteFile("worker-app/go.mod", []byte(goModContent), 0o600))
+
+	// Create go.sum (empty for this test)
+	require.NoError(t, os.WriteFile("worker-app/go.sum", []byte(""), 0o600))
+
+	// Create Go files in the module
+	mainGoContent := `package main
+
+import (
+	"fmt"
+	"example.com/worker/internal/tasks"
+)
+
+func main() {
+	task := tasks.NewTask("example")
+	fmt.Printf("Running task: %s\n", task.Name())
+}
+`
+	require.NoError(t, os.WriteFile("worker-app/cmd/worker/main.go", []byte(mainGoContent), 0o600))
+
+	tasksGoContent := `package tasks
+
+type Task struct {
+	name string
+}
+
+func NewTask(name string) *Task {
+	return &Task{name: name}
+}
+
+func (t *Task) Name() string {
+	return t.name
+}
+`
+	require.NoError(t, os.WriteFile("worker-app/internal/tasks/tasks.go", []byte(tasksGoContent), 0o600))
+
+	// Create some orphaned Go files (not part of any module)
+	orphanedGoContent := `package docs
+
+// This file is not part of any Go module
+func DocumentationHelper() {
+	// helper function
+}
+`
+	require.NoError(t, os.WriteFile("other-files/docs/helper.go", []byte(orphanedGoContent), 0o600))
+
+	// Create non-Go files
+	require.NoError(t, os.WriteFile("README.md", []byte("# Test Project"), 0o600))
+	require.NoError(t, os.WriteFile("other-files/config.json", []byte("{}"), 0o600))
+
+	// Commit initial state
+	require.NoError(t, exec.CommandContext(ctx, "git", "add", ".").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "commit", "-m", "initial commit").Run())
+
+	// Create lint check
+	sharedCtx := shared.NewContext()
+	check := NewLintCheckWithSharedContext(sharedCtx)
+
+	// Test: Lint files from Go module subdirectory
+	t.Run("GoModuleSubdirectory", func(t *testing.T) {
+		files := []string{
+			"worker-app/cmd/worker/main.go",
+			"worker-app/internal/tasks/tasks.go",
+		}
+
+		err := check.Run(ctx, files)
+		if err != nil {
+			t.Logf("Go module subdirectory lint result: %v", err)
+			// Should not fail due to module resolution issues
+			require.NotContains(t, err.Error(), "no go files to analyze")
+			require.NotContains(t, err.Error(), "could not import")
+		}
+	})
+
+	// Test: Mixed files from module and orphaned files
+	t.Run("MixedModuleAndOrphanedFiles", func(t *testing.T) {
+		files := []string{
+			"worker-app/cmd/worker/main.go",
+			"other-files/docs/helper.go", // This should be skipped
+		}
+
+		err := check.Run(ctx, files)
+		if err != nil {
+			t.Logf("Mixed files lint result: %v", err)
+			// Should handle module files and skip orphaned files
+		}
+		// Should not fail completely due to orphaned files
+	})
+
+	// Test: All files including non-Go files
+	t.Run("AllFilesIncludingNonGo", func(t *testing.T) {
+		files := []string{
+			"worker-app/cmd/worker/main.go",
+			"worker-app/internal/tasks/tasks.go",
+			"other-files/docs/helper.go",
+			"README.md",               // Non-Go file
+			"other-files/config.json", // Non-Go file
+		}
+
+		err := check.Run(ctx, files)
+		if err != nil {
+			t.Logf("All files lint result: %v", err)
+		}
+		// Should filter to only Go files and handle them appropriately
+	})
+}
+
+// TestOrphanedGoFilesHandling tests that orphaned Go files are handled gracefully
+func TestOrphanedGoFilesHandling(t *testing.T) {
+	// Skip in short mode
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	tempDir, err := os.MkdirTemp("", "lint_orphaned_*")
+	require.NoError(t, err)
+	defer func() {
+		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+			t.Logf("Failed to remove temp dir: %v", removeErr)
+		}
+	}()
+
+	oldDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() {
+		if chdirErr := os.Chdir(oldDir); chdirErr != nil {
+			t.Logf("Failed to change back to old dir: %v", chdirErr)
+		}
+	}()
+
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+
+	// Initialize git repo
+	ctx := context.Background()
+	require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", "test@example.com").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", "Test User").Run())
+
+	// Create orphaned Go files (no go.mod anywhere in the hierarchy)
+	require.NoError(t, os.MkdirAll("standalone/utils", 0o750))
+	require.NoError(t, os.MkdirAll("scripts", 0o750))
+
+	orphanedContent1 := `package utils
+
+// This is an orphaned Go file with no module
+func UtilityFunction() {
+	// some utility
+}
+`
+	require.NoError(t, os.WriteFile("standalone/utils/util.go", []byte(orphanedContent1), 0o600))
+
+	orphanedContent2 := `package main
+
+import "fmt"
+
+// This is an orphaned main package
+func main() {
+	fmt.Println("Orphaned main")
+}
+`
+	require.NoError(t, os.WriteFile("scripts/script.go", []byte(orphanedContent2), 0o600))
+
+	// Commit files
+	require.NoError(t, exec.CommandContext(ctx, "git", "add", ".").Run())
+	require.NoError(t, exec.CommandContext(ctx, "git", "commit", "-m", "orphaned files").Run())
+
+	// Create check
+	sharedCtx := shared.NewContext()
+	check := NewLintCheckWithSharedContext(sharedCtx)
+
+	// Test linting orphaned files - should not fail
+	files := []string{
+		"standalone/utils/util.go",
+		"scripts/script.go",
+	}
+
+	err = check.Run(ctx, files)
+	// Should succeed (orphaned files are skipped)
+	require.NoError(t, err, "Orphaned Go files should be handled gracefully")
+
+	t.Log("Orphaned Go files handling test completed")
+}
+
 // TestBuildTagDetection tests the build tag detection functions
 func TestBuildTagDetection(t *testing.T) {
 	// Create temp files with different build constraints
