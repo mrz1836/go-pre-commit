@@ -185,6 +185,9 @@ func TestUpgradeCmd_Integration(t *testing.T) {
 
 // TestRunUpgradeWithConfig_Comprehensive tests the runUpgradeWithConfig function with various scenarios
 func TestRunUpgradeWithConfig_Comprehensive(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping comprehensive upgrade test in short mode")
+	}
 	testCases := []struct {
 		name           string
 		currentVersion string
