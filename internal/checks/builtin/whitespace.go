@@ -2,7 +2,6 @@
 package builtin
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -145,14 +144,19 @@ func (c *WhitespaceCheck) processFile(filename string) (bool, error) {
 		return false, fmt.Errorf("failed to read file: %w", err)
 	}
 
-	// Process lines
+	// Process lines manually without bufio.Scanner to handle files with very long lines
+	// Scanner has a default 64KB token limit which causes "token too long" errors on minified files
 	var modified bool
 	var output bytes.Buffer
-	scanner := bufio.NewScanner(bytes.NewReader(content))
 	var hasNonEmptyLines bool
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	// Split content on newlines and process each line
+	lines := bytes.Split(content, []byte{'\n'})
+
+	for i, lineBytes := range lines {
+		// Remove trailing \r if present (handles CRLF line endings)
+		lineBytes = bytes.TrimSuffix(lineBytes, []byte{'\r'})
+		line := string(lineBytes)
 		trimmed := strings.TrimRight(line, " \t")
 
 		if line != trimmed {
@@ -164,11 +168,10 @@ func (c *WhitespaceCheck) processFile(filename string) (bool, error) {
 		}
 
 		output.WriteString(trimmed)
-		output.WriteByte('\n')
-	}
-
-	if err := scanner.Err(); err != nil {
-		return false, fmt.Errorf("error scanning file: %w", err)
+		// Add newline for all lines except the last (Split includes empty element after final \n)
+		if i < len(lines)-1 {
+			output.WriteByte('\n')
+		}
 	}
 
 	// Only write if modified
