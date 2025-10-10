@@ -148,9 +148,7 @@
                 ]
             },
             "gomoddirectives": {
-                "replace-allow-list": [
-                    "github.com/joho/godotenv"
-                ]
+                "replace-allow-list": []
             },
             "govet": {
                 "enable": [
