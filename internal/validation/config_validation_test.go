@@ -220,8 +220,8 @@ GO_PRE_COMMIT_LOG_LEVEL=invalid
 KEY_WITHOUT_VALUE
 VALID_KEY=valid_value
 `,
-			shouldError: true, // godotenv should fail on malformed syntax
-			description: "Malformed environment variables should cause loading to fail",
+			shouldError: false, // envfile parser is tolerant of malformed lines
+			description: "Malformed environment variables should be tolerated (skipped)",
 		},
 	}
 

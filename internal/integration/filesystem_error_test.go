@@ -109,7 +109,7 @@ func (s *FileSystemErrorTestSuite) TestConfigLoad_FileSystemErrors() {
 
 				return testDir
 			},
-			expectError:   false, // godotenv is tolerant of invalid lines
+			expectError:   false, // envfile parser is tolerant of invalid lines
 			errorContains: "",
 			description:   "Should handle invalid .env.base content gracefully",
 		},
