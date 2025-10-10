@@ -111,8 +111,8 @@ func parse(content string) map[string]string {
 // - Handling quoted values
 // - Trimming whitespace
 func processValue(value string) string {
-	// Trim leading whitespace
-	value = strings.TrimLeft(value, " \t")
+	// Trim all leading whitespace (handles all Unicode whitespace)
+	value = strings.TrimLeftFunc(value, isWhitespace)
 
 	// Handle quoted values
 	if len(value) >= 2 {
@@ -136,8 +136,22 @@ func processValue(value string) string {
 		value = value[:idx]
 	}
 
-	// Trim trailing whitespace
-	value = strings.TrimRight(value, " \t")
+	// Trim all trailing whitespace (handles all Unicode whitespace)
+	value = strings.TrimRightFunc(value, isWhitespace)
 
 	return value
+}
+
+// isWhitespace checks if a rune is a whitespace character
+// This includes all ASCII and Unicode whitespace
+func isWhitespace(r rune) bool {
+	// Check ASCII whitespace
+	if r == ' ' || r == '\t' || r == '\n' || r == '\r' || r == '\v' || r == '\f' {
+		return true
+	}
+	// Check Unicode whitespace categories
+	// This includes: U+0085 (NEL), U+00A0 (NBSP), U+1680, U+2000-U+200A, U+2028, U+2029, U+202F, U+205F, U+3000
+	return r == 0x85 || r == 0xA0 || r == 0x1680 ||
+		(r >= 0x2000 && r <= 0x200A) || r == 0x2028 || r == 0x2029 ||
+		r == 0x202F || r == 0x205F || r == 0x3000
 }
