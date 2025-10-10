@@ -8,8 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/joho/godotenv"
-
+	"github.com/mrz1836/go-pre-commit/internal/envfile"
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 )
 
@@ -107,14 +106,14 @@ func Load() (*Config, error) {
 	basePath, err := findBaseEnvFile()
 	if err == nil {
 		// Load base environment file if found
-		if loadErr := godotenv.Load(basePath); loadErr != nil {
+		if loadErr := envfile.Load(basePath); loadErr != nil {
 			return nil, fmt.Errorf("failed to load %s: %w", basePath, loadErr)
 		}
 
 		// Load custom environment file if it exists (overrides base)
 		customPath := findCustomEnvFile(basePath)
 		if customPath != "" {
-			if overloadErr := godotenv.Overload(customPath); overloadErr != nil {
+			if overloadErr := envfile.Overload(customPath); overloadErr != nil {
 				return nil, fmt.Errorf("failed to load %s: %w", customPath, overloadErr)
 			}
 		}
