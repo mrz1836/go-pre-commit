@@ -75,7 +75,7 @@ func TestLintCheck_Metadata(t *testing.T) {
 func TestLintCheckWithConfig_Metadata(t *testing.T) {
 	sharedCtx := shared.NewContext()
 	customTimeout := 120 * time.Second
-	check := NewLintCheckWithConfig(sharedCtx, customTimeout)
+	check := NewLintCheckWithConfig(sharedCtx, nil, customTimeout)
 	metadataInterface := check.Metadata()
 
 	// Type assert to CheckMetadata
@@ -116,7 +116,7 @@ func TestModTidyCheck_Metadata(t *testing.T) {
 func TestModTidyCheckWithConfig_Metadata(t *testing.T) {
 	sharedCtx := shared.NewContext()
 	customTimeout := 45 * time.Second
-	check := NewModTidyCheckWithConfig(sharedCtx, customTimeout)
+	check := NewModTidyCheckWithConfig(sharedCtx, nil, customTimeout)
 	metadataInterface := check.Metadata()
 
 	// Type assert to CheckMetadata
@@ -207,12 +207,12 @@ func TestGotoolsChecks_TimeoutVariations(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, timeout, fumptMetadata.DefaultTimeout)
 
-			lint := NewLintCheckWithConfig(sharedCtx, timeout)
+			lint := NewLintCheckWithConfig(sharedCtx, nil, timeout)
 			lintMetadata, ok := lint.Metadata().(CheckMetadata)
 			require.True(t, ok)
 			assert.Equal(t, timeout, lintMetadata.DefaultTimeout)
 
-			modTidy := NewModTidyCheckWithConfig(sharedCtx, timeout)
+			modTidy := NewModTidyCheckWithConfig(sharedCtx, nil, timeout)
 			modTidyMetadata, ok := modTidy.Metadata().(CheckMetadata)
 			require.True(t, ok)
 			assert.Equal(t, timeout, modTidyMetadata.DefaultTimeout)

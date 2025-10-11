@@ -61,6 +61,7 @@ GO_PRE_COMMIT_ENABLE_LINT=true
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
 GO_PRE_COMMIT_ENABLE_WHITESPACE=true
 GO_PRE_COMMIT_ENABLE_EOF=true
+GO_SUM_FILE=go.sum
 `
 	require.NoError(t, os.WriteFile(envFile, []byte(envContent), 0o600))
 
@@ -86,6 +87,10 @@ GO_PRE_COMMIT_ENABLE_EOF=true
 	assert.True(t, cfg.Checks.ModTidy)
 	assert.True(t, cfg.Checks.Whitespace)
 	assert.True(t, cfg.Checks.EOF)
+
+	// Verify GO_SUM_FILE is loaded
+	assert.Equal(t, "go.sum", cfg.Module.GoSumFile)
+	assert.Empty(t, cfg.GetModuleDir()) // Root directory
 }
 
 func TestGetBoolEnv(t *testing.T) {
@@ -649,6 +654,51 @@ GO_PRE_COMMIT_ENABLE_EOF=true
 			// Directory should be empty for PATH-based binary lookup approach
 			// We no longer use directory-based approach, binary is found via PATH
 			assert.Empty(t, cfg.Directory)
+		})
+	}
+}
+
+// TestGetModuleDir tests the GetModuleDir method for extracting module directory from GO_SUM_FILE
+func TestGetModuleDir(t *testing.T) {
+	tests := []struct {
+		name       string
+		goSumFile  string
+		wantModDir string
+	}{
+		{
+			name:       "root directory - go.sum",
+			goSumFile:  "go.sum",
+			wantModDir: "",
+		},
+		{
+			name:       "root directory - empty",
+			goSumFile:  "",
+			wantModDir: "",
+		},
+		{
+			name:       "subdirectory - lib/go.sum",
+			goSumFile:  "lib/go.sum",
+			wantModDir: "lib",
+		},
+		{
+			name:       "subdirectory - backend/go.sum",
+			goSumFile:  "backend/go.sum",
+			wantModDir: "backend",
+		},
+		{
+			name:       "nested subdirectory - services/api/go.sum",
+			goSumFile:  "services/api/go.sum",
+			wantModDir: "services/api",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{}
+			cfg.Module.GoSumFile = tt.goSumFile
+
+			gotModDir := cfg.GetModuleDir()
+			assert.Equal(t, tt.wantModDir, gotModDir)
 		})
 	}
 }

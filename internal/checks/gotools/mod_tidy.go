@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mrz1836/go-pre-commit/internal/config"
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 	"github.com/mrz1836/go-pre-commit/internal/shared"
 )
@@ -26,6 +27,7 @@ var (
 // ModTidyCheck ensures go.mod and go.sum are tidy
 type ModTidyCheck struct {
 	sharedCtx *shared.Context
+	config    *config.Config
 	timeout   time.Duration
 }
 
@@ -33,6 +35,7 @@ type ModTidyCheck struct {
 func NewModTidyCheck() *ModTidyCheck {
 	return &ModTidyCheck{
 		sharedCtx: shared.NewContext(),
+		config:    nil,              // Config not available in basic constructor
 		timeout:   30 * time.Second, // 30 second timeout for mod tidy
 	}
 }
@@ -41,14 +44,16 @@ func NewModTidyCheck() *ModTidyCheck {
 func NewModTidyCheckWithSharedContext(sharedCtx *shared.Context) *ModTidyCheck {
 	return &ModTidyCheck{
 		sharedCtx: sharedCtx,
+		config:    nil, // Config not available in this constructor
 		timeout:   30 * time.Second,
 	}
 }
 
 // NewModTidyCheckWithConfig creates a new mod tidy check with shared context and custom timeout
-func NewModTidyCheckWithConfig(sharedCtx *shared.Context, timeout time.Duration) *ModTidyCheck {
+func NewModTidyCheckWithConfig(sharedCtx *shared.Context, cfg *config.Config, timeout time.Duration) *ModTidyCheck {
 	return &ModTidyCheck{
 		sharedCtx: sharedCtx,
+		config:    cfg,
 		timeout:   timeout,
 	}
 }
@@ -144,9 +149,29 @@ func (c *ModTidyCheck) runDirectModTidy(ctx context.Context, files []string) err
 		}
 	}
 
-	// If no modules found, try to run from repo root (legacy behavior)
+	// If no modules found, use GO_SUM_FILE to determine primary module location
 	if len(modulesByDir) == 0 {
-		return c.runModTidyOnModule(ctx, repoRoot)
+		// Determine the module directory from GO_SUM_FILE configuration
+		var moduleDir string
+		if c.config != nil {
+			moduleDirFromConfig := c.config.GetModuleDir()
+			if moduleDirFromConfig != "" {
+				moduleDir = filepath.Join(repoRoot, moduleDirFromConfig)
+			} else {
+				moduleDir = repoRoot
+			}
+		} else {
+			// Fallback to repo root if config is not available
+			moduleDir = repoRoot
+		}
+
+		// Only run if the directory contains a go.mod file
+		if isGoModule(moduleDir) {
+			return c.runModTidyOnModule(ctx, moduleDir)
+		}
+
+		// No Go modules found - skip gracefully (not an error)
+		return nil
 	}
 
 	// Run mod tidy on each module

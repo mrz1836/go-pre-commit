@@ -75,6 +75,11 @@ type Config struct {
 		ExcludePatterns []string // GO_PRE_COMMIT_EXCLUDE_PATTERNS
 	}
 
+	// Go module settings
+	Module struct {
+		GoSumFile string // GO_SUM_FILE (default: go.sum) - location of go.sum, used to determine module directory
+	}
+
 	// UI settings
 	UI struct {
 		ColorOutput bool // GO_PRE_COMMIT_COLOR_OUTPUT (default: true)
@@ -179,6 +184,9 @@ func Load() (*Config, error) {
 			cfg.Git.ExcludePatterns[i] = strings.TrimSpace(cfg.Git.ExcludePatterns[i])
 		}
 	}
+
+	// Go module settings
+	cfg.Module.GoSumFile = getStringEnv("GO_SUM_FILE", "go.sum")
 
 	// UI settings
 	cfg.UI.ColorOutput = getBoolEnv("GO_PRE_COMMIT_COLOR_OUTPUT", true)
@@ -304,6 +312,16 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// GetModuleDir returns the directory containing go.mod based on GO_SUM_FILE
+// Returns empty string if GO_SUM_FILE is "go.sum" (root directory)
+// Returns the directory path if GO_SUM_FILE is in a subdirectory (e.g., "lib/go.sum" returns "lib")
+func (c *Config) GetModuleDir() string {
+	if c.Module.GoSumFile == "" || c.Module.GoSumFile == "go.sum" {
+		return ""
+	}
+	return filepath.Dir(c.Module.GoSumFile)
 }
 
 // ValidationError represents configuration validation errors
