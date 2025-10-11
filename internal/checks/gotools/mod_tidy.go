@@ -116,9 +116,16 @@ func (c *ModTidyCheck) FilterFiles(files []string) []string {
 	}
 
 	// If we have .go files but no go.mod/go.sum changes, still run mod-tidy
-	// because imports might have changed
+	// because imports might have changed. Return the actual .go files so
+	// findGoModuleRoot can locate the correct module for each file.
 	if hasGoFiles {
-		return []string{"go.mod"} // Dummy entry to trigger the check
+		var goFiles []string
+		for _, file := range files {
+			if strings.HasSuffix(file, ".go") {
+				goFiles = append(goFiles, file)
+			}
+		}
+		return goFiles
 	}
 
 	// No relevant files

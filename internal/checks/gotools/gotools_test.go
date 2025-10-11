@@ -481,9 +481,9 @@ func (s *ModTidyCheckTestSuite) TestFilterFilesOnlyGoFiles() {
 		"internal/pkg.go",
 	}
 
-	// With only .go files, should return dummy go.mod to trigger check
+	// With only .go files, should return the actual .go files to allow proper module detection
 	filtered := check.FilterFiles(files)
-	expected := []string{"go.mod"}
+	expected := []string{"main.go", "internal/pkg.go"}
 	s.Equal(expected, filtered)
 }
 
