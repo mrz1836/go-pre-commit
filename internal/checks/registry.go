@@ -60,10 +60,10 @@ func NewRegistryWithConfig(cfg *config.Config) *Registry {
 	r.Register(builtin.NewWhitespaceCheckWithConfig(cfg))
 	r.Register(builtin.NewEOFCheckWithTimeout(time.Duration(cfg.CheckTimeouts.EOF) * time.Second))
 
-	// Register Go tool checks with shared context and timeouts
+	// Register Go tool checks with shared context, config, and timeouts
 	r.Register(gotools.NewFumptCheckWithConfig(r.sharedCtx, time.Duration(cfg.CheckTimeouts.Fumpt)*time.Second))
-	r.Register(gotools.NewLintCheckWithConfig(r.sharedCtx, time.Duration(cfg.CheckTimeouts.Lint)*time.Second))
-	r.Register(gotools.NewModTidyCheckWithConfig(r.sharedCtx, time.Duration(cfg.CheckTimeouts.ModTidy)*time.Second))
+	r.Register(gotools.NewLintCheckWithConfig(r.sharedCtx, cfg, time.Duration(cfg.CheckTimeouts.Lint)*time.Second))
+	r.Register(gotools.NewModTidyCheckWithConfig(r.sharedCtx, cfg, time.Duration(cfg.CheckTimeouts.ModTidy)*time.Second))
 
 	return r
 }
