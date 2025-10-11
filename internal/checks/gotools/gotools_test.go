@@ -358,7 +358,7 @@ func (s *LintCheckTestSuite) TestNewLintCheckWithSharedContext() {
 func (s *LintCheckTestSuite) TestNewLintCheckWithConfig() {
 	sharedCtx := shared.NewContext()
 	timeout := 30 * time.Second
-	check := NewLintCheckWithConfig(sharedCtx, timeout)
+	check := NewLintCheckWithConfig(sharedCtx, nil, timeout)
 	s.NotNil(check)
 	s.Equal(sharedCtx, check.sharedCtx)
 	s.Equal(timeout, check.timeout)
@@ -447,7 +447,7 @@ func (s *ModTidyCheckTestSuite) TestNewModTidyCheckWithSharedContext() {
 func (s *ModTidyCheckTestSuite) TestNewModTidyCheckWithConfig() {
 	sharedCtx := shared.NewContext()
 	timeout := 30 * time.Second
-	check := NewModTidyCheckWithConfig(sharedCtx, timeout)
+	check := NewModTidyCheckWithConfig(sharedCtx, nil, timeout)
 	s.NotNil(check)
 	s.Equal(sharedCtx, check.sharedCtx)
 	s.Equal(timeout, check.timeout)
@@ -947,7 +947,7 @@ func TestLintCheckDirectErrorScenarios(t *testing.T) {
 
 			var check *LintCheck
 			if tt.timeout > 0 {
-				check = NewLintCheckWithConfig(shared.NewContext(), tt.timeout)
+				check = NewLintCheckWithConfig(shared.NewContext(), nil, tt.timeout)
 			} else {
 				check = NewLintCheck()
 			}
@@ -1011,7 +1011,7 @@ func TestModTidyCheckBuildErrorScenarios(t *testing.T) {
 			// Create check with custom timeout if specified
 			var check *ModTidyCheck
 			if tt.timeout > 0 {
-				check = NewModTidyCheckWithConfig(shared.NewContext(), tt.timeout)
+				check = NewModTidyCheckWithConfig(shared.NewContext(), nil, tt.timeout)
 			} else {
 				check = NewModTidyCheck()
 			}
@@ -1076,7 +1076,7 @@ func TestModTidyCheckDirectErrorScenarios(t *testing.T) {
 
 			var check *ModTidyCheck
 			if tt.timeout > 0 {
-				check = NewModTidyCheckWithConfig(shared.NewContext(), tt.timeout)
+				check = NewModTidyCheckWithConfig(shared.NewContext(), nil, tt.timeout)
 			} else {
 				check = NewModTidyCheck()
 			}

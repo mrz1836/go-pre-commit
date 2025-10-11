@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mrz1836/go-pre-commit/internal/config"
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 	"github.com/mrz1836/go-pre-commit/internal/shared"
 	"github.com/mrz1836/go-pre-commit/internal/tools"
@@ -20,6 +21,7 @@ import (
 // LintCheck runs golangci-lint directly or via build tools
 type LintCheck struct {
 	sharedCtx *shared.Context
+	config    *config.Config
 	timeout   time.Duration
 	buildTags []string
 }
@@ -28,6 +30,7 @@ type LintCheck struct {
 func NewLintCheck() *LintCheck {
 	return &LintCheck{
 		sharedCtx: shared.NewContext(),
+		config:    nil,              // Config not available in basic constructor
 		timeout:   60 * time.Second, // 60 second timeout for lint
 	}
 }
@@ -36,14 +39,16 @@ func NewLintCheck() *LintCheck {
 func NewLintCheckWithSharedContext(sharedCtx *shared.Context) *LintCheck {
 	return &LintCheck{
 		sharedCtx: sharedCtx,
+		config:    nil, // Config not available in this constructor
 		timeout:   60 * time.Second,
 	}
 }
 
 // NewLintCheckWithConfig creates a new lint check with shared context and custom timeout
-func NewLintCheckWithConfig(sharedCtx *shared.Context, timeout time.Duration) *LintCheck {
+func NewLintCheckWithConfig(sharedCtx *shared.Context, cfg *config.Config, timeout time.Duration) *LintCheck {
 	return &LintCheck{
 		sharedCtx: sharedCtx,
+		config:    cfg,
 		timeout:   timeout,
 	}
 }
@@ -225,9 +230,36 @@ func (c *LintCheck) runLintOnDirectory(ctx context.Context, repoRoot, dir string
 				lintTarget = "./" + relPath
 			}
 		} else if moduleRoot == "" {
-			// This directory is not part of any Go module - skip linting
-			// Go files outside of modules can't be properly linted by golangci-lint
-			return nil
+			// No module found via directory walking - check GO_SUM_FILE configuration
+			if c.config != nil {
+				moduleDirFromConfig := c.config.GetModuleDir()
+				var configModuleDir string
+				if moduleDirFromConfig != "" {
+					configModuleDir = filepath.Join(repoRoot, moduleDirFromConfig)
+				} else {
+					configModuleDir = repoRoot
+				}
+
+				// If config points to a valid Go module, use it
+				if isGoModule(configModuleDir) {
+					workingDir = configModuleDir
+					relPath, err := filepath.Rel(configModuleDir, targetDir)
+					if err == nil && !strings.HasPrefix(relPath, "..") {
+						// Target is within the configured module
+						lintTarget = "./" + relPath
+					} else {
+						// Target is outside the configured module - skip linting
+						return nil
+					}
+				} else {
+					// No valid Go module found - skip linting
+					return nil
+				}
+			} else {
+				// No config and no module found - skip linting
+				// Go files outside of modules can't be properly linted by golangci-lint
+				return nil
+			}
 		}
 	}
 

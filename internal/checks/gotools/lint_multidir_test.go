@@ -251,7 +251,7 @@ func (s *LintMultiDirTestSuite) TestTimeoutHandling() {
 	s.T().Skip("Skipping timeout test - environment dependent")
 
 	// Create a check with very short timeout
-	shortTimeoutCheck := NewLintCheckWithConfig(s.sharedCtx, 1*time.Nanosecond)
+	shortTimeoutCheck := NewLintCheckWithConfig(s.sharedCtx, nil, 1*time.Nanosecond)
 
 	// Create multiple directories with many files to ensure timeout
 	for i := 0; i < 5; i++ {
