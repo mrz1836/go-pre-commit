@@ -436,7 +436,7 @@ func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 		"Performance.FailFast":        false,
 		"CheckTimeouts.Fumpt":         30,
 		"CheckTimeouts.Lint":          60,
-		"CheckTimeouts.ModTidy":       30,
+		"CheckTimeouts.ModTidy":       60,
 		"CheckTimeouts.Whitespace":    30,
 		"CheckTimeouts.EOF":           30,
 		"Git.HooksPath":               ".git/hooks",
