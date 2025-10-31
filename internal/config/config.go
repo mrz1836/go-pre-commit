@@ -136,7 +136,7 @@ func Load() (*Config, error) {
 	cfg.LogLevel = getStringEnv("GO_PRE_COMMIT_LOG_LEVEL", "info")
 	cfg.MaxFileSize = int64(getIntEnv("GO_PRE_COMMIT_MAX_FILE_SIZE_MB", 10)) * 1024 * 1024
 	cfg.MaxFilesOpen = getIntEnv("GO_PRE_COMMIT_MAX_FILES_OPEN", 100)
-	cfg.Timeout = getIntEnv("GO_PRE_COMMIT_TIMEOUT_SECONDS", 300) // Global timeout in seconds
+	cfg.Timeout = getIntEnv("GO_PRE_COMMIT_TIMEOUT_SECONDS", 720) // Global timeout in seconds (updated default)
 
 	// Check configurations
 	cfg.Checks.Fmt = getBoolEnv("GO_PRE_COMMIT_ENABLE_FMT", true)
@@ -169,7 +169,7 @@ func Load() (*Config, error) {
 	cfg.CheckTimeouts.Fmt = getIntEnv("GO_PRE_COMMIT_FMT_TIMEOUT", 30)
 	cfg.CheckTimeouts.Fumpt = getIntEnv("GO_PRE_COMMIT_FUMPT_TIMEOUT", 30)
 	cfg.CheckTimeouts.Goimports = getIntEnv("GO_PRE_COMMIT_GOIMPORTS_TIMEOUT", 30)
-	cfg.CheckTimeouts.Lint = getIntEnv("GO_PRE_COMMIT_LINT_TIMEOUT", 60)
+	cfg.CheckTimeouts.Lint = getIntEnv("GO_PRE_COMMIT_LINT_TIMEOUT", 600)
 	cfg.CheckTimeouts.ModTidy = getIntEnv("GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", 60)
 	cfg.CheckTimeouts.Whitespace = getIntEnv("GO_PRE_COMMIT_WHITESPACE_TIMEOUT", 30)
 	cfg.CheckTimeouts.EOF = getIntEnv("GO_PRE_COMMIT_EOF_TIMEOUT", 30)
@@ -529,14 +529,14 @@ func applyCITimeoutAdjustments(cfg *Config) {
 		cfg.ToolInstallation.Timeout = 600 // 10 minutes for CI
 	}
 
-	// Increase global timeout if using default
-	if cfg.Timeout == 300 {
-		cfg.Timeout = 600 // 10 minutes for CI
+	// Increase global timeout if using default (updated for new 720s default)
+	if cfg.Timeout == 720 {
+		cfg.Timeout = 1440 // 24 minutes for CI (2x)
 	}
 
-	// Increase lint timeout as it's often the slowest check
-	if cfg.CheckTimeouts.Lint == 60 { // Only adjust if using default
-		cfg.CheckTimeouts.Lint = 180 // 3 minutes for lint in CI
+	// Increase lint timeout as it's often the slowest check (updated for new 600s default)
+	if cfg.CheckTimeouts.Lint == 600 { // Only adjust if using default
+		cfg.CheckTimeouts.Lint = 1800 // 30 minutes for lint in CI (3x)
 	}
 
 	// Slightly increase other check timeouts

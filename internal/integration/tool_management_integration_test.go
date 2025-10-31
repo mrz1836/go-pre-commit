@@ -323,7 +323,7 @@ func (s *ToolManagementIntegrationTestSuite) TestToolConfigurationIntegration() 
 				"ENABLE_GO_PRE_COMMIT": "true",
 			},
 			expectedValues: map[string]interface{}{
-				"timeout": 300,
+				"timeout": 720,
 			},
 		},
 		{

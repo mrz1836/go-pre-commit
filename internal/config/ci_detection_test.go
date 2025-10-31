@@ -204,7 +204,7 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 		{
 			name: "adjust default timeouts",
 			initialConfig: Config{
-				Timeout: 300,
+				Timeout: 720,
 				ToolInstallation: struct {
 					Timeout int
 				}{
@@ -223,7 +223,7 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 					Fmt:         30,
 					Fumpt:       30,
 					Goimports:   30,
-					Lint:        60,
+					Lint:        600,
 					ModTidy:     60,
 					Whitespace:  30,
 					EOF:         30,
@@ -231,16 +231,16 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 				},
 			},
 			expectedAdjustments: map[string]int{
-				"global":           600, // 10 minutes
-				"toolInstallation": 600, // 10 minutes
-				"lint":             180, // 3 minutes
-				"fmt":              60,  // 1 minute
-				"fumpt":            60,  // 1 minute
-				"goimports":        60,  // 1 minute
-				"modTidy":          180, // 3 minutes
-				"whitespace":       45,  // 45 seconds
-				"eof":              45,  // 45 seconds
-				"aiDetection":      60,  // 1 minute
+				"global":           1440, // 24 minutes (720 * 2)
+				"toolInstallation": 600,  // 10 minutes (300 * 2)
+				"lint":             1800, // 30 minutes (600 * 3)
+				"fmt":              60,   // 1 minute
+				"fumpt":            60,   // 1 minute
+				"goimports":        60,   // 1 minute
+				"modTidy":          180,  // 3 minutes
+				"whitespace":       45,   // 45 seconds
+				"eof":              45,   // 45 seconds
+				"aiDetection":      60,   // 1 minute
 			},
 		},
 		{
@@ -405,14 +405,14 @@ GO_PRE_COMMIT_LOG_LEVEL=info
 				// Should have CI adjustments
 				assert.True(t, cfg.Environment.IsCI)
 				assert.Equal(t, "github-actions", cfg.Environment.CIProvider)
-				assert.Equal(t, 600, cfg.Timeout)                  // Adjusted from 300
-				assert.Equal(t, 600, cfg.ToolInstallation.Timeout) // Adjusted from 300
-				assert.Equal(t, 180, cfg.CheckTimeouts.Lint)       // Adjusted from 60
+				assert.Equal(t, 1440, cfg.Timeout)                 // Adjusted from 720 (2x)
+				assert.Equal(t, 600, cfg.ToolInstallation.Timeout) // Adjusted from 300 (2x)
+				assert.Equal(t, 1800, cfg.CheckTimeouts.Lint)      // Adjusted from 600 (3x)
 			} else {
 				// Should have default timeouts
-				assert.Equal(t, 300, cfg.Timeout)                  // Default
+				assert.Equal(t, 720, cfg.Timeout)                  // Default (updated from 300)
 				assert.Equal(t, 300, cfg.ToolInstallation.Timeout) // Default
-				assert.Equal(t, 60, cfg.CheckTimeouts.Lint)        // Default
+				assert.Equal(t, 600, cfg.CheckTimeouts.Lint)       // Default (updated from 60)
 			}
 		})
 	}

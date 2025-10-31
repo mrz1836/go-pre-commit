@@ -298,7 +298,7 @@ GO_PRE_COMMIT_COLOR_OUTPUT=false
 	s.Equal("debug", cfg.LogLevel)
 	s.Equal(int64(5*1024*1024), cfg.MaxFileSize)
 	s.Equal(50, cfg.MaxFilesOpen)
-	s.Equal(300, cfg.Timeout)
+	s.Equal(300, cfg.Timeout) // Custom value from env file
 
 	// Check configurations
 	s.False(cfg.Checks.Fumpt)
@@ -349,7 +349,7 @@ func (s *ConfigTestSuite) TestLoadWithMinimalConfiguration() {
 	s.Equal("info", cfg.LogLevel)
 	s.Equal(int64(10*1024*1024), cfg.MaxFileSize)
 	s.Equal(100, cfg.MaxFilesOpen)
-	s.Equal(300, cfg.Timeout)
+	s.Equal(720, cfg.Timeout)
 	s.True(cfg.Checks.Fumpt)
 	s.True(cfg.Checks.Lint)
 	s.True(cfg.Checks.ModTidy)

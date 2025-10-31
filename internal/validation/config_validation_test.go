@@ -424,7 +424,7 @@ func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 		"LogLevel":                    "info",
 		"MaxFileSize":                 int64(10 * 1024 * 1024), // 10MB
 		"MaxFilesOpen":                100,
-		"Timeout":                     300, // Actual default from config.go line 96
+		"Timeout":                     720, // Updated default from config.go line 139
 		"Checks.Fumpt":                true,
 		"Checks.Lint":                 true,
 		"Checks.ModTidy":              true,
@@ -435,7 +435,7 @@ func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 		"Performance.ParallelWorkers": 0, // Actual default from config.go line 114 (0 = auto)
 		"Performance.FailFast":        false,
 		"CheckTimeouts.Fumpt":         30,
-		"CheckTimeouts.Lint":          60,
+		"CheckTimeouts.Lint":          600, // Updated default from config.go line 172
 		"CheckTimeouts.ModTidy":       60,
 		"CheckTimeouts.Whitespace":    30,
 		"CheckTimeouts.EOF":           30,
