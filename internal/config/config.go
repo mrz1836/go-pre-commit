@@ -170,7 +170,7 @@ func Load() (*Config, error) {
 	cfg.CheckTimeouts.Fumpt = getIntEnv("GO_PRE_COMMIT_FUMPT_TIMEOUT", 30)
 	cfg.CheckTimeouts.Goimports = getIntEnv("GO_PRE_COMMIT_GOIMPORTS_TIMEOUT", 30)
 	cfg.CheckTimeouts.Lint = getIntEnv("GO_PRE_COMMIT_LINT_TIMEOUT", 60)
-	cfg.CheckTimeouts.ModTidy = getIntEnv("GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", 30)
+	cfg.CheckTimeouts.ModTidy = getIntEnv("GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", 60)
 	cfg.CheckTimeouts.Whitespace = getIntEnv("GO_PRE_COMMIT_WHITESPACE_TIMEOUT", 30)
 	cfg.CheckTimeouts.EOF = getIntEnv("GO_PRE_COMMIT_EOF_TIMEOUT", 30)
 	cfg.CheckTimeouts.AIDetection = getIntEnv("GO_PRE_COMMIT_AI_DETECTION_TIMEOUT", 30)
@@ -540,7 +540,7 @@ func applyCITimeoutAdjustments(cfg *Config) {
 	}
 
 	// Slightly increase other check timeouts
-	adjustTimeout := func(current *int, defaultVal, newVal int) { //nolint:unparam // defaultVal provides flexibility for different defaults
+	adjustTimeout := func(current *int, defaultVal, newVal int) {
 		if *current == defaultVal {
 			*current = newVal
 		}
@@ -549,7 +549,7 @@ func applyCITimeoutAdjustments(cfg *Config) {
 	adjustTimeout(&cfg.CheckTimeouts.Fmt, 30, 60)
 	adjustTimeout(&cfg.CheckTimeouts.Fumpt, 30, 60)
 	adjustTimeout(&cfg.CheckTimeouts.Goimports, 30, 60)
-	adjustTimeout(&cfg.CheckTimeouts.ModTidy, 30, 90)
+	adjustTimeout(&cfg.CheckTimeouts.ModTidy, 60, 180)
 	adjustTimeout(&cfg.CheckTimeouts.Whitespace, 30, 45)
 	adjustTimeout(&cfg.CheckTimeouts.EOF, 30, 45)
 	adjustTimeout(&cfg.CheckTimeouts.AIDetection, 30, 60)

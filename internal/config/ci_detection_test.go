@@ -224,7 +224,7 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 					Fumpt:       30,
 					Goimports:   30,
 					Lint:        60,
-					ModTidy:     30,
+					ModTidy:     60,
 					Whitespace:  30,
 					EOF:         30,
 					AIDetection: 30,
@@ -237,7 +237,7 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 				"fmt":              60,  // 1 minute
 				"fumpt":            60,  // 1 minute
 				"goimports":        60,  // 1 minute
-				"modTidy":          90,  // 1.5 minutes
+				"modTidy":          180, // 3 minutes
 				"whitespace":       45,  // 45 seconds
 				"eof":              45,  // 45 seconds
 				"aiDetection":      60,  // 1 minute
@@ -525,7 +525,7 @@ func BenchmarkApplyCITimeoutAdjustments(b *testing.B) {
 			Fumpt:       30,
 			Goimports:   30,
 			Lint:        60,
-			ModTidy:     30,
+			ModTidy:     60,
 			Whitespace:  30,
 			EOF:         30,
 			AIDetection: 30,
