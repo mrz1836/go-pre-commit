@@ -45,6 +45,7 @@ Available checks:
   eof          - Ensure files end with newline
   fmt          - Format code with go fmt
   fumpt        - Format code with gofumpt
+  gitleaks     - Scan for secrets and credentials in code
   goimports    - Format code and manage imports
   lint         - Run golangci-lint
   mod-tidy     - Ensure go.mod and go.sum are tidy
@@ -393,6 +394,7 @@ func showAvailableChecks(cfg *config.Config, formatter *output.Formatter) error 
 		{"eof", "Ensure files end with newline", cfg.Checks.EOF},
 		{"fmt", "Format code with go fmt", cfg.Checks.Fmt},
 		{"fumpt", "Format code with gofumpt", cfg.Checks.Fumpt},
+		{"gitleaks", "Scan for secrets and credentials in code", cfg.Checks.Gitleaks},
 		{"goimports", "Format code and manage imports", cfg.Checks.Goimports},
 		{"lint", "Run golangci-lint", cfg.Checks.Lint},
 		{"mod-tidy", "Ensure go.mod and go.sum are tidy", cfg.Checks.ModTidy},
