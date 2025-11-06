@@ -14,6 +14,7 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 	"github.com/mrz1836/go-pre-commit/internal/shared"
+	"github.com/mrz1836/go-pre-commit/internal/tools"
 )
 
 // GitleaksCheck runs gitleaks to scan for secrets and credentials
@@ -82,7 +83,7 @@ func (c *GitleaksCheck) Metadata() interface{} {
 		Description:       "Scan for secrets and credentials in code using gitleaks",
 		FilePatterns:      []string{"*"}, // Scan all files for secrets
 		EstimatedDuration: 5 * time.Second,
-		Dependencies:      []string{}, // Not auto-installed, user must install
+		Dependencies:      []string{"gitleaks"}, // Auto-installed via binary download
 		DefaultTimeout:    c.timeout,
 		Category:          "security",
 		RequiresFiles:     true,
@@ -96,11 +97,12 @@ func (c *GitleaksCheck) Run(ctx context.Context, files []string) error {
 		return nil
 	}
 
-	// Check if gitleaks is installed (DO NOT auto-install)
-	if _, err := exec.LookPath("gitleaks"); err != nil {
-		return prerrors.NewToolNotFoundError(
+	// Ensure gitleaks is installed (auto-install if needed)
+	if err := tools.EnsureInstalled(ctx, "gitleaks"); err != nil {
+		return prerrors.NewToolExecutionError(
 			"gitleaks",
-			"Install gitleaks from: https://github.com/gitleaks/gitleaks#installation",
+			err.Error(),
+			"Failed to install gitleaks. You can install it manually from: https://github.com/gitleaks/gitleaks#installation",
 		)
 	}
 
