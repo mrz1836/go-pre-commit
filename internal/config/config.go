@@ -32,6 +32,7 @@ type Config struct {
 		Whitespace  bool // GO_PRE_COMMIT_ENABLE_WHITESPACE
 		EOF         bool // GO_PRE_COMMIT_ENABLE_EOF
 		AIDetection bool // GO_PRE_COMMIT_ENABLE_AI_DETECTION
+		Gitleaks    bool // GO_PRE_COMMIT_ENABLE_GITLEAKS
 	}
 
 	// Check behaviors
@@ -49,6 +50,7 @@ type Config struct {
 		Fumpt        string // GO_PRE_COMMIT_FUMPT_VERSION
 		Goimports    string // GO_PRE_COMMIT_GOIMPORTS_VERSION
 		GolangciLint string // GO_PRE_COMMIT_GOLANGCI_LINT_VERSION
+		Gitleaks     string // GO_PRE_COMMIT_GITLEAKS_VERSION
 	}
 
 	// Performance settings
@@ -67,6 +69,7 @@ type Config struct {
 		Whitespace  int // GO_PRE_COMMIT_WHITESPACE_TIMEOUT (default: 30)
 		EOF         int // GO_PRE_COMMIT_EOF_TIMEOUT (default: 30)
 		AIDetection int // GO_PRE_COMMIT_AI_DETECTION_TIMEOUT (default: 30)
+		Gitleaks    int // GO_PRE_COMMIT_GITLEAKS_TIMEOUT (default: 60)
 	}
 
 	// Git settings
@@ -147,6 +150,7 @@ func Load() (*Config, error) {
 	cfg.Checks.Whitespace = getBoolEnv("GO_PRE_COMMIT_ENABLE_WHITESPACE", true)
 	cfg.Checks.EOF = getBoolEnv("GO_PRE_COMMIT_ENABLE_EOF", true)
 	cfg.Checks.AIDetection = getBoolEnv("GO_PRE_COMMIT_ENABLE_AI_DETECTION", true)
+	cfg.Checks.Gitleaks = getBoolEnv("GO_PRE_COMMIT_ENABLE_GITLEAKS", false)
 
 	// Check behaviors
 	cfg.CheckBehaviors.FmtAutoStage = getBoolEnv("GO_PRE_COMMIT_FMT_AUTO_STAGE", true)
@@ -160,6 +164,7 @@ func Load() (*Config, error) {
 	cfg.ToolVersions.Fumpt = getStringEnv("GO_PRE_COMMIT_FUMPT_VERSION", "latest")
 	cfg.ToolVersions.Goimports = getStringEnv("GO_PRE_COMMIT_GOIMPORTS_VERSION", "latest")
 	cfg.ToolVersions.GolangciLint = getStringEnv("GO_PRE_COMMIT_GOLANGCI_LINT_VERSION", "latest")
+	cfg.ToolVersions.Gitleaks = getStringEnv("GO_PRE_COMMIT_GITLEAKS_VERSION", "v8.29.0")
 
 	// Performance settings
 	cfg.Performance.ParallelWorkers = getIntEnv("GO_PRE_COMMIT_PARALLEL_WORKERS", 0) // 0 = auto
@@ -174,6 +179,7 @@ func Load() (*Config, error) {
 	cfg.CheckTimeouts.Whitespace = getIntEnv("GO_PRE_COMMIT_WHITESPACE_TIMEOUT", 30)
 	cfg.CheckTimeouts.EOF = getIntEnv("GO_PRE_COMMIT_EOF_TIMEOUT", 30)
 	cfg.CheckTimeouts.AIDetection = getIntEnv("GO_PRE_COMMIT_AI_DETECTION_TIMEOUT", 30)
+	cfg.CheckTimeouts.Gitleaks = getIntEnv("GO_PRE_COMMIT_GITLEAKS_TIMEOUT", 60)
 
 	// Git settings
 	cfg.Git.HooksPath = getStringEnv("GO_PRE_COMMIT_HOOKS_PATH", ".git/hooks")
@@ -255,6 +261,10 @@ func (c *Config) Validate() error {
 
 	if c.CheckTimeouts.AIDetection <= 0 {
 		errors = append(errors, "GO_PRE_COMMIT_AI_DETECTION_TIMEOUT must be greater than 0")
+	}
+
+	if c.CheckTimeouts.Gitleaks <= 0 {
+		errors = append(errors, "GO_PRE_COMMIT_GITLEAKS_TIMEOUT must be greater than 0")
 	}
 
 	// Validate file size limits
