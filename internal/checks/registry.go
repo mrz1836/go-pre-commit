@@ -64,6 +64,7 @@ func NewRegistryWithConfig(cfg *config.Config) *Registry {
 	r.Register(gotools.NewFumptCheckWithConfig(r.sharedCtx, time.Duration(cfg.CheckTimeouts.Fumpt)*time.Second))
 	r.Register(gotools.NewLintCheckWithConfig(r.sharedCtx, cfg, time.Duration(cfg.CheckTimeouts.Lint)*time.Second))
 	r.Register(gotools.NewModTidyCheckWithConfig(r.sharedCtx, cfg, time.Duration(cfg.CheckTimeouts.ModTidy)*time.Second))
+	r.Register(gotools.NewGitleaksCheckWithFullConfig(r.sharedCtx, cfg))
 
 	return r
 }

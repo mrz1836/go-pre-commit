@@ -123,6 +123,7 @@ func TestNewRegistryWithConfig(t *testing.T) {
 					Whitespace  int
 					EOF         int
 					AIDetection int
+					Gitleaks    int
 				}{
 					Fmt:        60,
 					Fumpt:      60,
@@ -130,12 +131,13 @@ func TestNewRegistryWithConfig(t *testing.T) {
 					ModTidy:    45,
 					Whitespace: 30,
 					EOF:        20,
+					Gitleaks:   60,
 				},
 			},
 			verify: func(t *testing.T, r *Registry) {
 				assert.NotNil(t, r)
 				checks := r.GetChecks()
-				assert.Len(t, checks, 5)
+				assert.Len(t, checks, 6)
 
 				// Verify all expected checks are present
 				checkNames := r.Names()
@@ -158,6 +160,7 @@ func TestNewRegistryWithConfig(t *testing.T) {
 					Whitespace  int
 					EOF         int
 					AIDetection int
+					Gitleaks    int
 				}{
 					Fmt:        0,
 					Fumpt:      0,
@@ -165,12 +168,13 @@ func TestNewRegistryWithConfig(t *testing.T) {
 					ModTidy:    0,
 					Whitespace: 0,
 					EOF:        0,
+					Gitleaks:   0,
 				},
 			},
 			verify: func(t *testing.T, r *Registry) {
 				assert.NotNil(t, r)
 				checks := r.GetChecks()
-				assert.Len(t, checks, 5)
+				assert.Len(t, checks, 6)
 			},
 		},
 	}
