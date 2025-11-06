@@ -41,6 +41,7 @@ func TestNewWhitespaceCheckWithConfig(t *testing.T) {
 					Whitespace  int
 					EOF         int
 					AIDetection int
+					Gitleaks    int
 				}{
 					Whitespace: 60,
 				},
@@ -70,6 +71,7 @@ func TestNewWhitespaceCheckWithConfig(t *testing.T) {
 					Whitespace  int
 					EOF         int
 					AIDetection int
+					Gitleaks    int
 				}{
 					Whitespace: 90,
 				},
@@ -133,6 +135,7 @@ func TestWhitespaceCheck_Run_WithAutoStage(t *testing.T) {
 			Whitespace  int
 			EOF         int
 			AIDetection int
+			Gitleaks    int
 		}{
 			Whitespace: 30,
 		},
@@ -203,6 +206,7 @@ func TestWhitespaceCheck_Run_AutoStageError(t *testing.T) {
 			Whitespace  int
 			EOF         int
 			AIDetection int
+			Gitleaks    int
 		}{
 			Whitespace: 30,
 		},
