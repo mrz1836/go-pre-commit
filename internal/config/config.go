@@ -24,15 +24,16 @@ type Config struct {
 
 	// Check configurations
 	Checks struct {
-		Fmt         bool // GO_PRE_COMMIT_ENABLE_FMT
-		Fumpt       bool // GO_PRE_COMMIT_ENABLE_FUMPT
-		Goimports   bool // GO_PRE_COMMIT_ENABLE_GOIMPORTS
-		Lint        bool // GO_PRE_COMMIT_ENABLE_LINT
-		ModTidy     bool // GO_PRE_COMMIT_ENABLE_MOD_TIDY
-		Whitespace  bool // GO_PRE_COMMIT_ENABLE_WHITESPACE
-		EOF         bool // GO_PRE_COMMIT_ENABLE_EOF
-		AIDetection bool // GO_PRE_COMMIT_ENABLE_AI_DETECTION
-		Gitleaks    bool // GO_PRE_COMMIT_ENABLE_GITLEAKS
+		Fmt              bool // GO_PRE_COMMIT_ENABLE_FMT
+		Fumpt            bool // GO_PRE_COMMIT_ENABLE_FUMPT
+		Goimports        bool // GO_PRE_COMMIT_ENABLE_GOIMPORTS
+		Lint             bool // GO_PRE_COMMIT_ENABLE_LINT
+		ModTidy          bool // GO_PRE_COMMIT_ENABLE_MOD_TIDY
+		Whitespace       bool // GO_PRE_COMMIT_ENABLE_WHITESPACE
+		EOF              bool // GO_PRE_COMMIT_ENABLE_EOF
+		AIDetection      bool // GO_PRE_COMMIT_ENABLE_AI_DETECTION
+		Gitleaks         bool // GO_PRE_COMMIT_ENABLE_GITLEAKS
+		GitleaksAllFiles bool // GO_PRE_COMMIT_GITLEAKS_ALL_FILES
 	}
 
 	// Check behaviors
@@ -151,6 +152,7 @@ func Load() (*Config, error) {
 	cfg.Checks.EOF = getBoolEnv("GO_PRE_COMMIT_ENABLE_EOF", true)
 	cfg.Checks.AIDetection = getBoolEnv("GO_PRE_COMMIT_ENABLE_AI_DETECTION", true)
 	cfg.Checks.Gitleaks = getBoolEnv("GO_PRE_COMMIT_ENABLE_GITLEAKS", false)
+	cfg.Checks.GitleaksAllFiles = getBoolEnv("GO_PRE_COMMIT_GITLEAKS_ALL_FILES", false)
 
 	// Check behaviors
 	cfg.CheckBehaviors.FmtAutoStage = getBoolEnv("GO_PRE_COMMIT_FMT_AUTO_STAGE", true)

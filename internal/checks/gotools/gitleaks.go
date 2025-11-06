@@ -117,7 +117,9 @@ func (c *GitleaksCheck) FilterFiles(files []string) []string {
 }
 
 // runGitleaks runs gitleaks on the repository
-func (c *GitleaksCheck) runGitleaks(ctx context.Context, _ []string) error {
+// The files parameter is intentionally unused when using git-based scanning mode,
+// as gitleaks determines changed files via git commit range
+func (c *GitleaksCheck) runGitleaks(ctx context.Context, files []string) error { //nolint:revive,unparam // files parameter used conditionally
 	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to find repository root: %w", err)
@@ -127,9 +129,33 @@ func (c *GitleaksCheck) runGitleaks(ctx context.Context, _ []string) error {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
-	// Build gitleaks command arguments
-	// Use "detect" mode with --no-git to scan files directly
-	args := []string{"detect", "--no-git", "--source", repoRoot, "--verbose"}
+	var args []string
+
+	// Determine scan mode based on configuration
+	scanAllFiles := true
+	if c.config != nil {
+		scanAllFiles = c.config.Checks.GitleaksAllFiles
+	}
+
+	if scanAllFiles {
+		// Scan all files mode (original behavior)
+		args = []string{"detect", "--no-git", "--source", repoRoot, "--verbose"}
+	} else {
+		// Scan changed files mode using git detection
+		commitRange, gitErr := c.getGitCommitRange(ctx, repoRoot)
+		if gitErr == nil && commitRange != "" {
+			// Use git-based detection with commit range
+			args = []string{
+				"detect",
+				"--redact",
+				"-v",
+				"--log-opts=" + commitRange,
+			}
+		} else {
+			// Fallback: scan all files if git detection fails
+			args = []string{"detect", "--no-git", "--source", repoRoot, "--verbose"}
+		}
+	}
 
 	// Look for custom config file
 	configPath := c.findGitleaksConfig(repoRoot)
@@ -256,4 +282,48 @@ func (c *GitleaksCheck) formatGitleaksErrors(output string) string {
 
 	// Otherwise return the original output
 	return output
+}
+
+// getGitCommitRange determines the appropriate git commit range for scanning
+// Returns a range like "--no-merges --first-parent <base>^..<head>"
+func (c *GitleaksCheck) getGitCommitRange(ctx context.Context, repoRoot string) (string, error) {
+	// First, check if we're in a git repository
+	gitDirCmd := exec.CommandContext(ctx, "git", "rev-parse", "--git-dir")
+	gitDirCmd.Dir = repoRoot
+	if err := gitDirCmd.Run(); err != nil {
+		return "", fmt.Errorf("not a git repository: %w", err)
+	}
+
+	// Get the current HEAD commit
+	headCmd := exec.CommandContext(ctx, "git", "rev-parse", "HEAD")
+	headCmd.Dir = repoRoot
+	headOutput, err := headCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get HEAD commit: %w", err)
+	}
+	headCommit := strings.TrimSpace(string(headOutput))
+
+	// Try to find base commit (origin/master, origin/main, or HEAD~1)
+	baseCommit := ""
+
+	// Try origin/master first
+	baseCandidates := []string{"origin/master", "origin/main", "HEAD~1"}
+	for _, candidate := range baseCandidates {
+		cmd := exec.CommandContext(ctx, "git", "rev-parse", candidate) //nolint:gosec // Git command with fixed arguments
+		cmd.Dir = repoRoot
+		output, err := cmd.Output()
+		if err == nil {
+			baseCommit = strings.TrimSpace(string(output))
+			break
+		}
+	}
+
+	if baseCommit == "" {
+		return "", prerrors.ErrGitBaseCommitNotFound
+	}
+
+	// Build the log-opts string similar to CI workflow
+	// Format: "--no-merges --first-parent <base>^..<head>"
+	logOpts := fmt.Sprintf("--no-merges --first-parent %s^..%s", baseCommit, headCommit)
+	return logOpts, nil
 }

@@ -64,11 +64,12 @@ var (
 	ErrTimeout = errors.New("operation timed out")
 
 	// Git-related errors
-	ErrNotGitRepository     = errors.New("not a git repository")
-	ErrUnsupportedHookType  = errors.New("unsupported hook type")
-	ErrPreCommitDirNotExist = errors.New("pre-commit directory does not exist")
-	ErrHookNotExecutable    = errors.New("hook file is not executable")
-	ErrHookMarkerMissing    = errors.New("installed hook does not contain expected marker")
+	ErrNotGitRepository      = errors.New("not a git repository")
+	ErrGitBaseCommitNotFound = errors.New("could not determine base commit")
+	ErrUnsupportedHookType   = errors.New("unsupported hook type")
+	ErrPreCommitDirNotExist  = errors.New("pre-commit directory does not exist")
+	ErrHookNotExecutable     = errors.New("hook file is not executable")
+	ErrHookMarkerMissing     = errors.New("installed hook does not contain expected marker")
 )
 
 // CheckError represents an enhanced error with context and suggestions
