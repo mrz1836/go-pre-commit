@@ -321,7 +321,7 @@ go-pre-commit uninstall --hook-type pre-commit
 | **fmt**          | Formats Go code with standard `go fmt`             | ✅        | Pure Go - no dependencies      |
 | **fumpt**        | Formats Go code with stricter rules than `gofmt`   | ✅        | Auto-installs if needed        |
 | **goimports**    | Formats code and manages imports automatically     | ✅        | Auto-installs if needed        |
-| **gitleaks**     | Scans for secrets and credentials in code          | ❌        | Warns if not installed         |
+| **gitleaks**     | Scans for secrets and credentials in code          | ❌        | Auto-installs if needed        |
 | **lint**         | Runs golangci-lint for comprehensive linting       | ❌        | Auto-installs if needed        |
 | **mod-tidy**     | Ensures go.mod and go.sum are tidy                 | ✅        | Pure Go - no dependencies      |
 | **whitespace**   | Removes trailing whitespace                        | ✅        | Auto-stages changes if enabled |
