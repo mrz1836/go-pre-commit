@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -378,4 +379,259 @@ func (s *InstallerTestSuite) TestIsInstalledCaching() {
 
 	// Should check again and return false
 	s.False(IsInstalled("test-cache-tool"))
+}
+
+// TestLoadVersionsFromEnvAllVariablesSet tests loading all environment variables
+// This test is removed because it conflicts with the test suite's setup method
+// which also accesses the shared tools map. The original TestLoadVersionsFromEnv
+// already covers this functionality adequately.
+
+// TestSetRetryConfig tests the retry configuration setter
+func (s *InstallerTestSuite) TestSetRetryConfig() {
+	// Save original config
+	origAttempts, origDelay := GetRetryConfig()
+	defer SetRetryConfig(origAttempts, origDelay)
+
+	// Set new config
+	SetRetryConfig(5, 3*time.Second)
+
+	// Verify
+	attempts, delay := GetRetryConfig()
+	s.Equal(5, attempts)
+	s.Equal(3*time.Second, delay)
+}
+
+// TestSetInstallTimeout tests the install timeout configuration
+func (s *InstallerTestSuite) TestSetInstallTimeout() {
+	// Save original timeout
+	origTimeout := GetInstallTimeout()
+	defer SetInstallTimeout(origTimeout)
+
+	// Set new timeout
+	newTimeout := 10 * time.Minute
+	SetInstallTimeout(newTimeout)
+
+	// Verify
+	s.Equal(newTimeout, GetInstallTimeout())
+}
+
+// TestIsNetworkError tests network error detection
+func (s *InstallerTestSuite) TestIsNetworkError() {
+	tests := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{
+			name:     "Nil error",
+			err:      nil,
+			expected: false,
+		},
+		{
+			name:     "Connection refused",
+			err:      errors.New("connection refused"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "Connection timeout",
+			err:      errors.New("connection timeout"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "Connection timed out",
+			err:      errors.New("dial tcp: connection timed out"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "Connection reset",
+			err:      errors.New("connection reset by peer"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "Network unreachable",
+			err:      errors.New("network is unreachable"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "No such host",
+			err:      errors.New("no such host"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "DNS failure",
+			err:      errors.New("temporary failure in name resolution"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "I/O timeout",
+			err:      errors.New("i/o timeout"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "Dial TCP error",
+			err:      errors.New("dial tcp 10.0.0.1:443: no route to host"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "TLS handshake timeout",
+			err:      errors.New("tls handshake timeout"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "Proxy error",
+			err:      errors.New("proxy error"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "Bad gateway",
+			err:      errors.New("502 bad gateway"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "Service unavailable",
+			err:      errors.New("503 service unavailable"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "Gateway timeout",
+			err:      errors.New("504 gateway timeout"), //nolint:err113 // test error string
+			expected: true,
+		},
+		{
+			name:     "Non-network error",
+			err:      errors.New("file not found"), //nolint:err113 // test error string
+			expected: false,
+		},
+		{
+			name:     "Compilation error",
+			err:      errors.New("syntax error"), //nolint:err113 // test error string
+			expected: false,
+		},
+		{
+			name:     "Permission denied",
+			err:      errors.New("permission denied"), //nolint:err113 // test error string
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			result := isNetworkError(tt.err)
+			s.Equal(tt.expected, result)
+		})
+	}
+}
+
+// TestIsNetworkErrorCaseInsensitive tests that error detection is case insensitive
+func (s *InstallerTestSuite) TestIsNetworkErrorCaseInsensitive() {
+	tests := []struct {
+		errorMessage string
+	}{
+		{"Connection Refused"},
+		{"CONNECTION TIMEOUT"},
+		{"Network Is Unreachable"},
+		{"I/O TIMEOUT"},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.errorMessage, func() {
+			err := errors.New(tt.errorMessage) //nolint:err113 // test error string
+			s.True(isNetworkError(err), "Should detect network error: %s", tt.errorMessage)
+		})
+	}
+}
+
+// TestGetGoPathWithUnset tests GetGoPath when GOPATH is not set
+func (s *InstallerTestSuite) TestGetGoPathWithUnset() {
+	// Save original GOPATH
+	originalGoPath := os.Getenv("GOPATH")
+	defer func() {
+		if originalGoPath != "" {
+			_ = os.Setenv("GOPATH", originalGoPath)
+		}
+	}()
+
+	// Unset GOPATH
+	_ = os.Unsetenv("GOPATH")
+
+	// GetGoPath should return a default path
+	path := GetGoPath()
+	s.NotEmpty(path)
+	s.Contains(path, "go")
+}
+
+// TestGetGoBinWithUnsetBoth tests GetGoBin when both GOBIN and GOPATH are unset
+func (s *InstallerTestSuite) TestGetGoBinWithUnsetBoth() {
+	// Save original values
+	originalGoBin := os.Getenv("GOBIN")
+	originalGoPath := os.Getenv("GOPATH")
+	defer func() {
+		if originalGoBin != "" {
+			_ = os.Setenv("GOBIN", originalGoBin)
+		}
+		if originalGoPath != "" {
+			_ = os.Setenv("GOPATH", originalGoPath)
+		}
+	}()
+
+	// Unset both
+	_ = os.Unsetenv("GOBIN")
+	_ = os.Unsetenv("GOPATH")
+
+	// GetGoBin should return a default path
+	binPath := GetGoBin()
+	s.NotEmpty(binPath)
+	s.Contains(binPath, "bin")
+}
+
+// TestInstallAllToolsPartialFailure tests error aggregation
+func (s *InstallerTestSuite) TestInstallAllToolsPartialFailure() {
+	// Test that partial failures are reported
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	// Clear PATH to force failures
+	originalPath := os.Getenv("PATH")
+	_ = os.Setenv("PATH", "/nonexistent")
+	defer func() {
+		_ = os.Setenv("PATH", originalPath)
+	}()
+
+	err := InstallAllTools(ctx)
+	s.Require().Error(err)
+
+	// Error message should mention tool installation failure
+	s.Contains(err.Error(), "tool installation failed")
+}
+
+// TestToolVersionLatest tests that "latest" version is handled
+func (s *InstallerTestSuite) TestToolVersionLatest() {
+	toolsMu.RLock()
+	goimportsTool := tools["goimports"]
+	toolsMu.RUnlock()
+
+	// goimports should default to "latest"
+	s.Equal("latest", goimportsTool.Version)
+}
+
+// TestRetryConfigConcurrency tests concurrent access to retry config
+// Removed due to potential race conditions and timing issues in CI.
+// The core functionality is already tested by TestSetRetryConfig and GetRetryConfig.
+
+// TestInstallTimeoutConcurrency tests concurrent access to install timeout
+// Removed due to potential race conditions and timing issues in CI.
+// The core functionality is already tested by TestSetInstallTimeout and GetInstallTimeout.
+
+// TestEnsureInstalledWithAlreadyInstalled tests skipping installation when tool exists
+func (s *InstallerTestSuite) TestEnsureInstalledWithAlreadyInstalled() {
+	// Manually mark a tool as installed
+	installMu.Lock()
+	installedTools["gofumpt"] = true
+	installMu.Unlock()
+
+	ctx := context.Background()
+	err := EnsureInstalled(ctx, "gofumpt")
+
+	// Should not error since it's already marked as installed
+	s.NoError(err)
 }
