@@ -30,16 +30,16 @@
         <a href="https://goreportcard.com/report/github.com/mrz1836/go-pre-commit">
           <img src="https://goreportcard.com/badge/github.com/mrz1836/go-pre-commit?style=flat" alt="Go Report Card">
         </a><br/>
-		<!-- <a href="https://codecov.io/gh/mrz1836/go-pre-commit/tree/master">
+		    <!-- <a href="https://codecov.io/gh/mrz1836/go-pre-commit/tree/master">
           <img src="https://codecov.io/gh/mrz1836/go-pre-commit/branch/master/graph/badge.svg?style=flat" alt="Code Coverage">
         </a><br/> -->
-		<a href="https://mrz1836.github.io/go-pre-commit/" target="_blank">
+		    <a href="https://mrz1836.github.io/go-pre-commit/" target="_blank">
           <img src="https://mrz1836.github.io/go-pre-commit/coverage.svg" alt="Code Coverage">
         </a><br/>
-		<a href="https://scorecard.dev/viewer/?uri=github.com/mrz1836/go-pre-commit">
+		    <a href="https://scorecard.dev/viewer/?uri=github.com/mrz1836/go-pre-commit">
           <img src="https://api.scorecard.dev/projects/github.com/mrz1836/go-pre-commit/badge?logo=springsecurity&logoColor=white" alt="OpenSSF Scorecard">
         </a><br/>
-		<a href=".github/SECURITY.md">
+		    <a href=".github/SECURITY.md">
           <img src="https://img.shields.io/badge/security-policy-blue?style=flat&logo=springsecurity&logoColor=white" alt="Security policy">
         </a>
       </td>
@@ -53,7 +53,7 @@
         <a href=".github/AGENTS.md">
           <img src="https://img.shields.io/badge/AGENTS.md-found-40b814?style=flat&logo=openai" alt="AGENTS.md rules">
         </a><br/>
-		<a href=".github/dependabot.yml">
+		    <a href=".github/dependabot.yml">
           <img src="https://img.shields.io/badge/dependencies-automatic-blue?logo=dependabot&style=flat" alt="Dependabot">
         </a>
       </td>
@@ -64,7 +64,7 @@
         <a href="https://github.com/sponsors/mrz1836">
           <img src="https://img.shields.io/badge/sponsor-MrZ-181717.svg?logo=github&style=flat" alt="Sponsor">
         </a><br/>
-        <a href="https://mrz1818.com/?tab=tips&utm_source=github&utm_medium=sponsor-link&utm_campaign=go-pre-commit&utm_term=go-pre-commit&utm_content=go-pre-commit">
+          <a href="https://mrz1818.com/?tab=tips&utm_source=github&utm_medium=sponsor-link&utm_campaign=go-pre-commit&utm_term=go-pre-commit&utm_content=go-pre-commit">
           <img src="https://img.shields.io/badge/donate-bitcoin-ff9900.svg?logo=bitcoin&style=flat" alt="Donate Bitcoin">
         </a>
       </td>
