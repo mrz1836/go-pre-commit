@@ -139,7 +139,7 @@ jobs:
         with:
           path: |
             ~/.cache/go-pre-commit-tools
-          key: ${{ inputs.primary-runner }}-go-pre-commit-tools-golangci-${{ env.GO_PRE_COMMIT_GOLANGCI_LINT_VERSION }}-fumpt-${{ env.GO_PRE_COMMIT_FUMPT_VERSION }}
+          key: ${{ inputs.primary-runner }}-go-pre-commit-tools-golangci-${{ env.GO_PRE_COMMIT_GOLANGCI_LINT_VERSION }}-fumpt-${{ env.GO_PRE_COMMIT_FUMPT_VERSION }}-gitleaks-${{ env.GO_PRE_COMMIT_GITLEAKS_VERSION }}-goimports-${{ env.GO_PRE_COMMIT_GOIMPORTS_VERSION }}
 
       - name: 🛠️ Make cached go-pre-commit and tools usable
         if: env.GO_PRE_COMMIT_USE_LOCAL != 'true'
@@ -256,21 +256,22 @@ jobs:
           echo ""
           echo "🔧 Tool Versions:"
           echo "  • Max File Size: ${{ env.GO_PRE_COMMIT_MAX_FILE_SIZE_MB }} MB"
-          echo "  • golangci-lint: ${{ env.GO_PRE_COMMIT_GOLANGCI_LINT_VERSION }}"
+          echo "  • gitleaks: ${{ env.GO_PRE_COMMIT_GITLEAKS_VERSION }}"
           echo "  • gofumpt: ${{ env.GO_PRE_COMMIT_FUMPT_VERSION }}"
           echo "  • goimports: ${{ env.GO_PRE_COMMIT_GOIMPORTS_VERSION }}"
+          echo "  • golangci-lint: ${{ env.GO_PRE_COMMIT_GOLANGCI_LINT_VERSION }}"
           echo ""
           echo "📁 Configuration:"
           echo "  • Exclude Patterns: ${{ env.GO_PRE_COMMIT_EXCLUDE_PATTERNS }}"
           echo "  • Color Output: ${{ env.GO_PRE_COMMIT_COLOR_OUTPUT }}"
           echo ""
           echo "🔧 Individual Checks:"
+          echo "  • eof: ${{ env.GO_PRE_COMMIT_ENABLE_EOF }}"
           echo "  • fumpt: ${{ env.GO_PRE_COMMIT_ENABLE_FUMPT }}"
+          echo "  • gitleaks: ${{ env.GO_PRE_COMMIT_ENABLE_GITLEAKS }}"
           echo "  • lint: ${{ env.GO_PRE_COMMIT_ENABLE_LINT }}"
           echo "  • mod-tidy: ${{ env.GO_PRE_COMMIT_ENABLE_MOD_TIDY }}"
           echo "  • whitespace: ${{ env.GO_PRE_COMMIT_ENABLE_WHITESPACE }}"
-          echo "  • eof: ${{ env.GO_PRE_COMMIT_ENABLE_EOF }}"
-          echo "  • gitleaks: ${{ env.GO_PRE_COMMIT_ENABLE_GITLEAKS }}"
           echo ""
           echo "=================================================="
 
@@ -623,17 +624,13 @@ jobs:
           fi
 
           # Clean and filter output (colors should be disabled but handle any remaining codes)
-          # Remove any remaining ANSI codes and filter redundant summary lines
+          # Remove any remaining ANSI codes but preserve all check results
           echo "$CHECKS_OUTPUT" | \
             sed -E 's/\x1b\[[0-9;]*[mGKH]//g' | \
             sed 's/\xc2\x9b\[[0-9;]*[mGKH]//g' | \
             sed 's/�\[[0-9;]*[mGKH]//g' | \
             sed 's/�//g' | \
-            tr -d '\033' | \
-            grep -v '^✓.*check passed$' | \
-            grep -v '^✓.*completed successfully$' | \
-            grep -v '^✓.*passed on.*file' | \
-            grep -v '^✓ All checks passed!'
+            tr -d '\033'
 
           # Extract executed checks from output (if format allows)
           EXECUTED_CHECKS=$(echo "$CHECKS_OUTPUT" | grep -E "Running:|Executing:|✓" | sed 's/.*Running: //;s/.*Executing: //;s/.*✓ //' | tr '\n' ',' | sed 's/,$//' || echo "fumpt,lint,mod-tidy,whitespace,eof,gitleaks")
