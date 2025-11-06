@@ -270,6 +270,7 @@ jobs:
           echo "  • mod-tidy: ${{ env.GO_PRE_COMMIT_ENABLE_MOD_TIDY }}"
           echo "  • whitespace: ${{ env.GO_PRE_COMMIT_ENABLE_WHITESPACE }}"
           echo "  • eof: ${{ env.GO_PRE_COMMIT_ENABLE_EOF }}"
+          echo "  • gitleaks: ${{ env.GO_PRE_COMMIT_ENABLE_GITLEAKS }}"
           echo ""
           echo "=================================================="
 
@@ -635,7 +636,7 @@ jobs:
             grep -v '^✓ All checks passed!'
 
           # Extract executed checks from output (if format allows)
-          EXECUTED_CHECKS=$(echo "$CHECKS_OUTPUT" | grep -E "Running:|Executing:|✓" | sed 's/.*Running: //;s/.*Executing: //;s/.*✓ //' | tr '\n' ',' | sed 's/,$//' || echo "fumpt,lint,mod-tidy,whitespace,eof")
+          EXECUTED_CHECKS=$(echo "$CHECKS_OUTPUT" | grep -E "Running:|Executing:|✓" | sed 's/.*Running: //;s/.*Executing: //;s/.*✓ //' | tr '\n' ',' | sed 's/,$//' || echo "fumpt,lint,mod-tidy,whitespace,eof,gitleaks")
           echo "executed=$EXECUTED_CHECKS" >> $GITHUB_OUTPUT
 
           if [ "${CHECKS_EXIT:-0}" -ne 0 ]; then
@@ -722,7 +723,7 @@ jobs:
             fi
 
             echo "### 🔍 Checks Executed" >> $GITHUB_STEP_SUMMARY
-            CHECKS="${{ steps.run-checks.outputs.executed || 'fumpt,lint,mod-tidy,whitespace,eof' }}"
+            CHECKS="${{ steps.run-checks.outputs.executed || 'fumpt,lint,mod-tidy,whitespace,eof,gitleaks' }}"
             echo "$CHECKS" | tr ',' '\n' | while read check; do
               if [ -n "$check" ]; then
                 echo "- ✅ $check" >> $GITHUB_STEP_SUMMARY
