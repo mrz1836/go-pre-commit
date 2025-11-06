@@ -326,7 +326,7 @@ func (s *SkipFunctionalityTestSuite) TestSkipMultipleChecks() {
 // TestSkipAllChecks validates skipping all checks
 func (s *SkipFunctionalityTestSuite) TestSkipAllChecks() {
 	// Set SKIP to include all checks
-	skipValue := "fmt,fumpt,goimports,lint,mod-tidy,whitespace,eof"
+	skipValue := "fmt,fumpt,goimports,lint,mod-tidy,whitespace,eof,gitleaks"
 	s.Require().NoError(os.Setenv("SKIP", skipValue))
 	s.T().Logf("Setting SKIP to: %s", skipValue)
 
