@@ -332,6 +332,8 @@ func (r *Runner) getCheckTimeout(checkName string) time.Duration {
 		return time.Duration(r.config.CheckTimeouts.Fmt) * time.Second
 	case "fumpt":
 		return time.Duration(r.config.CheckTimeouts.Fumpt) * time.Second
+	case "gitleaks":
+		return time.Duration(r.config.CheckTimeouts.Gitleaks) * time.Second
 	case "goimports":
 		return time.Duration(r.config.CheckTimeouts.Goimports) * time.Second
 	case "lint":
@@ -360,6 +362,8 @@ func (r *Runner) isCheckEnabled(name string) bool {
 		return r.config.Checks.Fmt
 	case "fumpt":
 		return r.config.Checks.Fumpt
+	case "gitleaks":
+		return r.config.Checks.Gitleaks
 	case "goimports":
 		return r.config.Checks.Goimports
 	case "lint":
@@ -424,7 +428,7 @@ func (r *Runner) parseSkipValue(value string) []string {
 
 	// Handle special values
 	if strings.ToLower(value) == "all" {
-		return []string{"fmt", "fumpt", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"}
+		return []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"}
 	}
 
 	// Split by comma and clean up
@@ -434,6 +438,7 @@ func (r *Runner) parseSkipValue(value string) []string {
 	validChecks := map[string]bool{
 		"fmt":          true,
 		"fumpt":        true,
+		"gitleaks":     true,
 		"goimports":    true,
 		"lint":         true,
 		"mod-tidy":     true,
@@ -472,6 +477,7 @@ func (r *Runner) deduplicateAndValidateSkips(skips []string) []string {
 	validChecks := map[string]bool{
 		"fmt":          true,
 		"fumpt":        true,
+		"gitleaks":     true,
 		"goimports":    true,
 		"lint":         true,
 		"mod-tidy":     true,
