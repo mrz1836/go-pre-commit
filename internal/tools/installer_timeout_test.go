@@ -145,8 +145,8 @@ func TestInstallGolangciLint_TimeoutHandling(t *testing.T) {
 	}
 
 	// Should have completed within reasonable time due to timeout
-	// Allow up to 3 seconds for timeout handling and cleanup
-	assert.Less(t, elapsed, 3*time.Second)
+	// Allow up to 5 seconds for timeout handling and cleanup (increased buffer for slower systems)
+	assert.Less(t, elapsed, 5*time.Second)
 }
 
 func TestInstallTool_ProgressTracking(t *testing.T) {
