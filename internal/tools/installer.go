@@ -72,6 +72,12 @@ var (
 			Version:    "latest",
 			Binary:     "goimports",
 		},
+		"gitleaks": {
+			Name:       "gitleaks",
+			ImportPath: "github.com/gitleaks/gitleaks/v8",
+			Version:    "", // Will be loaded from env
+			Binary:     "gitleaks",
+		},
 	}
 
 	//nolint:gochecknoglobals // Installation cache requires package-level state
@@ -104,12 +110,21 @@ func LoadVersionsFromEnv() {
 		}
 	}
 
-	// Set defaults if not specified
-	if tools["golangci-lint"].Version == "" {
-		tools["golangci-lint"].Version = "v2.4.0"
+	if v := os.Getenv("GO_PRE_COMMIT_GITLEAKS_VERSION"); v != "" {
+		if t, ok := tools["gitleaks"]; ok {
+			t.Version = v
+		}
 	}
-	if tools["gofumpt"].Version == "" {
-		tools["gofumpt"].Version = "v0.8.0"
+
+	// Set defaults if not specified
+	if t, ok := tools["golangci-lint"]; ok && t.Version == "" {
+		t.Version = "v2.4.0"
+	}
+	if t, ok := tools["gofumpt"]; ok && t.Version == "" {
+		t.Version = "v0.8.0"
+	}
+	if t, ok := tools["gitleaks"]; ok && t.Version == "" {
+		t.Version = "v8.29.0"
 	}
 }
 
@@ -313,6 +328,11 @@ func InstallTool(ctx context.Context, tool *Tool) error {
 		return installGolangciLint(installCtx, tool.Version)
 	}
 
+	// Special handling for gitleaks which requires binary download
+	if tool.Name == "gitleaks" {
+		return installGitleaks(installCtx, tool.Version)
+	}
+
 	// Standard go install for other tools with retry logic
 	var output []byte
 	start := time.Now()
@@ -453,6 +473,179 @@ func installGolangciLint(ctx context.Context, version string) error {
 			// Ignore write error to stdout
 			_ = logErr
 		}
+	}
+
+	return nil
+}
+
+// installGitleaks downloads and installs gitleaks binary from GitHub releases
+func installGitleaks(ctx context.Context, version string) error {
+	timeout := GetInstallTimeout()
+
+	// Check if this was a timeout at the start
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return prerrors.NewToolInstallTimeoutError("gitleaks", timeout, 0)
+	}
+
+	// Start progress tracking for gitleaks installation
+	tracker := progress.New(progress.Options{
+		Operation:    "Tool installation",
+		Context:      "gitleaks",
+		Timeout:      timeout,
+		ProgressFunc: progress.InstallProgressFunc("gitleaks"),
+	})
+	tracker.Start(ctx)
+	defer tracker.Stop()
+
+	// Detect OS and architecture
+	goos := os.Getenv("GOOS")
+	if goos == "" {
+		goos = "linux" // Default to linux
+		if v := os.Getenv("OS"); v == "Windows_NT" {
+			goos = "windows"
+		} else {
+			out, err := exec.CommandContext(ctx, "uname", "-s").Output()
+			if err == nil && strings.Contains(strings.ToLower(string(out)), "darwin") {
+				goos = "darwin"
+			}
+		}
+	}
+
+	goarch := os.Getenv("GOARCH")
+	if goarch == "" {
+		goarch = "amd64" // Default to amd64
+		out, err := exec.CommandContext(ctx, "uname", "-m").Output()
+		if err == nil {
+			arch := strings.TrimSpace(strings.ToLower(string(out)))
+			switch arch {
+			case "arm64", "aarch64":
+				goarch = "arm64"
+			case "x86_64", "amd64":
+				goarch = "amd64"
+			}
+		}
+	}
+
+	// Construct download URL
+	// Format: https://github.com/gitleaks/gitleaks/releases/download/v8.29.0/gitleaks_8.29.0_linux_x64.tar.gz
+	// GitHub releases use different arch names
+	archMap := map[string]string{
+		"amd64": "x64",
+		"arm64": "arm64",
+	}
+	releaseArch, ok := archMap[goarch]
+	if !ok {
+		releaseArch = "x64" // Default fallback
+	}
+
+	// Strip 'v' prefix from version if present for filename
+	versionNum := strings.TrimPrefix(version, "v")
+
+	// Construct filename based on OS
+	var filename string
+	if goos == "windows" {
+		filename = fmt.Sprintf("gitleaks_%s_windows_%s.zip", versionNum, releaseArch)
+	} else {
+		filename = fmt.Sprintf("gitleaks_%s_%s_%s.tar.gz", versionNum, goos, releaseArch)
+	}
+
+	downloadURL := fmt.Sprintf("https://github.com/gitleaks/gitleaks/releases/download/%s/%s", version, filename)
+
+	// Create temporary directory for download
+	tmpDir, err := os.MkdirTemp("", "gitleaks-install-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	defer func() {
+		_ = os.RemoveAll(tmpDir)
+	}()
+
+	archivePath := filepath.Join(tmpDir, filename)
+
+	// Download the archive with retry logic
+	start := time.Now()
+	var output []byte
+
+	err = retryWithBackoff(ctx, "downloading gitleaks", func() error {
+		cmd := exec.CommandContext(ctx, "curl", "-sSfL", "-o", archivePath, downloadURL) //nolint:gosec // downloadURL is constructed from trusted version
+		var cmdErr error
+		output, cmdErr = cmd.CombinedOutput()
+		return cmdErr
+	})
+
+	elapsed := time.Since(start)
+
+	if err != nil {
+		// Check if this was a timeout
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return prerrors.NewToolInstallTimeoutError("gitleaks", timeout, elapsed)
+		}
+
+		// Check if we exhausted retries on network errors
+		if isNetworkError(err) {
+			attempts, _ := GetRetryConfig()
+			return fmt.Errorf("%w for gitleaks after %d attempts (network error): %w\nOutput: %s",
+				ErrInstallFailed, attempts, err, output)
+		}
+
+		return fmt.Errorf("%w for gitleaks: failed to download: %w\nOutput: %s", ErrInstallFailed, err, output)
+	}
+
+	// Extract the archive
+	var extractCmd *exec.Cmd
+	if goos == "windows" {
+		// Use unzip for Windows
+		extractCmd = exec.CommandContext(ctx, "unzip", "-o", archivePath, "-d", tmpDir) //nolint:gosec // archivePath is constructed from trusted tmpDir
+	} else {
+		// Use tar for Unix-like systems
+		extractCmd = exec.CommandContext(ctx, "tar", "-xzf", archivePath, "-C", tmpDir) //nolint:gosec // archivePath is constructed from trusted tmpDir
+	}
+
+	output, err = extractCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%w for gitleaks: failed to extract: %w\nOutput: %s", ErrInstallFailed, err, output)
+	}
+
+	// Find the gitleaks binary in the extracted files
+	var binaryName string
+	if goos == "windows" {
+		binaryName = "gitleaks.exe"
+	} else {
+		binaryName = "gitleaks"
+	}
+
+	binaryPath := filepath.Join(tmpDir, binaryName)
+	if _, statErr := os.Stat(binaryPath); os.IsNotExist(statErr) {
+		return fmt.Errorf("%w for gitleaks: binary not found in archive", ErrInstallFailed)
+	}
+
+	// Get the Go bin directory
+	gobin := GetGoBin()
+
+	// Ensure the directory exists
+	if mkdirErr := os.MkdirAll(gobin, 0o750); mkdirErr != nil {
+		return fmt.Errorf("failed to create GOBIN directory: %w", mkdirErr)
+	}
+
+	// Move the binary to GOBIN
+	destPath := filepath.Join(gobin, binaryName)
+
+	// Remove existing binary if present
+	_ = os.Remove(destPath)
+
+	// Copy the file
+	input, err := os.ReadFile(binaryPath) //nolint:gosec // binaryPath is constructed from trusted tmpDir
+	if err != nil {
+		return fmt.Errorf("failed to read binary: %w", err)
+	}
+
+	if err := os.WriteFile(destPath, input, 0o750); err != nil { //nolint:gosec // executable binary needs execute permissions
+		return fmt.Errorf("failed to write binary: %w", err)
+	}
+
+	// Verify installation
+	if _, err := exec.LookPath(binaryName); err != nil {
+		return fmt.Errorf("%w: gitleaks: %w", ErrToolNotInPath, err)
 	}
 
 	return nil

@@ -525,6 +525,7 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 				cfg.CheckTimeouts.Whitespace = 30
 				cfg.CheckTimeouts.EOF = 30
 				cfg.CheckTimeouts.AIDetection = 30
+				cfg.CheckTimeouts.Gitleaks = 60
 				cfg.Performance.ParallelWorkers = 4
 				cfg.ToolVersions.Fumpt = "latest"
 				cfg.ToolVersions.GolangciLint = "latest"
@@ -551,12 +552,13 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 				cfg.CheckTimeouts.Whitespace = 30
 				cfg.CheckTimeouts.EOF = 30
 				cfg.CheckTimeouts.AIDetection = 30
+				cfg.CheckTimeouts.Gitleaks = 0 // Invalid
 				cfg.Performance.ParallelWorkers = 4
 				cfg.ToolInstallation.Timeout = 0 // Invalid
 				return cfg
 			},
 			expectError: true,
-			errorCount:  4, // timeout, tool install timeout, fmt timeout, fumpt timeout
+			errorCount:  5, // timeout, tool install timeout, fmt timeout, fumpt timeout, gitleaks timeout
 			description: "Should reject invalid timeout values",
 		},
 		{
@@ -575,12 +577,13 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 				cfg.CheckTimeouts.Whitespace = 30
 				cfg.CheckTimeouts.EOF = 30
 				cfg.CheckTimeouts.AIDetection = 30
+				cfg.CheckTimeouts.Gitleaks = 0       // Invalid
 				cfg.Performance.ParallelWorkers = -1 // Invalid
 				cfg.ToolInstallation.Timeout = 300
 				return cfg
 			},
 			expectError: true,
-			errorCount:  3, // file size, files open, parallel workers
+			errorCount:  4, // file size, files open, parallel workers, gitleaks timeout
 			description: "Should reject invalid file size and worker values",
 		},
 		{
@@ -599,6 +602,7 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 				cfg.CheckTimeouts.Whitespace = 30
 				cfg.CheckTimeouts.EOF = 30
 				cfg.CheckTimeouts.AIDetection = 30
+				cfg.CheckTimeouts.Gitleaks = 0 // Invalid
 				cfg.Performance.ParallelWorkers = 4
 				cfg.ToolVersions.Fumpt = "invalid-version"     // Invalid
 				cfg.ToolVersions.GolangciLint = "also-invalid" // Invalid
@@ -606,7 +610,7 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 				return cfg
 			},
 			expectError: true,
-			errorCount:  3, // log level, fumpt version, golangci-lint version
+			errorCount:  4, // log level, fumpt version, golangci-lint version, gitleaks timeout
 			description: "Should reject invalid log level and tool versions",
 		},
 		{
@@ -625,13 +629,14 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 				cfg.CheckTimeouts.Whitespace = 30
 				cfg.CheckTimeouts.EOF = 30
 				cfg.CheckTimeouts.AIDetection = 30
+				cfg.CheckTimeouts.Gitleaks = 0 // Invalid
 				cfg.Performance.ParallelWorkers = 4
 				cfg.ToolInstallation.Timeout = 300
 				cfg.Git.ExcludePatterns = []string{"valid", "", "  ", "another-valid"} // Two empty patterns
 				return cfg
 			},
 			expectError: true,
-			errorCount:  2, // two empty exclude patterns
+			errorCount:  3, // two empty exclude patterns, gitleaks timeout
 			description: "Should reject empty exclude patterns",
 		},
 	}

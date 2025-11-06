@@ -92,12 +92,12 @@ func (s *SkipFunctionalityTestSuite) TestParseSkipValue() {
 		{
 			name:     "Special Value All",
 			input:    "all",
-			expected: []string{"fmt", "fumpt", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
+			expected: []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
 		},
 		{
 			name:     "Special Value ALL (case insensitive)",
 			input:    "ALL",
-			expected: []string{"fmt", "fumpt", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
+			expected: []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
 		},
 		{
 			name:     "With Spaces",
@@ -323,8 +323,8 @@ func (s *SkipFunctionalityTestSuite) TestDeduplicateAndValidateSkips() {
 		},
 		{
 			name:        "All Valid Checks",
-			input:       []string{"fmt", "fumpt", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
-			expected:    []string{"fmt", "fumpt", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
+			input:       []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
+			expected:    []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
 			description: "Should accept all valid check names",
 		},
 	}
@@ -489,7 +489,7 @@ func (s *SkipFunctionalityTestSuite) TestSkipEdgeCases() {
 		{
 			name:        "Mixed Case All",
 			skipValue:   "All",
-			expected:    []string{"fmt", "fumpt", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
+			expected:    []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
 			description: "Should handle mixed case 'all' keyword",
 		},
 		{

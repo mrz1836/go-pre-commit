@@ -48,6 +48,9 @@ var (
 	// ErrAIAttributionFound is returned when AI attribution is detected
 	ErrAIAttributionFound = errors.New("AI attribution detected")
 
+	// ErrSecretsFound is returned when gitleaks finds secrets
+	ErrSecretsFound = errors.New("secrets found")
+
 	// ErrToolExecutionFailed is returned when a tool execution fails
 	ErrToolExecutionFailed = errors.New("tool execution failed")
 
@@ -248,6 +251,8 @@ func NewCheckTimeoutError(checkName string, timeout, elapsed time.Duration) *Tim
 		configVar = "GO_PRE_COMMIT_EOF_TIMEOUT"
 	case "ai_detection":
 		configVar = "GO_PRE_COMMIT_AI_DETECTION_TIMEOUT"
+	case "gitleaks":
+		configVar = "GO_PRE_COMMIT_GITLEAKS_TIMEOUT"
 	}
 
 	return NewTimeoutError("Check execution", checkName, timeout, elapsed, configVar)

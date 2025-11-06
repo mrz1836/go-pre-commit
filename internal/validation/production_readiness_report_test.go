@@ -177,6 +177,7 @@ func (s *ProductionReadinessTestSuite) TestPerformanceValidation() {
 			Whitespace  bool
 			EOF         bool
 			AIDetection bool
+			Gitleaks    bool
 		}{
 			Whitespace: true,
 			EOF:        true,
@@ -232,6 +233,7 @@ func (s *ProductionReadinessTestSuite) TestParallelScaling() {
 			Whitespace  bool
 			EOF         bool
 			AIDetection bool
+			Gitleaks    bool
 		}{
 			Whitespace: true,
 			EOF:        true,
@@ -279,6 +281,7 @@ func (s *ProductionReadinessTestSuite) TestMemoryEfficiency() {
 			Whitespace  bool
 			EOF         bool
 			AIDetection bool
+			Gitleaks    bool
 		}{
 			Whitespace: true,
 			EOF:        true,
@@ -802,6 +805,7 @@ func TestPerformanceMeasurementWithContext(t *testing.T) {
 			Whitespace  bool
 			EOF         bool
 			AIDetection bool
+			Gitleaks    bool
 		}{
 			Whitespace: true,
 		},

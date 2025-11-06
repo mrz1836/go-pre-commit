@@ -24,6 +24,9 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 - `go-pre-commit upgrade` - Upgrade to the latest version
 - `go-pre-commit uninstall` - Remove installed hooks
 
+**Available checks:**
+- `ai_detection`, `fumpt`, `lint`, `mod-tidy`, `whitespace`, `eof`, `fmt`, `goimports`, `gitleaks`
+
 ### 📚 Documentation Hierarchy
 
 **`AGENTS.md`** remains the single source of truth for:

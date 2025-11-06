@@ -845,8 +845,8 @@ func (s *ConfigEnvironmentIntegrationTestSuite) TestSkipEnvironmentIntegration()
 		},
 		{
 			name:          "Skip all",
-			skipValue:     "fmt,lint,fumpt,mod-tidy,whitespace,eof",
-			expectedSkips: []string{"fmt", "lint", "fumpt", "mod-tidy", "whitespace", "eof"},
+			skipValue:     "fmt,lint,fumpt,gitleaks,mod-tidy,whitespace,eof",
+			expectedSkips: []string{"fmt", "lint", "fumpt", "gitleaks", "mod-tidy", "whitespace", "eof"},
 			expectedRuns:  []string{},
 			description:   "Should skip all checks",
 		},

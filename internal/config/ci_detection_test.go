@@ -219,6 +219,7 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 					Whitespace  int
 					EOF         int
 					AIDetection int
+					Gitleaks    int
 				}{
 					Fmt:         30,
 					Fumpt:       30,
@@ -228,6 +229,7 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 					Whitespace:  30,
 					EOF:         30,
 					AIDetection: 30,
+					Gitleaks:    60,
 				},
 			},
 			expectedAdjustments: map[string]int{
@@ -261,6 +263,7 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 					Whitespace  int
 					EOF         int
 					AIDetection int
+					Gitleaks    int
 				}{
 					Fmt:         45,  // Custom timeout
 					Fumpt:       30,  // Default - should be adjusted
@@ -270,6 +273,7 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 					Whitespace:  30,  // Default - should be adjusted
 					EOF:         30,  // Default - should be adjusted
 					AIDetection: 30,  // Default - should be adjusted
+					Gitleaks:    60,  // Default - should be adjusted
 				},
 			},
 			expectedAdjustments: map[string]int{
@@ -520,6 +524,7 @@ func BenchmarkApplyCITimeoutAdjustments(b *testing.B) {
 			Whitespace  int
 			EOF         int
 			AIDetection int
+			Gitleaks    int
 		}{
 			Fmt:         30,
 			Fumpt:       30,
@@ -529,6 +534,7 @@ func BenchmarkApplyCITimeoutAdjustments(b *testing.B) {
 			Whitespace:  30,
 			EOF:         30,
 			AIDetection: 30,
+			Gitleaks:    60,
 		},
 	}
 
