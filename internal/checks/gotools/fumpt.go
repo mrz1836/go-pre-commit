@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
+	"github.com/mrz1836/go-pre-commit/internal/golangci"
 	"github.com/mrz1836/go-pre-commit/internal/shared"
 	"github.com/mrz1836/go-pre-commit/internal/tools"
 )
@@ -164,8 +166,21 @@ func (c *FumptCheck) runDirectFumpt(ctx context.Context, files []string) error {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
-	// Run gofumpt
-	args := append([]string{"-w"}, absFiles...)
+	// Build arguments with module path if available
+	args := []string{}
+
+	// Check for environment variable override first (allows per-project customization)
+	if modulePath := os.Getenv("GO_PRE_COMMIT_FUMPT_MODULE_PATH"); modulePath != "" {
+		args = append(args, "-modpath", modulePath)
+	} else if modulePath, err := golangci.ReadGofumptModulePath(repoRoot); err == nil && modulePath != "" {
+		// Auto-detect from golangci-lint config or go.mod
+		args = append(args, "-modpath", modulePath)
+	}
+	// If no module path found, gofumpt will auto-detect from go.mod in the current directory
+
+	args = append(args, "-w")
+	args = append(args, absFiles...)
+
 	cmd := exec.CommandContext(ctx, "gofumpt", args...) //nolint:gosec // Command arguments are validated
 	cmd.Dir = repoRoot
 
