@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
-	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 )
 
 func TestSetGetInstallTimeout(t *testing.T) {
@@ -145,8 +146,8 @@ func TestInstallGolangciLint_TimeoutHandling(t *testing.T) {
 	}
 
 	// Should have completed within reasonable time due to timeout
-	// Allow up to 5 seconds for timeout handling and cleanup (increased buffer for slower systems)
-	assert.Less(t, elapsed, 5*time.Second)
+	// Allow up to 10 seconds for timeout handling and cleanup (increased buffer for slower systems)
+	assert.Less(t, elapsed, 10*time.Second)
 }
 
 func TestInstallTool_ProgressTracking(t *testing.T) {

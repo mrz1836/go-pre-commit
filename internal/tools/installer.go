@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 	"github.com/mrz1836/go-pre-commit/internal/progress"
 )
