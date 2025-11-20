@@ -174,7 +174,7 @@ func (c *ModTidyCheck) runDirectModTidy(ctx context.Context, files []string) err
 
 		// Only run if the directory contains a go.mod file
 		if isGoModule(moduleDir) {
-			return c.runModTidyOnModule(ctx, moduleDir)
+			return c.runModTidyOnModule(ctx, moduleDir, repoRoot)
 		}
 
 		// No Go modules found - skip gracefully (not an error)
@@ -184,7 +184,7 @@ func (c *ModTidyCheck) runDirectModTidy(ctx context.Context, files []string) err
 	// Run mod tidy on each module
 	var allErrors []string
 	for moduleDir := range modulesByDir {
-		err := c.runModTidyOnModule(ctx, moduleDir)
+		err := c.runModTidyOnModule(ctx, moduleDir, repoRoot)
 		if err != nil {
 			relPath, _ := filepath.Rel(repoRoot, moduleDir)
 			if relPath == "" {
@@ -218,9 +218,15 @@ func (c *ModTidyCheck) runDirectModTidy(ctx context.Context, files []string) err
 }
 
 // runModTidyOnModule runs go mod tidy on a specific module directory
-func (c *ModTidyCheck) runModTidyOnModule(ctx context.Context, moduleDir string) error {
+func (c *ModTidyCheck) runModTidyOnModule(ctx context.Context, moduleDir, repoRoot string) error {
+	// Calculate relative path for display
+	relPath, _ := filepath.Rel(repoRoot, moduleDir)
+	if relPath == "" {
+		relPath = "."
+	}
+
 	// Try to use go mod tidy -diff first (Go 1.21+)
-	diffErr := c.checkModTidyDiff(ctx, moduleDir)
+	diffErr := c.checkModTidyDiff(ctx, moduleDir, repoRoot)
 	if diffErr != nil {
 		// Check if it's because -diff is not supported
 		if !strings.Contains(diffErr.Error(), "not supported") {
@@ -251,58 +257,64 @@ func (c *ModTidyCheck) runModTidyOnModule(ctx context.Context, moduleDir string)
 		// Check if it's a context timeout
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return prerrors.NewToolExecutionError(
-				"go mod tidy",
+				fmt.Sprintf("go mod tidy (in %s)", relPath),
 				output,
-				fmt.Sprintf("Mod tidy timed out after %v. Consider increasing GO_PRE_COMMIT_MOD_TIDY_TIMEOUT.", c.timeout),
+				fmt.Sprintf("Mod tidy timed out after %v in module '%s'. Consider increasing GO_PRE_COMMIT_MOD_TIDY_TIMEOUT.", c.timeout, relPath),
 			)
 		}
 
 		if strings.Contains(output, "no go.mod file") {
 			return prerrors.NewToolExecutionError(
-				"go mod tidy",
+				fmt.Sprintf("go mod tidy (in %s)", relPath),
 				output,
-				"No go.mod file found. Initialize a Go module with 'go mod init <module-name>'.",
+				fmt.Sprintf("No go.mod file found in module '%s'. Initialize a Go module with 'go mod init <module-name>'.", relPath),
 			)
 		}
 
 		if strings.Contains(output, "network") || strings.Contains(output, "timeout") {
 			return prerrors.NewToolExecutionError(
-				"go mod tidy",
+				fmt.Sprintf("go mod tidy (in %s)", relPath),
 				output,
-				"Network error downloading modules. Check your internet connection and proxy settings.",
+				fmt.Sprintf("Network error downloading modules in '%s'. Check your internet connection and proxy settings.", relPath),
 			)
 		}
 
 		if strings.Contains(output, "checksum mismatch") {
 			return prerrors.NewToolExecutionError(
-				"go mod tidy",
+				fmt.Sprintf("go mod tidy (in %s)", relPath),
 				output,
-				"Module checksum verification failed. Run 'go clean -modcache' and try again.",
+				fmt.Sprintf("Module checksum verification failed in '%s'. Run 'go clean -modcache' and try again.", relPath),
 			)
 		}
 
 		if strings.Contains(output, "not found") {
 			return prerrors.NewToolExecutionError(
-				"go mod tidy",
+				fmt.Sprintf("go mod tidy (in %s)", relPath),
 				output,
-				"Module dependencies not found. Check that all imported modules exist and are accessible.",
+				fmt.Sprintf("Module dependencies not found in '%s'. Check that all imported modules exist and are accessible.", relPath),
 			)
 		}
 
 		// Generic failure
 		return prerrors.NewToolExecutionError(
-			"go mod tidy",
+			fmt.Sprintf("go mod tidy (in %s)", relPath),
 			output,
-			"Run 'go mod tidy' manually to see detailed error output.",
+			fmt.Sprintf("Run 'cd %s && go mod tidy' manually to see detailed error output.", relPath),
 		)
 	}
 
 	// Check if there are uncommitted changes
-	return c.checkUncommittedChanges(ctx, moduleDir)
+	return c.checkUncommittedChanges(ctx, moduleDir, repoRoot)
 }
 
 // checkModTidyDiff uses go mod tidy -diff to check if changes would be made (Go 1.21+)
-func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, moduleDir string) error {
+func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, moduleDir, repoRoot string) error {
+	// Calculate relative path for display
+	relPath, _ := filepath.Rel(repoRoot, moduleDir)
+	if relPath == "" {
+		relPath = "."
+	}
+
 	// Add timeout for go mod tidy -diff command
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
@@ -326,26 +338,26 @@ func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, moduleDir string) e
 		// Check if it's a context timeout
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return prerrors.NewToolExecutionError(
-				"go mod tidy -diff",
+				fmt.Sprintf("go mod tidy -diff (in %s)", relPath),
 				output,
-				fmt.Sprintf("Mod tidy check timed out after %v. Consider increasing GO_PRE_COMMIT_MOD_TIDY_TIMEOUT.", c.timeout),
+				fmt.Sprintf("Mod tidy check timed out after %v in module '%s'. Consider increasing GO_PRE_COMMIT_MOD_TIDY_TIMEOUT.", c.timeout, relPath),
 			)
 		}
 
 		// Handle other errors that are not diff-related
 		if strings.Contains(output, "no go.mod file") {
 			return prerrors.NewToolExecutionError(
-				"go mod tidy -diff",
+				fmt.Sprintf("go mod tidy -diff (in %s)", relPath),
 				output,
-				"No go.mod file found. Initialize a Go module with 'go mod init <module-name>'.",
+				fmt.Sprintf("No go.mod file found in module '%s'. Initialize a Go module with 'go mod init <module-name>'.", relPath),
 			)
 		}
 
 		if strings.Contains(output, "network") || strings.Contains(output, "timeout") {
 			return prerrors.NewToolExecutionError(
-				"go mod tidy -diff",
+				fmt.Sprintf("go mod tidy -diff (in %s)", relPath),
 				output,
-				"Network error downloading modules. Check your internet connection and proxy settings.",
+				fmt.Sprintf("Network error downloading modules in '%s'. Check your internet connection and proxy settings.", relPath),
 			)
 		}
 
@@ -355,9 +367,9 @@ func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, moduleDir string) e
 		if diffOutput == "" {
 			// No diff output but command failed - this is a real error
 			return prerrors.NewToolExecutionError(
-				"go mod tidy -diff",
+				fmt.Sprintf("go mod tidy -diff (in %s)", relPath),
 				output,
-				"Module dependencies check failed. See error details above.",
+				fmt.Sprintf("Module dependencies check failed in '%s'. See error details above.", relPath),
 			)
 		}
 		// This is the expected case - go mod tidy -diff found differences
@@ -382,9 +394,9 @@ func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, moduleDir string) e
 		if len(actualDiffs) > 0 {
 			diffDetails := strings.Join(actualDiffs, "\n")
 			return prerrors.NewToolExecutionError(
-				"go mod tidy -diff",
+				fmt.Sprintf("go mod tidy -diff (in %s)", relPath),
 				diffDetails,
-				"go.mod or go.sum are not tidy. Run 'go mod tidy' to update dependencies.",
+				fmt.Sprintf("go.mod or go.sum are not tidy in module '%s'. Run 'cd %s && go mod tidy' to update dependencies.", relPath, relPath),
 			)
 		}
 	}
@@ -394,7 +406,13 @@ func (c *ModTidyCheck) checkModTidyDiff(ctx context.Context, moduleDir string) e
 
 // checkUncommittedChanges checks if go mod tidy made any changes
 // This is a fallback method when go mod tidy -diff is not available
-func (c *ModTidyCheck) checkUncommittedChanges(ctx context.Context, moduleDir string) error {
+func (c *ModTidyCheck) checkUncommittedChanges(ctx context.Context, moduleDir, repoRoot string) error {
+	// Calculate relative path for display
+	relPath, _ := filepath.Rel(repoRoot, moduleDir)
+	if relPath == "" {
+		relPath = "."
+	}
+
 	// Add short timeout for git diff
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -412,15 +430,15 @@ func (c *ModTidyCheck) checkUncommittedChanges(ctx context.Context, moduleDir st
 	statusCmd.Stderr = &statusOutput
 
 	if err := statusCmd.Run(); err != nil {
-		return fmt.Errorf("failed to check git status: %w", err)
+		return fmt.Errorf("failed to check git status in module '%s': %w", relPath, err)
 	}
 
 	// If there are any changes or new files, that's an error
 	if statusOutput.Len() > 0 {
 		return prerrors.NewToolExecutionError(
-			"git status",
+			fmt.Sprintf("git status (in %s)", relPath),
 			statusOutput.String(),
-			"go.mod or go.sum were modified by 'go mod tidy'. Commit these changes to proceed. Run 'git add go.mod go.sum && git commit -m \"Update module dependencies\"'.",
+			fmt.Sprintf("go.mod or go.sum were modified by 'go mod tidy' in module '%s'. Commit these changes to proceed. Run 'cd %s && git add go.mod go.sum && git commit -m \"Update module dependencies\"'.", relPath, relPath),
 		)
 	}
 
