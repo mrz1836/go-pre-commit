@@ -666,7 +666,7 @@ diff current/go.mod tidy/go.mod
 +	github.com/another/dep v2.0.0`,
 			expectedCount: 10,
 			expectedLines: nil, // Don't check specific lines, just count
-			description:        "Should extract module path indicators and diff lines",
+			description:   "Should extract module path indicators and diff lines",
 		},
 	}
 
