@@ -1041,7 +1041,7 @@ func TestModTidyCheckDirectErrorScenarios(t *testing.T) {
 			setupFunc: func(_ *testing.T, _ string) {
 				// Don't create go.mod file
 			},
-			expectedError: "command 'go mod tidy' failed", // Actual error from NewToolExecutionError when no go.mod
+			expectedError: "command 'go mod tidy", // Actual error from NewToolExecutionError when no go.mod
 		},
 		{
 			name: "timeout in direct mod tidy",
@@ -1051,8 +1051,8 @@ func TestModTidyCheckDirectErrorScenarios(t *testing.T) {
 				err := os.WriteFile("go.mod", []byte(goMod), 0o600)
 				require.NoError(t, err)
 			},
-			expectedError: "command 'go mod tidy' failed", // Actual error format from NewToolExecutionError
-			timeout:       1 * time.Millisecond,           // Very short timeout
+			expectedError: "command 'go mod tidy", // Actual error format from NewToolExecutionError
+			timeout:       1 * time.Millisecond,   // Very short timeout
 		},
 	}
 

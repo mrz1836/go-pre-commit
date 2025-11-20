@@ -208,7 +208,7 @@ func (c *ModTidyCheck) runDirectModTidy(ctx context.Context, files []string) err
 	if len(allErrors) > 0 {
 		combinedErrors := strings.Join(allErrors, "\n\n")
 		return prerrors.NewToolExecutionError(
-			"go mod tidy",
+			"go mod tidy (in one or more modules)",
 			combinedErrors,
 			"Fix the mod tidy issues shown above. Run 'go mod tidy' in each module directory.",
 		)

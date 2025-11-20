@@ -351,6 +351,11 @@ func extractKeyErrorLines(output string) []string {
 			isError = true
 		}
 
+		// Module path indicators for multi-module errors
+		if strings.HasPrefix(line, "Module ") && (strings.Contains(line, "needs tidying") || strings.Contains(line, ":")) {
+			isError = true
+		}
+
 		// Diff output from go mod tidy -diff
 		if strings.HasPrefix(line, "diff ") ||
 			strings.HasPrefix(line, "--- ") ||

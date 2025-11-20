@@ -648,6 +648,26 @@ Completed with errors.`,
 			},
 			description: "Should extract different types of error indicators",
 		},
+		{
+			name: "Multi-Module Mod Tidy Errors",
+			input: `Running go mod tidy...
+Module . needs tidying:
+diff current/go.mod tidy/go.mod
+--- current/go.mod
++++ tidy/go.mod
+@@ -17,3 +17,4 @@
++	github.com/new/dep v1.0.0
+
+Module ./services/api needs tidying:
+diff current/go.mod tidy/go.mod
+--- current/go.mod
++++ tidy/go.mod
+@@ -5,2 +5,3 @@
++	github.com/another/dep v2.0.0`,
+			expectedCount: 10,
+			expectedLines: nil, // Don't check specific lines, just count
+			description:        "Should extract module path indicators and diff lines",
+		},
 	}
 
 	for _, tc := range testCases {
