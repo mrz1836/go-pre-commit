@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mrz1836/go-pre-commit/internal/shared"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/mrz1836/go-pre-commit/internal/shared"
 )
 
 // LintGoModuleTestSuite tests Go module detection and handling functionality

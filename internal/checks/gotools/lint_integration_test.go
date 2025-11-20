@@ -8,8 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mrz1836/go-pre-commit/internal/shared"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mrz1836/go-pre-commit/internal/shared"
 )
 
 // TestLintMultiDirectoryIntegration tests the complete multi-directory linting flow

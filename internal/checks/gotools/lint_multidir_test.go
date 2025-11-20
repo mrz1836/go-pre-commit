@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mrz1836/go-pre-commit/internal/shared"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/mrz1836/go-pre-commit/internal/shared"
 )
 
 // LintMultiDirTestSuite tests multi-directory linting functionality
