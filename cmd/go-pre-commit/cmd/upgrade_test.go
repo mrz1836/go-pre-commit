@@ -264,6 +264,12 @@ func TestRunUpgradeWithConfig_Comprehensive(t *testing.T) {
 				t.Skipf("Skipping test: published version likely has replace directives (will pass after v1.2.5 release)")
 			}
 
+			// Special case: Skip test if rate limited
+			// This can happen in CI when running without GitHub token or when rate limit is exhausted
+			if err != nil && strings.Contains(err.Error(), "rate limit") {
+				t.Skipf("Skipping test: GitHub API rate limit exceeded (set GITHUB_TOKEN for authenticated requests)")
+			}
+
 			if tc.expectedError {
 				require.Error(t, err, "Expected error for case: %s", tc.description)
 				if tc.errorContains != "" {
