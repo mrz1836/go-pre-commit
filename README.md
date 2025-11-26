@@ -26,7 +26,7 @@
     </td>
     <td align="left">
        <a href="https://goreportcard.com/report/github.com/mrz1836/go-pre-commit"><img src="https://goreportcard.com/badge/github.com/mrz1836/go-pre-commit?style=flat-square" alt="Go Report"></a>
-       <a href="https://mrz1836.github.io/go-pre-commit/" target="_blank"><img src="https://mrz1836.github.io/go-pre-commit/coverage.svg" alt="Code Coverage"></a>
+       <a href="https://mrz1836.github.io/go-pre-commit/" target="_blank"><img src="https://mrz1836.github.io/go-pre-commit/coverage-flat-square.svg" alt="Code Coverage"></a>
     </td>
   </tr>
 
