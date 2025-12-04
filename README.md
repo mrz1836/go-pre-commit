@@ -62,56 +62,35 @@
 <table align="center">
   <tr>
     <td align="center" width="33%">
-       🚀&nbsp;<a href="#-quickstart"><code>Installation</code></a>
+       🚀&nbsp;<a href="#-quickstart"><code>Quickstart</code></a>
     </td>
     <td align="center" width="33%">
        ⚙️&nbsp;<a href="#-configuration"><code>Configuration</code></a>
     </td>
     <td align="center" width="33%">
-       🔄&nbsp;<a href="#-workflow-process"><code>Workflow&nbsp;Process</code></a>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
        🎯&nbsp;<a href="#-available-checks"><code>Available&nbsp;Checks</code></a>
     </td>
-    <td align="center">
-      🔌&nbsp;<a href="#-plugin-system"><code>Plugin&nbsp;System</code></a>
-    </td>
-    <td align="center">
-      🏗️&nbsp;<a href="#-starting-a-new-project"><code>New&nbsp;Project</code></a>
-    </td>
   </tr>
   <tr>
     <td align="center">
-       📚&nbsp;<a href="#-advanced-documentation"><code>Documentation</code></a>
+       🔌&nbsp;<a href="#-plugin-system"><code>Plugin&nbsp;System</code></a>
     </td>
+    <td align="center">
+       🤖&nbsp;<a href="#-sub-agents-team"><code>Sub-Agents</code></a>
+    </td>
+    <td align="center">
+       ⚡&nbsp;<a href="#-custom-claude-commands"><code>Claude&nbsp;Commands</code></a>
+    </td>
+  </tr>
+  <tr>
     <td align="center">
        🧪&nbsp;<a href="#-examples--tests"><code>Examples&nbsp;&&nbsp;Tests</code></a>
     </td>
     <td align="center">
-      ⚡&nbsp;<a href="#-benchmarks"><code>Benchmarks</code></a>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      🛠️&nbsp;<a href="#-code-standards"><code>Code&nbsp;Standards</code></a>
-    </td>
-    <td align="center">
-      🤖&nbsp;<a href="#-ai-compliance"><code>AI&nbsp;Compliance</code></a>
-    </td>
-    <td align="center">
-       👥&nbsp;<a href="#-maintainers"><code>Maintainers</code></a>
-    </td>
-  </tr>
-   <tr>
-    <td align="center">
        🤝&nbsp;<a href="#-contributing"><code>Contributing</code></a>
     </td>
     <td align="center">
-      ⚖️&nbsp;<a href="#-license"><code>License</code></a>
-    </td>
-    <td align="center">
+       📝&nbsp;<a href="#-license"><code>License</code></a>
     </td>
   </tr>
 </table>
