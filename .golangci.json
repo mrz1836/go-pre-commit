@@ -38,6 +38,22 @@
         }
     },
     "issues": {
+        "exclude-rules": [
+            {
+                "linters": [
+                    "revive"
+                ],
+                "path": "internal/errors/",
+                "text": "var-naming"
+            },
+            {
+                "linters": [
+                    "revive"
+                ],
+                "path": "internal/shared/",
+                "text": "var-naming"
+            }
+        ],
         "uniq-by-line": true
     },
     "linters": {
@@ -192,6 +208,14 @@
                 "for-loops": false,
                 "range-loops": true,
                 "simple": true
+            },
+            "revive": {
+                "rules": [
+                    {
+                        "disabled": true,
+                        "name": "var-naming"
+                    }
+                ]
             },
             "unparam": {
                 "check-exported": false
