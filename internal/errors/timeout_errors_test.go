@@ -1,5 +1,5 @@
-// Package errors provides comprehensive timeout error testing
-package errors
+// Package errors_test provides comprehensive timeout error testing
+package errors_test
 
 import (
 	"context"
@@ -9,18 +9,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	pkgerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 )
 
 func TestTimeoutError_Error(t *testing.T) {
 	tests := []struct {
 		name     string
-		err      *TimeoutError
+		err      *pkgerrors.TimeoutError
 		expected string
 	}{
 		{
 			name: "basic timeout error",
-			err: &TimeoutError{
-				Err:       ErrTimeout,
+			err: &pkgerrors.TimeoutError{
+				Err:       pkgerrors.ErrTimeout,
 				Operation: "Tool installation",
 				Timeout:   5 * time.Minute,
 			},
@@ -28,8 +30,8 @@ func TestTimeoutError_Error(t *testing.T) {
 		},
 		{
 			name: "timeout error with context",
-			err: &TimeoutError{
-				Err:       ErrTimeout,
+			err: &pkgerrors.TimeoutError{
+				Err:       pkgerrors.ErrTimeout,
 				Operation: "Tool installation",
 				Context:   "golangci-lint",
 				Timeout:   2 * time.Minute,
@@ -38,8 +40,8 @@ func TestTimeoutError_Error(t *testing.T) {
 		},
 		{
 			name: "timeout error with config var",
-			err: &TimeoutError{
-				Err:       ErrTimeout,
+			err: &pkgerrors.TimeoutError{
+				Err:       pkgerrors.ErrTimeout,
 				Operation: "Check execution",
 				Context:   "lint",
 				Timeout:   60 * time.Second,
@@ -49,8 +51,8 @@ func TestTimeoutError_Error(t *testing.T) {
 		},
 		{
 			name: "timeout error with suggested timeout",
-			err: &TimeoutError{
-				Err:              ErrTimeout,
+			err: &pkgerrors.TimeoutError{
+				Err:              pkgerrors.ErrTimeout,
 				Operation:        "Tool installation",
 				Context:          "golangci-lint",
 				Timeout:          5 * time.Minute,
@@ -70,8 +72,8 @@ func TestTimeoutError_Error(t *testing.T) {
 }
 
 func TestTimeoutError_Unwrap(t *testing.T) {
-	baseErr := ErrToolNotFound
-	timeoutErr := &TimeoutError{
+	baseErr := pkgerrors.ErrToolNotFound
+	timeoutErr := &pkgerrors.TimeoutError{
 		Err: baseErr,
 	}
 
@@ -80,13 +82,13 @@ func TestTimeoutError_Unwrap(t *testing.T) {
 }
 
 func TestTimeoutError_Is(t *testing.T) {
-	baseErr := ErrToolNotFound
-	timeoutErr := &TimeoutError{
+	baseErr := pkgerrors.ErrToolNotFound
+	timeoutErr := &pkgerrors.TimeoutError{
 		Err: baseErr,
 	}
 
 	assert.True(t, timeoutErr.Is(baseErr))
-	assert.False(t, timeoutErr.Is(ErrFmtIssues))
+	assert.False(t, timeoutErr.Is(pkgerrors.ErrFmtIssues))
 }
 
 func TestNewTimeoutError(t *testing.T) {
@@ -96,9 +98,9 @@ func TestNewTimeoutError(t *testing.T) {
 	elapsed := 3 * time.Minute
 	configVar := "GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT"
 
-	err := NewTimeoutError(operation, context, timeout, elapsed, configVar)
+	err := pkgerrors.NewTimeoutError(operation, context, timeout, elapsed, configVar)
 
-	assert.Equal(t, ErrTimeout, err.Err)
+	assert.Equal(t, pkgerrors.ErrTimeout, err.Err)
 	assert.Equal(t, operation, err.Operation)
 	assert.Equal(t, context, err.Context)
 	assert.Equal(t, timeout, err.Timeout)
@@ -144,7 +146,7 @@ func TestNewTimeoutError_SuggestedTimeoutCalculation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := NewTimeoutError("test", "test", tt.timeout, tt.elapsed, "TEST_VAR")
+			err := pkgerrors.NewTimeoutError("test", "test", tt.timeout, tt.elapsed, "TEST_VAR")
 			assert.Equal(t, tt.expectedSuggested, err.SuggestedTimeout)
 		})
 	}
@@ -155,7 +157,7 @@ func TestNewToolInstallTimeoutError(t *testing.T) {
 	timeout := 5 * time.Minute
 	elapsed := 3 * time.Minute
 
-	err := NewToolInstallTimeoutError(toolName, timeout, elapsed)
+	err := pkgerrors.NewToolInstallTimeoutError(toolName, timeout, elapsed)
 
 	assert.Equal(t, "Tool installation", err.Operation)
 	assert.Equal(t, toolName, err.Context)
@@ -217,7 +219,7 @@ func TestNewCheckTimeoutError(t *testing.T) {
 			timeout := 60 * time.Second
 			elapsed := 30 * time.Second
 
-			err := NewCheckTimeoutError(tt.checkName, timeout, elapsed)
+			err := pkgerrors.NewCheckTimeoutError(tt.checkName, timeout, elapsed)
 
 			assert.Equal(t, "Check execution", err.Operation)
 			assert.Equal(t, tt.checkName, err.Context)
@@ -230,20 +232,20 @@ func TestNewCheckTimeoutError(t *testing.T) {
 
 func TestTimeoutError_Integration(t *testing.T) {
 	// Test that TimeoutError can be used with standard Go error handling patterns
-	toolTimeoutErr := NewToolInstallTimeoutError("gofumpt", 2*time.Minute, 90*time.Second)
+	toolTimeoutErr := pkgerrors.NewToolInstallTimeoutError("gofumpt", 2*time.Minute, 90*time.Second)
 
 	// Test error wrapping
 	wrappedErr := fmt.Errorf("installation failed: %w", toolTimeoutErr)
 
 	// Test error unwrapping
-	var timeoutErr *TimeoutError
+	var timeoutErr *pkgerrors.TimeoutError
 	require.ErrorAs(t, wrappedErr, &timeoutErr)
 	assert.Equal(t, "gofumpt", timeoutErr.Context)
 	assert.Equal(t, "GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT", timeoutErr.ConfigVar)
 
 	// Test Is behavior
-	require.ErrorIs(t, wrappedErr, ErrTimeout)
-	require.ErrorIs(t, toolTimeoutErr, ErrTimeout)
+	require.ErrorIs(t, wrappedErr, pkgerrors.ErrTimeout)
+	require.ErrorIs(t, toolTimeoutErr, pkgerrors.ErrTimeout)
 
 	// Test that the error message is helpful
 	errorMsg := toolTimeoutErr.Error()
@@ -265,7 +267,7 @@ func TestTimeoutError_ContextTimeout(t *testing.T) {
 	assert.Equal(t, context.DeadlineExceeded, ctx.Err())
 
 	// Create timeout error as would happen in real usage
-	timeoutErr := NewToolInstallTimeoutError("test-tool", 100*time.Millisecond, 100*time.Millisecond)
+	timeoutErr := pkgerrors.NewToolInstallTimeoutError("test-tool", 100*time.Millisecond, 100*time.Millisecond)
 
 	assert.Equal(t, "Tool installation", timeoutErr.Operation)
 	assert.Equal(t, "test-tool", timeoutErr.Context)

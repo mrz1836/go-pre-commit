@@ -487,11 +487,11 @@ func (s *NetworkErrorTestSuite) TestIsNewerVersion_NetworkIndependent() {
 func (s *NetworkErrorTestSuite) TestContextCancellation_NetworkOperations() {
 	s.Run("Context cancellation", func() {
 		// Create a context that will be canceled
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancel()
 
-		// Wait for context to be canceled
-		time.Sleep(5 * time.Millisecond)
+		// Wait for context to be canceled (use longer sleep to ensure timeout fires)
+		time.Sleep(50 * time.Millisecond)
 
 		// Since GetLatestReleaseWithVersion doesn't accept context parameter,
 		// we simulate the behavior and verify context handling patterns

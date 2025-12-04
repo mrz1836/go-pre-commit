@@ -1,4 +1,4 @@
-package errors
+package errors_test
 
 import (
 	"errors"
@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+
+	pkgerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 )
 
 // Test error variables to satisfy err113 linter
@@ -30,17 +32,17 @@ func (s *ErrorTestSuite) TestCommonErrors() {
 		err      error
 		expected string
 	}{
-		{"ErrChecksFailed", ErrChecksFailed, "checks failed"},
-		{"ErrNoChecksToRun", ErrNoChecksToRun, "no checks to run"},
-		{"ErrEnvFileNotFound", ErrEnvFileNotFound, "failed to find .env.base"},
-		{"ErrRepositoryRootNotFound", ErrRepositoryRootNotFound, "unable to determine repository root"},
-		{"ErrToolNotFound", ErrToolNotFound, "required tool not found"},
-		{"ErrLintingIssues", ErrLintingIssues, "linting issues found"},
-		{"ErrNotTidy", ErrNotTidy, "go.mod or go.sum are not tidy"},
-		{"ErrWhitespaceIssues", ErrWhitespaceIssues, "whitespace issues found"},
-		{"ErrEOFIssues", ErrEOFIssues, "EOF issues found"},
-		{"ErrToolExecutionFailed", ErrToolExecutionFailed, "tool execution failed"},
-		{"ErrGracefulSkip", ErrGracefulSkip, "check gracefully skipped"},
+		{"ErrChecksFailed", pkgerrors.ErrChecksFailed, "checks failed"},
+		{"ErrNoChecksToRun", pkgerrors.ErrNoChecksToRun, "no checks to run"},
+		{"ErrEnvFileNotFound", pkgerrors.ErrEnvFileNotFound, "failed to find .env.base"},
+		{"ErrRepositoryRootNotFound", pkgerrors.ErrRepositoryRootNotFound, "unable to determine repository root"},
+		{"ErrToolNotFound", pkgerrors.ErrToolNotFound, "required tool not found"},
+		{"ErrLintingIssues", pkgerrors.ErrLintingIssues, "linting issues found"},
+		{"ErrNotTidy", pkgerrors.ErrNotTidy, "go.mod or go.sum are not tidy"},
+		{"ErrWhitespaceIssues", pkgerrors.ErrWhitespaceIssues, "whitespace issues found"},
+		{"ErrEOFIssues", pkgerrors.ErrEOFIssues, "EOF issues found"},
+		{"ErrToolExecutionFailed", pkgerrors.ErrToolExecutionFailed, "tool execution failed"},
+		{"ErrGracefulSkip", pkgerrors.ErrGracefulSkip, "check gracefully skipped"},
 	}
 
 	for _, tt := range tests {
@@ -57,7 +59,7 @@ func (s *ErrorTestSuite) TestCheckErrorConstructor() {
 	message := "something went wrong"
 	suggestion := "try this fix"
 
-	checkErr := NewCheckError(baseErr, message, suggestion)
+	checkErr := pkgerrors.NewCheckError(baseErr, message, suggestion)
 
 	s.NotNil(checkErr)
 	s.Equal(baseErr, checkErr.Err)
@@ -70,12 +72,12 @@ func (s *ErrorTestSuite) TestCheckErrorConstructor() {
 func (s *ErrorTestSuite) TestCheckErrorError() {
 	tests := []struct {
 		name     string
-		checkErr *CheckError
+		checkErr *pkgerrors.CheckError
 		expected string
 	}{
 		{
 			name: "message takes precedence",
-			checkErr: &CheckError{
+			checkErr: &pkgerrors.CheckError{
 				Err:     errTestBase,
 				Message: "custom message",
 			},
@@ -83,14 +85,14 @@ func (s *ErrorTestSuite) TestCheckErrorError() {
 		},
 		{
 			name: "falls back to base error",
-			checkErr: &CheckError{
+			checkErr: &pkgerrors.CheckError{
 				Err: errTestBase,
 			},
 			expected: "base error",
 		},
 		{
 			name:     "unknown error when both are empty",
-			checkErr: &CheckError{},
+			checkErr: &pkgerrors.CheckError{},
 			expected: "unknown error",
 		},
 	}
@@ -105,7 +107,7 @@ func (s *ErrorTestSuite) TestCheckErrorError() {
 // TestCheckErrorUnwrap tests the Unwrap method
 func (s *ErrorTestSuite) TestCheckErrorUnwrap() {
 	baseErr := errTestBase
-	checkErr := &CheckError{Err: baseErr}
+	checkErr := &pkgerrors.CheckError{Err: baseErr}
 
 	unwrapped := checkErr.Unwrap()
 	s.Equal(baseErr, unwrapped)
@@ -113,11 +115,11 @@ func (s *ErrorTestSuite) TestCheckErrorUnwrap() {
 
 // TestCheckErrorIs tests the Is method
 func (s *ErrorTestSuite) TestCheckErrorIs() {
-	baseErr := ErrToolNotFound
-	checkErr := &CheckError{Err: baseErr}
+	baseErr := pkgerrors.ErrToolNotFound
+	checkErr := &pkgerrors.CheckError{Err: baseErr}
 
-	s.True(checkErr.Is(ErrToolNotFound))
-	s.False(checkErr.Is(ErrLintingIssues))
+	s.True(checkErr.Is(pkgerrors.ErrToolNotFound))
+	s.False(checkErr.Is(pkgerrors.ErrLintingIssues))
 }
 
 // TestNewToolNotFoundError tests the tool not found error constructor
@@ -125,10 +127,10 @@ func (s *ErrorTestSuite) TestNewToolNotFoundError() {
 	tool := "golangci-lint"
 	alternative := "try installing with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
 
-	err := NewToolNotFoundError(tool, alternative)
+	err := pkgerrors.NewToolNotFoundError(tool, alternative)
 
 	s.NotNil(err)
-	s.True(err.Is(ErrToolNotFound))
+	s.True(err.Is(pkgerrors.ErrToolNotFound))
 	s.Equal("golangci-lint not found", err.Message)
 	s.Equal(alternative, err.Suggestion)
 	s.True(err.CanSkip)
@@ -140,10 +142,10 @@ func (s *ErrorTestSuite) TestNewToolExecutionError() {
 	output := "some error output"
 	suggestion := "fix the issues found"
 
-	err := NewToolExecutionError(command, output, suggestion)
+	err := pkgerrors.NewToolExecutionError(command, output, suggestion)
 
 	s.NotNil(err)
-	s.True(err.Is(ErrToolExecutionFailed))
+	s.True(err.Is(pkgerrors.ErrToolExecutionFailed))
 	s.Equal("command 'golangci-lint run' failed", err.Message)
 	s.Equal(command, err.Command)
 	s.Equal(output, err.Output)
@@ -155,10 +157,10 @@ func (s *ErrorTestSuite) TestNewToolExecutionError() {
 func (s *ErrorTestSuite) TestNewGracefulSkipError() {
 	reason := "check requirements not met"
 
-	err := NewGracefulSkipError(reason)
+	err := pkgerrors.NewGracefulSkipError(reason)
 
 	s.NotNil(err)
-	s.True(err.Is(ErrGracefulSkip))
+	s.True(err.Is(pkgerrors.ErrGracefulSkip))
 	s.Equal(reason, err.Message)
 	s.Equal("This check was skipped to allow other checks to continue", err.Suggestion)
 	s.True(err.CanSkip)
@@ -167,22 +169,22 @@ func (s *ErrorTestSuite) TestNewGracefulSkipError() {
 // TestCheckErrorChaining tests error chaining and wrapping
 func (s *ErrorTestSuite) TestCheckErrorChaining() {
 	originalErr := errTestOriginal
-	wrappedErr := NewCheckError(originalErr, "wrapped message", "fix suggestion")
+	wrappedErr := pkgerrors.NewCheckError(originalErr, "wrapped message", "fix suggestion")
 
 	// Test that we can unwrap to the original error
 	s.Require().ErrorIs(wrappedErr, originalErr)
 	s.Equal(originalErr, errors.Unwrap(wrappedErr))
 
 	// Test error chaining with standard library
-	var checkErr *CheckError
+	var checkErr *pkgerrors.CheckError
 	s.Require().ErrorAs(wrappedErr, &checkErr)
 	s.Equal(wrappedErr, checkErr)
 }
 
 // TestCheckErrorFields tests all fields of CheckError
 func (s *ErrorTestSuite) TestCheckErrorFields() {
-	err := &CheckError{
-		Err:        ErrLintingIssues,
+	err := &pkgerrors.CheckError{
+		Err:        pkgerrors.ErrLintingIssues,
 		Message:    "custom message",
 		Suggestion: "fix the linting issues",
 		Command:    "golangci-lint run",
@@ -191,7 +193,7 @@ func (s *ErrorTestSuite) TestCheckErrorFields() {
 		CanSkip:    true,
 	}
 
-	s.Equal(ErrLintingIssues, err.Err)
+	s.Equal(pkgerrors.ErrLintingIssues, err.Err)
 	s.Equal("custom message", err.Message)
 	s.Equal("fix the linting issues", err.Suggestion)
 	s.Equal("golangci-lint run", err.Command)
@@ -202,14 +204,14 @@ func (s *ErrorTestSuite) TestCheckErrorFields() {
 
 // Unit tests for edge cases
 func TestCheckErrorNilWrapping(t *testing.T) {
-	checkErr := &CheckError{Err: nil}
+	checkErr := &pkgerrors.CheckError{Err: nil}
 	require.NoError(t, checkErr.Unwrap())
-	assert.False(t, checkErr.Is(ErrToolNotFound))
+	assert.False(t, checkErr.Is(pkgerrors.ErrToolNotFound))
 }
 
 func TestCheckErrorEmptyMessage(t *testing.T) {
-	checkErr := &CheckError{
-		Err:     ErrToolNotFound,
+	checkErr := &pkgerrors.CheckError{
+		Err:     pkgerrors.ErrToolNotFound,
 		Message: "",
 	}
 	assert.Equal(t, "required tool not found", checkErr.Error())
@@ -217,20 +219,20 @@ func TestCheckErrorEmptyMessage(t *testing.T) {
 
 func TestErrorComparisons(t *testing.T) {
 	// Test that our predefined errors are distinct
-	assert.NotEqual(t, ErrChecksFailed, ErrNoChecksToRun)
-	assert.NotEqual(t, ErrToolNotFound, ErrLintingIssues)
+	assert.NotEqual(t, pkgerrors.ErrChecksFailed, pkgerrors.ErrNoChecksToRun)
+	assert.NotEqual(t, pkgerrors.ErrToolNotFound, pkgerrors.ErrLintingIssues)
 }
 
 func TestErrorWrappingWithStandardLibrary(t *testing.T) {
-	originalErr := ErrToolNotFound
-	wrappedErr := NewCheckError(originalErr, "custom message", "fix it")
+	originalErr := pkgerrors.ErrToolNotFound
+	wrappedErr := pkgerrors.NewCheckError(originalErr, "custom message", "fix it")
 
 	// Test with errors.Is
-	require.ErrorIs(t, wrappedErr, ErrToolNotFound)
-	require.NotErrorIs(t, wrappedErr, ErrLintingIssues)
+	require.ErrorIs(t, wrappedErr, pkgerrors.ErrToolNotFound)
+	require.NotErrorIs(t, wrappedErr, pkgerrors.ErrLintingIssues)
 
 	// Test with errors.As
-	var checkErr *CheckError
+	var checkErr *pkgerrors.CheckError
 	require.ErrorAs(t, wrappedErr, &checkErr)
 	assert.Equal(t, "custom message", checkErr.Message)
 }
@@ -238,32 +240,34 @@ func TestErrorWrappingWithStandardLibrary(t *testing.T) {
 func TestAllConstructors(t *testing.T) {
 	tests := []struct {
 		name        string
-		constructor func() *CheckError
+		constructor func() *pkgerrors.CheckError
 		expectedErr error
 		canSkip     bool
 	}{
 		{
-			name:        "NewCheckError",
-			constructor: func() *CheckError { return NewCheckError(ErrLintingIssues, "msg", "suggestion") },
-			expectedErr: ErrLintingIssues,
+			name: "NewCheckError",
+			constructor: func() *pkgerrors.CheckError {
+				return pkgerrors.NewCheckError(pkgerrors.ErrLintingIssues, "msg", "suggestion")
+			},
+			expectedErr: pkgerrors.ErrLintingIssues,
 			canSkip:     false,
 		},
 		{
 			name:        "NewToolNotFoundError",
-			constructor: func() *CheckError { return NewToolNotFoundError("tool", "alt") },
-			expectedErr: ErrToolNotFound,
+			constructor: func() *pkgerrors.CheckError { return pkgerrors.NewToolNotFoundError("tool", "alt") },
+			expectedErr: pkgerrors.ErrToolNotFound,
 			canSkip:     true,
 		},
 		{
 			name:        "NewToolExecutionError",
-			constructor: func() *CheckError { return NewToolExecutionError("cmd", "output", "suggestion") },
-			expectedErr: ErrToolExecutionFailed,
+			constructor: func() *pkgerrors.CheckError { return pkgerrors.NewToolExecutionError("cmd", "output", "suggestion") },
+			expectedErr: pkgerrors.ErrToolExecutionFailed,
 			canSkip:     false,
 		},
 		{
 			name:        "NewGracefulSkipError",
-			constructor: func() *CheckError { return NewGracefulSkipError("reason") },
-			expectedErr: ErrGracefulSkip,
+			constructor: func() *pkgerrors.CheckError { return pkgerrors.NewGracefulSkipError("reason") },
+			expectedErr: pkgerrors.ErrGracefulSkip,
 			canSkip:     true,
 		},
 	}

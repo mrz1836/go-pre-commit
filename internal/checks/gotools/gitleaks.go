@@ -119,7 +119,7 @@ func (c *GitleaksCheck) FilterFiles(files []string) []string {
 // runGitleaks runs gitleaks on the repository
 // The files parameter is intentionally unused when using git-based scanning mode,
 // as gitleaks determines changed files via git commit range
-func (c *GitleaksCheck) runGitleaks(ctx context.Context, files []string) error { //nolint:revive,unparam // files parameter used conditionally
+func (c *GitleaksCheck) runGitleaks(ctx context.Context, files []string) error { //nolint:unparam // files parameter used conditionally
 	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to find repository root: %w", err)
