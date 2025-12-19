@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mrz1836/go-pre-commit/internal/shared"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mrz1836/go-pre-commit/internal/shared"
 )
 
 func TestFumptCheck_Run_ContextCancelled_Extra(t *testing.T) {
