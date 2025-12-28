@@ -1,20 +1,20 @@
 package checks
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/mrz1836/go-pre-commit/internal/plugins"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mrz1836/go-pre-commit/internal/plugins"
 )
 
 func TestRegistryLoadPluginsNoRegistry(t *testing.T) {
 	registry := &Registry{checks: make(map[string]Check)}
 
 	require.NoError(t, registry.LoadPlugins())
-	require.Len(t, registry.GetChecks(), 0)
+	require.Empty(t, registry.GetChecks())
 }
 
 func TestRegistryLoadPluginsRegistersChecks(t *testing.T) {
@@ -62,5 +62,5 @@ file_patterns:
 
 	err := registry.LoadPlugins()
 	require.Error(t, err)
-	require.True(t, errors.Is(err, plugins.ErrPluginsLoadFailed))
+	require.ErrorIs(t, err, plugins.ErrPluginsLoadFailed)
 }
