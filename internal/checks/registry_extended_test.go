@@ -305,7 +305,7 @@ func TestRegistry_GetChecksByCategory(t *testing.T) {
 	// Get formatting checks
 	formattingChecks := r.GetChecksByCategory("formatting")
 	assert.Len(t, formattingChecks, 2)
-	checkNames := []string{}
+	checkNames := make([]string, 0, len(formattingChecks))
 	for _, c := range formattingChecks {
 		checkNames = append(checkNames, c.Name())
 	}
@@ -371,7 +371,7 @@ func TestRegistry_ValidateCheckDependencies(t *testing.T) {
 	assert.Len(t, errors, 4)
 
 	// Verify error messages
-	errorMessages := []string{}
+	errorMessages := make([]string, 0, len(errors))
 	for _, err := range errors {
 		errorMessages = append(errorMessages, err.Error())
 	}

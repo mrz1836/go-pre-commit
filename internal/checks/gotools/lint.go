@@ -348,7 +348,8 @@ func (c *LintCheck) handleBuildConstraintsError(ctx context.Context, repoRoot, d
 	}
 
 	// Retry with detected build tags
-	retryArgs := []string{"run", "--new-from-rev=HEAD~1", "--build-tags", strings.Join(buildTags, ",")}
+	retryArgs := make([]string, 0, 5) //nolint:mnd // Fixed capacity for known args
+	retryArgs = append(retryArgs, "run", "--new-from-rev=HEAD~1", "--build-tags", strings.Join(buildTags, ","))
 	retryArgs = append(retryArgs, filepath.Join(repoRoot, dir))
 
 	retryCmd := exec.CommandContext(ctx, "golangci-lint", retryArgs...) //nolint:gosec // Command arguments are validated
