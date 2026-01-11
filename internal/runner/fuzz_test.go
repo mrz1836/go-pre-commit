@@ -205,7 +205,7 @@ func FuzzProgressCallback(f *testing.F) {
 
 		// Create progress callback that shouldn't panic
 		callbackCalled := false
-		progressCallback := func(name, stat string) {
+		progressCallback := func(name, stat string, _ time.Duration) {
 			callbackCalled = true
 			// Callback should handle any input without panicking
 			// Just use the variables to avoid unused warnings

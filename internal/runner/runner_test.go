@@ -254,7 +254,7 @@ func (s *RunnerTestSuite) TestFailFastExecution() {
 	opts := Options{
 		Files:    []string{testFile},
 		FailFast: true,
-		ProgressCallback: func(checkName, status string) {
+		ProgressCallback: func(checkName, status string, _ time.Duration) {
 			progressMutex.Lock()
 			defer progressMutex.Unlock()
 			progressCalls = append(progressCalls, checkName+":"+status)
@@ -291,7 +291,7 @@ func (s *RunnerTestSuite) TestParallelExecution() {
 		Files:    []string{testFile},
 		FailFast: false, // Parallel execution
 		Parallel: 2,
-		ProgressCallback: func(checkName, status string) {
+		ProgressCallback: func(checkName, status string, _ time.Duration) {
 			progressMutex.Lock()
 			defer progressMutex.Unlock()
 			progressCalls = append(progressCalls, checkName+":"+status)
@@ -540,7 +540,7 @@ func (s *RunnerTestSuite) TestProgressCallbacks() {
 
 	opts := Options{
 		Files: []string{testFile},
-		ProgressCallback: func(checkName, status string) {
+		ProgressCallback: func(checkName, status string, _ time.Duration) {
 			progressMutex.Lock()
 			defer progressMutex.Unlock()
 			progressEvents = append(progressEvents, checkName+":"+status)

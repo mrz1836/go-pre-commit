@@ -60,7 +60,8 @@ type CheckResult struct {
 }
 
 // ProgressCallback is called during check execution for progress updates
-type ProgressCallback func(checkName, status string)
+// The duration parameter contains the check execution time (0 for "running" status)
+type ProgressCallback func(checkName, status string, duration time.Duration)
 
 // New creates a new Runner
 func New(cfg *config.Config, repoRoot string) *Runner {
@@ -125,7 +126,7 @@ func (r *Runner) Run(ctx context.Context, opts Options) (*Results, error) {
 		// Sequential execution with fail-fast
 		for _, check := range checksToRun {
 			if opts.ProgressCallback != nil {
-				opts.ProgressCallback(check.Name(), "running")
+				opts.ProgressCallback(check.Name(), "running", 0)
 			}
 
 			result := r.runCheck(ctxWithTimeout, check, opts.Files, opts.GracefulDegradation, opts.DebugTimeout)
@@ -134,17 +135,17 @@ func (r *Runner) Run(ctx context.Context, opts Options) (*Results, error) {
 			if result.Success {
 				results.Passed++
 				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(check.Name(), "passed")
+					opts.ProgressCallback(check.Name(), "passed", result.Duration)
 				}
 			} else if result.CanSkip && opts.GracefulDegradation {
 				results.Skipped++
 				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(check.Name(), "skipped")
+					opts.ProgressCallback(check.Name(), "skipped", result.Duration)
 				}
 			} else {
 				results.Failed++
 				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(check.Name(), "failed")
+					opts.ProgressCallback(check.Name(), "failed", result.Duration)
 				}
 				break // Stop on first failure
 			}
@@ -164,7 +165,7 @@ func (r *Runner) Run(ctx context.Context, opts Options) (*Results, error) {
 				defer func() { <-semaphore }()
 
 				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(c.Name(), "running")
+					opts.ProgressCallback(c.Name(), "running", 0)
 				}
 
 				result := r.runCheck(ctxWithTimeout, c, opts.Files, opts.GracefulDegradation, opts.DebugTimeout)
@@ -181,17 +182,17 @@ func (r *Runner) Run(ctx context.Context, opts Options) (*Results, error) {
 			if result.Success {
 				results.Passed++
 				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(result.Name, "passed")
+					opts.ProgressCallback(result.Name, "passed", result.Duration)
 				}
 			} else if result.CanSkip && opts.GracefulDegradation {
 				results.Skipped++
 				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(result.Name, "skipped")
+					opts.ProgressCallback(result.Name, "skipped", result.Duration)
 				}
 			} else {
 				results.Failed++
 				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(result.Name, "failed")
+					opts.ProgressCallback(result.Name, "failed", result.Duration)
 				}
 			}
 		}

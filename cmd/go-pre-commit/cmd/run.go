@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -241,16 +242,17 @@ func (cb *CommandBuilder) runChecksWithConfig(runConfig RunConfig, _ *cobra.Comm
 
 	// Set up progress callback if progress is enabled and not in quiet mode
 	if runConfig.ShowProgress && !runConfig.Quiet {
-		opts.ProgressCallback = func(checkName, status string) {
+		opts.ProgressCallback = func(checkName, status string, duration time.Duration) {
+			durationStr := formatter.Duration(duration)
 			switch status {
 			case "running":
 				formatter.Progress("Running %s check...", checkName)
 			case "passed":
-				formatter.Success("%s check passed", checkName)
+				formatter.Success("%s check passed (%s)", checkName, durationStr)
 			case "failed":
-				formatter.Error("%s check failed", checkName)
+				formatter.Error("%s check failed (%s)", checkName, durationStr)
 			case "skipped":
-				formatter.Warning("%s check skipped", checkName)
+				formatter.Warning("%s check skipped (%s)", checkName, durationStr)
 			}
 		}
 	}
@@ -437,13 +439,10 @@ func displayEnhancedResults(formatter *output.Formatter, results *runner.Results
 						formatter.SuggestAction(result.Suggestion)
 					}
 				} else {
-					// Normal success
-					formatter.Success("%s completed successfully", result.Name)
-					if verboseMode {
-						formatter.Detail("Duration: %s", formatter.Duration(result.Duration))
-						if len(result.Files) > 0 {
-							formatter.Detail("Files: %s", formatter.FormatFileList(result.Files, 3))
-						}
+					// Normal success - always show duration inline
+					formatter.Success("%s completed successfully (%s)", result.Name, formatter.Duration(result.Duration))
+					if verboseMode && len(result.Files) > 0 {
+						formatter.Detail("Files: %s", formatter.FormatFileList(result.Files, 3))
 					}
 				}
 			}
@@ -451,14 +450,11 @@ func displayEnhancedResults(formatter *output.Formatter, results *runner.Results
 			// Failed check - add to failed list for summary
 			failedChecks = append(failedChecks, result)
 
-			// Failed check
-			formatter.Error("%s failed", result.Name)
+			// Failed check - always show duration inline
+			formatter.Error("%s failed (%s)", result.Name, formatter.Duration(result.Duration))
 
-			if verboseMode {
-				formatter.Detail("Duration: %s", formatter.Duration(result.Duration))
-				if len(result.Files) > 0 {
-					formatter.Detail("Files: %s", formatter.FormatFileList(result.Files, 3))
-				}
+			if verboseMode && len(result.Files) > 0 {
+				formatter.Detail("Files: %s", formatter.FormatFileList(result.Files, 3))
 			}
 
 			// Show error message
