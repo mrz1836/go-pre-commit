@@ -113,6 +113,10 @@ func TestWhitespaceCheck_Run_WithAutoStage(t *testing.T) {
 	tmpDir, err := os.MkdirTemp(".", "whitespace_test")
 	require.NoError(t, err)
 	defer func() {
+		// Unstage any files that were staged during the test to avoid leaving orphaned index entries
+		if resetErr := exec.CommandContext(context.Background(), "git", "reset", "HEAD", tmpDir).Run(); resetErr != nil { //nolint:gosec // test cleanup with controlled input
+			t.Logf("Failed to unstage files in %s: %v", tmpDir, resetErr)
+		}
 		if removeErr := os.RemoveAll(tmpDir); removeErr != nil {
 			t.Logf("Failed to remove temp dir %s: %v", tmpDir, removeErr)
 		}
@@ -241,6 +245,10 @@ func TestWhitespaceCheck_StageFiles(t *testing.T) {
 	tmpDir, err := os.MkdirTemp(".", "stage_test")
 	require.NoError(t, err)
 	defer func() {
+		// Unstage any files that were staged during the test to avoid leaving orphaned index entries
+		if resetErr := exec.CommandContext(context.Background(), "git", "reset", "HEAD", tmpDir).Run(); resetErr != nil { //nolint:gosec // test cleanup with controlled input
+			t.Logf("Failed to unstage files in %s: %v", tmpDir, resetErr)
+		}
 		if removeErr := os.RemoveAll(tmpDir); removeErr != nil {
 			t.Logf("Failed to remove temp dir %s: %v", tmpDir, removeErr)
 		}
