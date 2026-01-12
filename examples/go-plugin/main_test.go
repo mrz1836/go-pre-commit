@@ -379,7 +379,7 @@ func TestCheckLicenseHeaders(t *testing.T) {
 func TestReadLicenseHeader_CustomFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	customPath := filepath.Join(tmpDir, "CUSTOM_LICENSE")
-	require.NoError(t, os.WriteFile(customPath, []byte("Custom License Header"), 0600))
+	require.NoError(t, os.WriteFile(customPath, []byte("Custom License Header"), 0o600))
 
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
@@ -400,7 +400,7 @@ func TestCheckLicenseHeaders_LicenseFileLoading(t *testing.T) {
 			setupEnv: func(t *testing.T) (func(), string) {
 				tmpDir := t.TempDir()
 				licensePath := filepath.Join(tmpDir, "LICENSE")
-				require.NoError(t, os.WriteFile(licensePath, []byte("MIT License\nCopyright 2024"), 0600))
+				require.NoError(t, os.WriteFile(licensePath, []byte("MIT License\nCopyright 2024"), 0o600))
 
 				oldWd, err := os.Getwd()
 				require.NoError(t, err)
