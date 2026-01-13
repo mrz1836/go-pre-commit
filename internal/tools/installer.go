@@ -676,10 +676,18 @@ func GetToolPath(toolName string) (string, error) {
 func InstallAllTools(ctx context.Context) error {
 	LoadVersionsFromEnv()
 
-	var wg sync.WaitGroup
-	errCh := make(chan error, len(tools))
-
+	// Snapshot tool names under read lock to avoid race with map modifications
+	toolsMu.RLock()
+	toolNames := make([]string, 0, len(tools))
 	for name := range tools {
+		toolNames = append(toolNames, name)
+	}
+	toolsMu.RUnlock()
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, len(toolNames))
+
+	for _, name := range toolNames {
 		wg.Add(1)
 		go func(toolName string) {
 			defer wg.Done()
@@ -692,7 +700,7 @@ func InstallAllTools(ctx context.Context) error {
 	wg.Wait()
 	close(errCh)
 
-	errors := make([]string, 0, len(tools))
+	errors := make([]string, 0, len(toolNames))
 	for err := range errCh {
 		errors = append(errors, err.Error())
 	}
