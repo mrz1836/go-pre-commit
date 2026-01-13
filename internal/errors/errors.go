@@ -65,7 +65,7 @@ var (
 
 	// Git-related errors
 	ErrNotGitRepository      = errors.New("not a git repository")
-	ErrGitBaseCommitNotFound = errors.New("could not determine base commit")
+	ErrGitBaseCommitNotFound = errors.New("could not determine git base commit")
 	ErrUnsupportedHookType   = errors.New("unsupported hook type")
 	ErrPreCommitDirNotExist  = errors.New("pre-commit directory does not exist")
 	ErrHookNotExecutable     = errors.New("hook file is not executable")
