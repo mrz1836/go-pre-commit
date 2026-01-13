@@ -1,0 +1,352 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>go-pre-commit: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+
+				<option value="file0">github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/main.go (81.8%)</option>
+
+				<option value="file1">github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/version.go (69.6%)</option>
+
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+
+			</div>
+		</div>
+		<div id="content">
+
+		<pre class="file" id="file0" style="display: none">// Package main provides the entry point for the Go pre-commit system
+package main
+
+import (
+        "fmt"
+        "os"
+        "strings"
+
+        "github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/cmd"
+)
+
+func main() <span class="cov0" title="0">{
+        os.Exit(run())
+}</span>
+
+// run executes the main application logic and returns the exit code.
+// This function is separated from main() to enable testing.
+func run() int <span class="cov8" title="1">{
+        // Create build information using the new pattern
+        buildInfo := NewBuildInfo()
+
+        // Get version and add modified suffix if there are uncommitted changes
+        version := buildInfo.Version()
+        if buildInfo.IsModified() &amp;&amp; !strings.HasSuffix(version, "-dirty") </span><span class="cov0" title="0">{
+                version += "-dirty"
+        }</span>
+
+        // Create CLI application with dependency injection
+        <span class="cov8" title="1">app := cmd.NewCLIApp(version, buildInfo.Commit(), buildInfo.BuildDate())
+        builder := cmd.NewCommandBuilder(app)
+
+        // Execute the root command
+        if err := builder.Execute(); err != nil </span><span class="cov8" title="1">{
+                fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+                return 1
+        }</span>
+        <span class="cov8" title="1">return 0</span>
+}
+</pre>
+
+		<pre class="file" id="file1" style="display: none">package main
+
+import (
+        "errors"
+        "runtime/debug"
+        "strings"
+        "time"
+)
+
+// Build-time variables injected via ldflags
+// These are package-level but unexported to reduce global exposure
+//
+//nolint:gochecknoglobals // These are build-time injected variables, required for ldflags
+var (
+        version   = "dev"
+        commit    = "none"
+        buildDate = "unknown"
+)
+
+// BuildInfo encapsulates build-time information
+type BuildInfo struct {
+        version   string
+        commit    string
+        buildDate string
+}
+
+// NewBuildInfo creates a new BuildInfo instance with build-time injected values
+// and fallbacks to runtime build information
+func NewBuildInfo() *BuildInfo <span class="cov8" title="1">{
+        return &amp;BuildInfo{
+                version:   getVersionWithFallback(),
+                commit:    getCommitWithFallback(),
+                buildDate: getBuildDateWithFallback(),
+        }
+}</span>
+
+// Version returns the version string
+func (b *BuildInfo) Version() string <span class="cov8" title="1">{
+        return b.version
+}</span>
+
+// Commit returns the commit hash
+func (b *BuildInfo) Commit() string <span class="cov8" title="1">{
+        return b.commit
+}</span>
+
+// BuildDate returns the build date
+func (b *BuildInfo) BuildDate() string <span class="cov8" title="1">{
+        return b.buildDate
+}</span>
+
+// IsModified returns true if the build has uncommitted changes
+func (b *BuildInfo) IsModified() bool <span class="cov8" title="1">{
+        if info, ok := debug.ReadBuildInfo(); ok </span><span class="cov8" title="1">{
+                for _, setting := range info.Settings </span><span class="cov8" title="1">{
+                        if setting.Key == "vcs.modified" </span><span class="cov0" title="0">{
+                                return setting.Value == "true"
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+// getVersionWithFallback returns the version information with fallback to BuildInfo
+func getVersionWithFallback() string <span class="cov8" title="1">{
+        // If version was set via ldflags and it's not a template placeholder, use it
+        if version != "dev" &amp;&amp; version != "" &amp;&amp; !isTemplateString(version) </span><span class="cov0" title="0">{
+                return version
+        }</span>
+
+        // Try to get version from build info
+        <span class="cov8" title="1">if info, ok := debug.ReadBuildInfo(); ok </span><span class="cov8" title="1">{
+                // Check if there's a module version (from go install @version)
+                if info.Main.Version != "" &amp;&amp; info.Main.Version != "(devel)" </span><span class="cov0" title="0">{
+                        // For go install @version, use the version as-is (already includes 'v' prefix)
+                        return info.Main.Version
+                }</span>
+
+                // Try to get VCS revision as fallback for development builds
+                <span class="cov8" title="1">for _, setting := range info.Settings </span><span class="cov8" title="1">{
+                        if setting.Key == "vcs.revision" &amp;&amp; setting.Value != "" </span><span class="cov0" title="0">{
+                                // Use short commit hash for readability
+                                if len(setting.Value) &gt; 7 </span><span class="cov0" title="0">{
+                                        return setting.Value[:7]
+                                }</span>
+                                <span class="cov0" title="0">return setting.Value</span>
+                        }
+                }
+        }
+
+        // Default to "dev" if nothing else is available
+        <span class="cov8" title="1">return "dev"</span>
+}
+
+// getCommitWithFallback returns the commit hash with fallback to BuildInfo
+func getCommitWithFallback() string <span class="cov8" title="1">{
+        // If commit was set via ldflags and it's not a template placeholder, use it
+        if commit != "none" &amp;&amp; commit != "" &amp;&amp; !isTemplateString(commit) </span><span class="cov0" title="0">{
+                return commit
+        }</span>
+
+        // Try to get from build info
+        <span class="cov8" title="1">if info, ok := debug.ReadBuildInfo(); ok </span><span class="cov8" title="1">{
+                for _, setting := range info.Settings </span><span class="cov8" title="1">{
+                        if setting.Key == "vcs.revision" &amp;&amp; setting.Value != "" </span><span class="cov0" title="0">{
+                                // For commit display, use short hash for readability
+                                if len(setting.Value) &gt; 7 </span><span class="cov0" title="0">{
+                                        return setting.Value[:7]
+                                }</span>
+                                <span class="cov0" title="0">return setting.Value</span>
+                        }
+                }
+
+                // For go install builds, try to extract commit from module sum if available
+                <span class="cov8" title="1">if info.Main.Sum != "" </span><span class="cov0" title="0">{
+                        // Module sum format: h1:base64hash - extract first 7 chars of hash
+                        if parts := strings.Split(info.Main.Sum, ":"); len(parts) == 2 &amp;&amp; len(parts[1]) &gt;= 7 </span><span class="cov0" title="0">{
+                                return parts[1][:7]
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">return "none"</span>
+}
+
+// getBuildDateWithFallback returns the build date with fallback to BuildInfo
+func getBuildDateWithFallback() string <span class="cov8" title="1">{
+        // If build date was set via ldflags and it's not a template placeholder, use it
+        if buildDate != "unknown" &amp;&amp; buildDate != "" &amp;&amp; !isTemplateString(buildDate) </span><span class="cov0" title="0">{
+                return buildDate
+        }</span>
+
+        // Try to get from build info
+        <span class="cov8" title="1">if info, ok := debug.ReadBuildInfo(); ok </span><span class="cov8" title="1">{
+                for _, setting := range info.Settings </span><span class="cov8" title="1">{
+                        if setting.Key == "vcs.time" &amp;&amp; setting.Value != "" </span><span class="cov0" title="0">{
+                                // VCS time is in RFC3339 format, convert to a more readable format
+                                if t, err := parseTime(setting.Value); err == nil </span><span class="cov0" title="0">{
+                                        return t.Format("2006-01-02_15:04:05_UTC")
+                                }</span>
+                                <span class="cov0" title="0">return setting.Value</span>
+                        }
+                }
+
+                // For go install builds without VCS info, use a generic marker
+                <span class="cov8" title="1">if info.Main.Version != "" &amp;&amp; info.Main.Version != "(devel)" </span><span class="cov0" title="0">{
+                        return "go-install"
+                }</span>
+        }
+
+        <span class="cov8" title="1">return "unknown"</span>
+}
+
+// ErrUnableToParseTime is returned when time string cannot be parsed
+var ErrUnableToParseTime = errors.New("unable to parse time")
+
+// parseTime attempts to parse time from various formats
+func parseTime(timeStr string) (time.Time, error) <span class="cov8" title="1">{
+        // Try RFC3339 format first (Git's default)
+        if t, err := time.Parse(time.RFC3339, timeStr); err == nil </span><span class="cov8" title="1">{
+                return t.UTC(), nil
+        }</span>
+
+        // Try other common formats
+        <span class="cov8" title="1">formats := []string{
+                "2006-01-02T15:04:05Z",
+                "2006-01-02T15:04:05.000Z",
+                "2006-01-02 15:04:05",
+        }
+
+        for _, format := range formats </span><span class="cov8" title="1">{
+                if t, err := time.Parse(format, timeStr); err == nil </span><span class="cov8" title="1">{
+                        return t.UTC(), nil
+                }</span>
+        }
+
+        <span class="cov8" title="1">return time.Time{}, ErrUnableToParseTime</span>
+}
+
+// Legacy compatibility functions - these wrap the new BuildInfo pattern
+// to maintain backward compatibility during migration
+
+// GetVersion returns the version information (legacy compatibility)
+func GetVersion() string <span class="cov8" title="1">{
+        return getVersionWithFallback()
+}</span>
+
+// GetCommit returns the commit hash (legacy compatibility)
+func GetCommit() string <span class="cov8" title="1">{
+        return getCommitWithFallback()
+}</span>
+
+// GetBuildDate returns the build date (legacy compatibility)
+func GetBuildDate() string <span class="cov8" title="1">{
+        return getBuildDateWithFallback()
+}</span>
+
+// IsModified returns true if the build has uncommitted changes (legacy compatibility)
+func IsModified() bool <span class="cov8" title="1">{
+        bi := &amp;BuildInfo{}
+        return bi.IsModified()
+}</span>
+
+// isTemplateString checks if a string contains unsubstituted template syntax
+func isTemplateString(s string) bool <span class="cov8" title="1">{
+        return strings.Contains(s, "{{") &amp;&amp; strings.Contains(s, "}}")
+}</span>
+</pre>
+
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

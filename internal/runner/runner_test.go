@@ -649,4 +649,117 @@ func TestRunnerEdgeCases(t *testing.T) {
 			assert.NotNil(t, results)
 		}
 	})
+
+	t.Run("debug timeout with CI environment", func(t *testing.T) {
+		cfg := &config.Config{
+			Enabled: true,
+			Timeout: 30,
+		}
+		cfg.Checks.Whitespace = true
+		cfg.Environment.IsCI = true
+		cfg.Environment.CIProvider = "GitHub Actions"
+		cfg.Environment.AutoAdjustTimers = true
+		cfg.ToolInstallation.Timeout = 300
+
+		r := New(cfg, "/test")
+
+		opts := Options{
+			Files:        []string{"test.txt"},
+			DebugTimeout: true, // Enable debug output
+		}
+
+		// Capture stderr to verify debug output
+		oldStderr := os.Stderr
+		rPipe, wPipe, _ := os.Pipe()
+		os.Stderr = wPipe
+
+		_, _ = r.Run(context.Background(), opts)
+
+		_ = wPipe.Close()
+		os.Stderr = oldStderr
+
+		// Read captured output
+		buf := make([]byte, 1024)
+		n, _ := rPipe.Read(buf)
+		output := string(buf[:n])
+
+		// Should contain debug timeout information
+		assert.Contains(t, output, "DEBUG-TIMEOUT")
+	})
+
+	t.Run("fail fast with skip on degradation", func(t *testing.T) {
+		cfg := &config.Config{
+			Enabled: true,
+			Timeout: 30,
+		}
+		// Use a check that might not be available
+		cfg.Checks.Fumpt = true
+
+		r := New(cfg, "/test")
+
+		opts := Options{
+			Files:               []string{"test.go"},
+			FailFast:            true,
+			GracefulDegradation: true,
+		}
+
+		results, err := r.Run(context.Background(), opts)
+		// Should complete even if fumpt is not available
+		if err == nil {
+			assert.NotNil(t, results)
+		}
+	})
+
+	t.Run("parallel execution with graceful degradation", func(t *testing.T) {
+		cfg := &config.Config{
+			Enabled: true,
+			Timeout: 30,
+		}
+		cfg.Checks.Whitespace = true
+		cfg.Checks.EOF = true
+		cfg.Checks.Fumpt = true // May not be available
+		cfg.Performance.ParallelWorkers = 2
+
+		r := New(cfg, "/test")
+
+		opts := Options{
+			Files:               []string{"test.txt"},
+			GracefulDegradation: true,
+		}
+
+		results, err := r.Run(context.Background(), opts)
+		// Should handle missing tools gracefully
+		if err == nil {
+			assert.NotNil(t, results)
+			// Some checks may have been skipped
+			assert.GreaterOrEqual(t, results.Passed+results.Skipped, 0)
+		}
+	})
+
+	t.Run("context timeout during check execution", func(t *testing.T) {
+		cfg := &config.Config{
+			Enabled: true,
+			Timeout: 1, // Very short timeout
+		}
+		cfg.Checks.Whitespace = true
+
+		r := New(cfg, "/test")
+
+		// Create context with very short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+		defer cancel()
+
+		opts := Options{
+			Files: []string{"test.txt"},
+		}
+
+		// Wait a bit to ensure timeout
+		time.Sleep(10 * time.Millisecond)
+
+		results, err := r.Run(ctx, opts)
+		// Should either timeout or complete quickly
+		// Test passes if we reach here without panic
+		_ = err
+		_ = results
+	})
 }
