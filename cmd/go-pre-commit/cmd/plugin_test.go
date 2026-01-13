@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -494,4 +495,97 @@ requires_files: true`
 	assert.Equal(t, "yaml-precedence-plugin", manifest.Name)
 	assert.Equal(t, "YAML version should be loaded", manifest.Description)
 	assert.Equal(t, "yaml", manifest.Category)
+}
+
+func TestBuildPluginListCmd(t *testing.T) {
+	// Test that the plugin list command can be built and has correct structure
+	app := NewCLIApp("1.0.0", "test", "2025-01-01")
+	builder := NewCommandBuilder(app)
+
+	// Build the plugin command
+	pluginCmd := builder.BuildPluginCmd()
+	require.NotNil(t, pluginCmd)
+
+	// Find the list subcommand
+	listCmd := findCommand(t, pluginCmd, "list")
+	require.NotNil(t, listCmd)
+
+	// Verify command properties
+	assert.Equal(t, "list", listCmd.Use)
+	assert.Contains(t, listCmd.Short, "List")
+}
+
+func TestBuildPluginValidateCmd(t *testing.T) {
+	// Test that the plugin validate command can be built
+	app := NewCLIApp("1.0.0", "test", "2025-01-01")
+	builder := NewCommandBuilder(app)
+
+	pluginCmd := builder.BuildPluginCmd()
+	require.NotNil(t, pluginCmd)
+
+	validateCmd := findCommand(t, pluginCmd, "validate")
+	require.NotNil(t, validateCmd)
+
+	// Verify command properties
+	assert.Equal(t, "validate [plugin-dir]", validateCmd.Use)
+	assert.Contains(t, validateCmd.Short, "Validate")
+}
+
+func TestBuildPluginAddCmd(t *testing.T) {
+	// Test that the plugin add command can be built
+	app := NewCLIApp("1.0.0", "test", "2025-01-01")
+	builder := NewCommandBuilder(app)
+
+	pluginCmd := builder.BuildPluginCmd()
+	require.NotNil(t, pluginCmd)
+
+	addCmd := findCommand(t, pluginCmd, "add")
+	require.NotNil(t, addCmd)
+
+	// Verify command properties
+	assert.Equal(t, "add <source>", addCmd.Use)
+	assert.Contains(t, addCmd.Short, "Add")
+}
+
+func TestBuildPluginRemoveCmd(t *testing.T) {
+	// Test that the plugin remove command can be built
+	app := NewCLIApp("1.0.0", "test", "2025-01-01")
+	builder := NewCommandBuilder(app)
+
+	pluginCmd := builder.BuildPluginCmd()
+	require.NotNil(t, pluginCmd)
+
+	removeCmd := findCommand(t, pluginCmd, "remove")
+	require.NotNil(t, removeCmd)
+
+	// Verify command properties
+	assert.Equal(t, "remove <plugin-name>", removeCmd.Use)
+	assert.Contains(t, removeCmd.Short, "Remove")
+}
+
+func TestBuildPluginInfoCmd(t *testing.T) {
+	// Test that the plugin info command can be built
+	app := NewCLIApp("1.0.0", "test", "2025-01-01")
+	builder := NewCommandBuilder(app)
+
+	pluginCmd := builder.BuildPluginCmd()
+	require.NotNil(t, pluginCmd)
+
+	infoCmd := findCommand(t, pluginCmd, "info")
+	require.NotNil(t, infoCmd)
+
+	// Verify command properties
+	assert.Equal(t, "info <plugin-name>", infoCmd.Use)
+	assert.Contains(t, infoCmd.Short, "Show")
+}
+
+// findCommand is a helper to find a subcommand by name
+func findCommand(t *testing.T, parent *cobra.Command, name string) *cobra.Command {
+	t.Helper()
+	for _, cmd := range parent.Commands() {
+		if cmd.Name() == name {
+			return cmd
+		}
+	}
+	return nil
 }
