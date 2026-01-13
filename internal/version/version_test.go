@@ -1,6 +1,7 @@
 package version
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -291,4 +292,117 @@ func TestGetLatestRelease(t *testing.T) {
 	require.NotNil(t, release)
 	assert.NotEmpty(t, release.TagName, "Release should have a tag name")
 	assert.NotEmpty(t, release.PublishedAt, "Release should have a published date")
+}
+
+func TestGetGitHubToken(t *testing.T) {
+	tests := []struct {
+		name        string
+		githubToken string
+		ghToken     string
+		expectedHas bool
+	}{
+		{
+			name:        "no token set",
+			githubToken: "",
+			ghToken:     "",
+			expectedHas: false,
+		},
+		{
+			name:        "GITHUB_TOKEN set",
+			githubToken: "test-github-token",
+			ghToken:     "",
+			expectedHas: true,
+		},
+		{
+			name:        "GH_TOKEN set",
+			githubToken: "",
+			ghToken:     "test-gh-token",
+			expectedHas: true,
+		},
+		{
+			name:        "both tokens set - GITHUB_TOKEN takes precedence",
+			githubToken: "test-github-token",
+			ghToken:     "test-gh-token",
+			expectedHas: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save original values
+			origGitHubToken := os.Getenv("GITHUB_TOKEN")
+			origGHToken := os.Getenv("GH_TOKEN")
+			defer func() {
+				// Restore original values
+				_ = os.Setenv("GITHUB_TOKEN", origGitHubToken)
+				_ = os.Setenv("GH_TOKEN", origGHToken)
+			}()
+
+			// Set test values
+			if tt.githubToken != "" {
+				_ = os.Setenv("GITHUB_TOKEN", tt.githubToken)
+			} else {
+				_ = os.Unsetenv("GITHUB_TOKEN")
+			}
+			if tt.ghToken != "" {
+				_ = os.Setenv("GH_TOKEN", tt.ghToken)
+			} else {
+				_ = os.Unsetenv("GH_TOKEN")
+			}
+
+			token := getGitHubToken()
+			if tt.expectedHas {
+				assert.NotEmpty(t, token)
+			} else {
+				assert.Empty(t, token)
+			}
+		})
+	}
+}
+
+func TestCompareVersions_CommitHashCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		v1       string
+		v2       string
+		expected int
+	}{
+		{
+			name:     "commit hash vs version",
+			v1:       "abc1234",
+			v2:       "1.0.0",
+			expected: -1,
+		},
+		{
+			name:     "version vs commit hash",
+			v1:       "1.0.0",
+			v2:       "abc1234",
+			expected: 1,
+		},
+		{
+			name:     "both commit hashes",
+			v1:       "abc1234",
+			v2:       "def5678",
+			expected: 0,
+		},
+		{
+			name:     "empty version vs version",
+			v1:       "",
+			v2:       "1.0.0",
+			expected: -1,
+		},
+		{
+			name:     "version vs empty",
+			v1:       "1.0.0",
+			v2:       "",
+			expected: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := CompareVersions(tt.v1, tt.v2)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
