@@ -28,6 +28,8 @@ var (
 	ErrToolNotInPath = errors.New("tool installed but not found in PATH")
 	// ErrInstallTimeout is returned when tool installation times out
 	ErrInstallTimeout = errors.New("tool installation timed out")
+	// ErrToolNotInstalled is returned when a tool is not installed or not found
+	ErrToolNotInstalled = errors.New("tool not installed")
 )
 
 // Configuration for tool installation
@@ -662,7 +664,12 @@ func GetToolPath(toolName string) (string, error) {
 		return "", fmt.Errorf("%w: %s", ErrUnknownTool, toolName)
 	}
 
-	return exec.LookPath(tool.Binary)
+	path, err := exec.LookPath(tool.Binary)
+	if err != nil {
+		return "", fmt.Errorf("%w: %s: %w", ErrToolNotInstalled, tool.Name, err)
+	}
+
+	return path, nil
 }
 
 // InstallAllTools installs all required tools
