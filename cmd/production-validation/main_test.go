@@ -779,3 +779,57 @@ func TestMainWithDeps_DirectoryCreationFailure(t *testing.T) {
 	assert.True(t, fatalCalled)
 	assert.Contains(t, fatalMessage, "Failed to create output directory")
 }
+
+// TestMainWithDeps_WriteFileFailure tests file write failure
+func TestMainWithDeps_WriteFileFailure(t *testing.T) {
+	// Save original values
+	oldArgs := os.Args
+	oldCommandLine := flag.CommandLine
+	defer func() {
+		os.Args = oldArgs
+		flag.CommandLine = oldCommandLine
+	}()
+
+	// Create new flag set
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+
+	// Create a directory where we want to write the file, then make it read-only
+	tempDir := t.TempDir()
+	outputPath := filepath.Join(tempDir, "report.txt")
+
+	// Write a file and make it read-only to cause write failure
+	err := os.WriteFile(outputPath, []byte("test"), 0o600) // #nosec G306 - Test file with secure permissions
+	require.NoError(t, err)
+	err = os.Chmod(outputPath, 0o400) // #nosec G302 - Test file, intentionally read-only
+	require.NoError(t, err)
+
+	os.Args = []string{"production-validation", "-output", outputPath}
+
+	testDeps := getDependencies()
+	testDeps.newProductionReadinessValidator = func() (*validation.ProductionReadinessValidator, error) {
+		return &validation.ProductionReadinessValidator{}, nil
+	}
+	testDeps.generateReport = func(_ *validation.ProductionReadinessValidator) (*validation.ProductionReadinessReport, error) {
+		return &validation.ProductionReadinessReport{
+			ProductionReady: true,
+			OverallScore:    85,
+		}, nil
+	}
+
+	// Capture log.Fatal
+	fatalCalled := false
+	var fatalMessage string
+	testDeps.logFatalf = func(format string, v ...interface{}) {
+		fatalCalled = true
+		fatalMessage = fmt.Sprintf(format, v...)
+		panic("log.Fatal called")
+	}
+
+	// Should panic from log.Fatal due to write failure
+	assert.Panics(t, func() {
+		mainWithDeps(testDeps)
+	})
+
+	assert.True(t, fatalCalled)
+	assert.Contains(t, fatalMessage, "Failed to write output file")
+}
