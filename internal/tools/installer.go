@@ -275,14 +275,22 @@ func EnsureInstalled(ctx context.Context, toolName string) error {
 
 	toolsMu.RLock()
 	tool, exists := tools[toolName]
-	toolsMu.RUnlock()
-
 	if !exists {
+		toolsMu.RUnlock()
 		return fmt.Errorf("%w: %s", ErrUnknownTool, toolName)
 	}
+	// Copy tool struct to avoid race with concurrent LoadVersionsFromEnv calls
+	// that may write to tool.Version while InstallTool reads it
+	toolCopy := &Tool{
+		Name:       tool.Name,
+		ImportPath: tool.ImportPath,
+		Version:    tool.Version,
+		Binary:     tool.Binary,
+	}
+	toolsMu.RUnlock()
 
 	// Install the tool
-	return InstallTool(ctx, tool)
+	return InstallTool(ctx, toolCopy)
 }
 
 // InstallTool installs a specific tool
