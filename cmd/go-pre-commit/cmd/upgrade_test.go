@@ -418,3 +418,35 @@ func TestGetInstalledVersionErrorPaths(t *testing.T) {
 	_, err := GetInstalledVersion()
 	assert.Error(t, err)
 }
+
+// TestIsLikelyCommitHash_Dirty tests commit hash with -dirty suffix
+func TestIsLikelyCommitHash_Dirty(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{
+			name:     "Short SHA with dirty suffix",
+			input:    "abc123d-dirty",
+			expected: true,
+		},
+		{
+			name:     "Full SHA with dirty suffix",
+			input:    "abc123def456789012345678901234567890abcd-dirty",
+			expected: true,
+		},
+		{
+			name:     "Too long even after removing dirty",
+			input:    "abc123def456789012345678901234567890abcdef-dirty",
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := isLikelyCommitHash(tc.input)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}

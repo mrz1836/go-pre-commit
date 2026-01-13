@@ -749,3 +749,69 @@ func Example_main() {
 	fmt.Println("Go Pre-commit System")
 	// Output: Go Pre-commit System
 }
+
+// TestMainProcess is a helper for subprocess testing of main()
+func TestMainProcess(_ *testing.T) {
+	// This test is run as a subprocess by other tests
+	if os.Getenv("GO_TEST_SUBPROCESS") != "1" {
+		return
+	}
+
+	// Run main() based on test case
+	switch os.Getenv("GO_TEST_CASE") {
+	case "help":
+		os.Args = []string{"go-pre-commit", "--help"}
+		main()
+	case "version":
+		os.Args = []string{"go-pre-commit", "--version"}
+		main()
+	case "invalid":
+		os.Args = []string{"go-pre-commit", "invalid-command-xyz"}
+		main()
+	}
+}
+
+// TestMain_Help tests main() with --help flag using subprocess
+func TestMain_Help(t *testing.T) {
+	if os.Getenv("GO_TEST_SUBPROCESS") == "1" {
+		return
+	}
+
+	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 - test binary path is safe
+	cmd.Env = append(os.Environ(), "GO_TEST_SUBPROCESS=1", "GO_TEST_CASE=help")
+
+	err := cmd.Run()
+	assert.NoError(t, err, "main() with --help should exit successfully")
+}
+
+// TestMain_Version tests main() with --version flag using subprocess
+func TestMain_Version(t *testing.T) {
+	if os.Getenv("GO_TEST_SUBPROCESS") == "1" {
+		return
+	}
+
+	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 - test binary path is safe
+	cmd.Env = append(os.Environ(), "GO_TEST_SUBPROCESS=1", "GO_TEST_CASE=version")
+
+	err := cmd.Run()
+	assert.NoError(t, err, "main() with --version should exit successfully")
+}
+
+// TestMain_InvalidCommand tests main() with invalid command using subprocess
+func TestMain_InvalidCommand(t *testing.T) {
+	if os.Getenv("GO_TEST_SUBPROCESS") == "1" {
+		return
+	}
+
+	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 - test binary path is safe
+	cmd.Env = append(os.Environ(), "GO_TEST_SUBPROCESS=1", "GO_TEST_CASE=invalid")
+
+	err := cmd.Run()
+	if err == nil {
+		t.Fatal("expected non-zero exit code for invalid command")
+	}
+
+	var exitErr *exec.ExitError
+	require.ErrorAs(t, err, &exitErr)
+	assert.Equal(t, 1, exitErr.ExitCode())
+}
