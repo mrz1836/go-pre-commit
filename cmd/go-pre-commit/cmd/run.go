@@ -7,13 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 	"github.com/mrz1836/go-pre-commit/internal/git"
 	"github.com/mrz1836/go-pre-commit/internal/output"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
+	"github.com/spf13/cobra"
 )
 
 // RunConfig holds configuration for the run command

@@ -3,11 +3,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/git"
 	"github.com/mrz1836/go-pre-commit/internal/output"
+	"github.com/spf13/cobra"
 )
 
 // BuildStatusCmd creates the status command

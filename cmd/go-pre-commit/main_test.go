@@ -12,10 +12,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/cmd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/cmd"
 )
 
 func TestMain(t *testing.T) {
@@ -664,6 +663,73 @@ func TestRunFunctionVersionInfo(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestRunFunctionVersionDirtySuffix tests the -dirty suffix logic in run()
+func TestRunFunctionVersionDirtySuffix(t *testing.T) {
+	// Save original args
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+
+	// Set args for version command
+	os.Args = []string{"go-pre-commit", "--no-color", "--version"}
+
+	// Test with a version that already has -dirty suffix
+	t.Run("version already has dirty suffix", func(t *testing.T) {
+		cmd.ResetCommand()
+		cmd.SetVersionInfo("v1.2.3-dirty", "abc123", "2023-12-01")
+
+		// Capture stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+		defer func() { os.Stdout = oldStdout }()
+
+		exitCode := run()
+
+		// Close and read output
+		if closeErr := w.Close(); closeErr != nil {
+			t.Logf("Failed to close pipe writer: %v", closeErr)
+		}
+		var buf bytes.Buffer
+		if _, copyErr := io.Copy(&buf, r); copyErr != nil {
+			t.Logf("Failed to copy output: %v", copyErr)
+		}
+
+		require.Equal(t, 0, exitCode)
+		output := buf.String()
+
+		// Version should contain -dirty only once
+		dirtyCount := strings.Count(output, "-dirty")
+		assert.LessOrEqual(t, dirtyCount, 1, "Should not add -dirty suffix twice")
+	})
+
+	// Test with a clean version (normal case)
+	t.Run("version without dirty suffix", func(t *testing.T) {
+		cmd.ResetCommand()
+		cmd.SetVersionInfo("v1.2.3", "abc123", "2023-12-01")
+
+		// Capture stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+		defer func() { os.Stdout = oldStdout }()
+
+		exitCode := run()
+
+		// Close and read output
+		if closeErr := w.Close(); closeErr != nil {
+			t.Logf("Failed to close pipe writer: %v", closeErr)
+		}
+		var buf bytes.Buffer
+		if _, copyErr := io.Copy(&buf, r); copyErr != nil {
+			t.Logf("Failed to copy output: %v", copyErr)
+		}
+
+		require.Equal(t, 0, exitCode)
+		// Test passes if run() completes successfully
+		// The actual -dirty suffix addition depends on VCS state during test
+	})
 }
 
 // Example showing how to use the pre-commit system
