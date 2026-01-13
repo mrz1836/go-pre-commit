@@ -3,6 +3,7 @@ package golangci
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -265,5 +266,104 @@ go 1.21
 	expected := "json.example.com/project"
 	if modulePath != expected {
 		t.Errorf("Expected JSON config to take precedence, got %q instead of %q", modulePath, expected)
+	}
+}
+
+// TestParseJSONConfig_InvalidJSON tests error handling for malformed JSON
+func TestParseJSONConfig_InvalidJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Write invalid JSON
+	invalidJSON := `{
+		"formatters": {
+			"settings": {
+				"gofumpt": {
+					"module-path": "test
+				}
+			}
+		}
+	}` // Missing closing quote
+
+	configPath := filepath.Join(tmpDir, ".golangci.json")
+	// #nosec G306 -- Test file, 0644 is acceptable
+	if err := os.WriteFile(configPath, []byte(invalidJSON), 0o644); err != nil {
+		t.Fatalf("Failed to write test config: %v", err)
+	}
+
+	_, err := parseJSONConfig(configPath)
+	if err == nil {
+		t.Fatal("Expected error for invalid JSON, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to parse JSON config") {
+		t.Errorf("Expected JSON parse error, got: %v", err)
+	}
+}
+
+// TestParseJSONConfig_ReadError tests error handling when file cannot be read
+func TestParseJSONConfig_ReadError(t *testing.T) {
+	// Try to read a non-existent file
+	_, err := parseJSONConfig("/nonexistent/path/.golangci.json")
+	if err == nil {
+		t.Fatal("Expected error for non-existent file, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to read config file") {
+		t.Errorf("Expected read error, got: %v", err)
+	}
+}
+
+// TestParseYAMLConfig_InvalidYAML tests error handling for malformed YAML
+func TestParseYAMLConfig_InvalidYAML(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Write invalid YAML (tabs are not allowed in YAML indentation)
+	invalidYAML := `formatters:
+	settings:
+		gofumpt:
+			module-path: test
+`
+
+	configPath := filepath.Join(tmpDir, ".golangci.yml")
+	// #nosec G306 -- Test file, 0644 is acceptable
+	if err := os.WriteFile(configPath, []byte(invalidYAML), 0o644); err != nil {
+		t.Fatalf("Failed to write test config: %v", err)
+	}
+
+	_, err := parseYAMLConfig(configPath)
+	if err == nil {
+		t.Fatal("Expected error for invalid YAML, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to parse YAML config") {
+		t.Errorf("Expected YAML parse error, got: %v", err)
+	}
+}
+
+// TestParseYAMLConfig_ReadError tests error handling when file cannot be read
+func TestParseYAMLConfig_ReadError(t *testing.T) {
+	// Try to read a non-existent file
+	_, err := parseYAMLConfig("/nonexistent/path/.golangci.yml")
+	if err == nil {
+		t.Fatal("Expected error for non-existent file, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to read config file") {
+		t.Errorf("Expected read error, got: %v", err)
+	}
+}
+
+// TestParseGoMod_ReadError tests error handling when go.mod cannot be read
+func TestParseGoMod_ReadError(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a directory with the go.mod name to cause read error
+	goModPath := filepath.Join(tmpDir, "go.mod")
+	if err := os.Mkdir(goModPath, 0o750); err != nil {
+		t.Fatalf("Failed to create directory: %v", err)
+	}
+
+	_, err := parseGoMod(goModPath)
+	if err == nil {
+		t.Fatal("Expected error when reading directory as file, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to read go.mod") {
+		t.Errorf("Expected read error, got: %v", err)
 	}
 }
