@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mrz1836/go-pre-commit/internal/config"
 )
 
 func TestNewInstaller(t *testing.T) {
@@ -242,5 +244,326 @@ func TestInstaller_UninstallHook_ErrorCases(t *testing.T) {
 				strings.Contains(err.Error(), "failed to remove hook"),
 			"Expected error about reading or removing hook, got: %s", err.Error())
 		assert.False(t, removed)
+	}
+}
+
+func TestNewInstallerWithConfig(t *testing.T) {
+	cfg := &config.Config{}
+	installer := NewInstallerWithConfig("/test/repo", ".github/pre-commit", cfg)
+
+	assert.NotNil(t, installer)
+	assert.Equal(t, "/test/repo", installer.repoRoot)
+	assert.Equal(t, ".github/pre-commit", installer.preCommitDir)
+	assert.NotNil(t, installer.config)
+}
+
+func TestGetInstallationStatus(t *testing.T) {
+	testCases := []struct {
+		name              string
+		setup             func(t *testing.T) (string, string)
+		expectedInstalled bool
+		expectedOurHook   bool
+		expectedConflict  bool
+		expectError       bool
+	}{
+		{
+			name: "hook not installed",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				gitDir := filepath.Join(tmpDir, ".git", "hooks")
+				err := os.MkdirAll(gitDir, 0o750)
+				require.NoError(t, err)
+				return tmpDir, "pre-commit"
+			},
+			expectedInstalled: false,
+			expectedOurHook:   false,
+			expectedConflict:  false,
+			expectError:       false,
+		},
+		{
+			name: "our hook installed",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				gitDir := filepath.Join(tmpDir, ".git", "hooks")
+				err := os.MkdirAll(gitDir, 0o750)
+				require.NoError(t, err)
+
+				hookPath := filepath.Join(gitDir, "pre-commit")
+				// #nosec G306 -- Test hook file needs executable permissions
+				err = os.WriteFile(hookPath, []byte("#!/bin/bash\n# Go Pre-commit Hook\necho test"), 0o755)
+				require.NoError(t, err)
+				return tmpDir, "pre-commit"
+			},
+			expectedInstalled: true,
+			expectedOurHook:   true,
+			expectedConflict:  false,
+			expectError:       false,
+		},
+		{
+			name: "conflicting hook installed",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				gitDir := filepath.Join(tmpDir, ".git", "hooks")
+				err := os.MkdirAll(gitDir, 0o750)
+				require.NoError(t, err)
+
+				hookPath := filepath.Join(gitDir, "pre-commit")
+				// #nosec G306 -- Test hook file needs executable permissions
+				err = os.WriteFile(hookPath, []byte("#!/bin/bash\necho 'different hook'"), 0o755)
+				require.NoError(t, err)
+				return tmpDir, "pre-commit"
+			},
+			expectedInstalled: false,
+			expectedOurHook:   false,
+			expectedConflict:  true,
+			expectError:       false,
+		},
+		{
+			name: "our hook but not executable",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				gitDir := filepath.Join(tmpDir, ".git", "hooks")
+				err := os.MkdirAll(gitDir, 0o750)
+				require.NoError(t, err)
+
+				hookPath := filepath.Join(gitDir, "pre-commit")
+				// #nosec G306 -- Test hook file, 0644 is intentionally not executable for testing
+				err = os.WriteFile(hookPath, []byte("#!/bin/bash\n# Go Pre-commit Hook\necho test"), 0o644)
+				require.NoError(t, err)
+				return tmpDir, "pre-commit"
+			},
+			expectedInstalled: true,
+			expectedOurHook:   true,
+			expectedConflict:  false,
+			expectError:       false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir, hookType := tc.setup(t)
+			installer := NewInstaller(tmpDir, ".github/pre-commit")
+
+			status, err := installer.GetInstallationStatus(hookType)
+
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.expectedInstalled, status.Installed)
+				assert.Equal(t, tc.expectedOurHook, status.IsOurHook)
+				assert.Equal(t, tc.expectedConflict, status.ConflictingHook)
+			}
+		})
+	}
+}
+
+func TestRestoreBackupIfExists(t *testing.T) {
+	testCases := []struct {
+		name        string
+		setup       func(t *testing.T) (string, string)
+		expectError bool
+		shouldFind  bool
+	}{
+		{
+			name: "no backup exists",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				gitDir := filepath.Join(tmpDir, ".git", "hooks")
+				err := os.MkdirAll(gitDir, 0o750)
+				require.NoError(t, err)
+				hookPath := filepath.Join(gitDir, "pre-commit")
+				return tmpDir, hookPath
+			},
+			expectError: false,
+			shouldFind:  false,
+		},
+		{
+			name: "backup exists and restored",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				gitDir := filepath.Join(tmpDir, ".git", "hooks")
+				err := os.MkdirAll(gitDir, 0o750)
+				require.NoError(t, err)
+
+				hookPath := filepath.Join(gitDir, "pre-commit")
+				backupPath := hookPath + ".backup.12345"
+				// #nosec G306 -- Test backup file needs executable permissions
+				err = os.WriteFile(backupPath, []byte("#!/bin/bash\necho 'backup'"), 0o755)
+				require.NoError(t, err)
+				return tmpDir, hookPath
+			},
+			expectError: false,
+			shouldFind:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir, hookPath := tc.setup(t)
+			installer := NewInstaller(tmpDir, ".github/pre-commit")
+
+			err := installer.restoreBackupIfExists(hookPath)
+
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				if tc.shouldFind {
+					// Verify backup was restored
+					_, err := os.Stat(hookPath)
+					assert.NoError(t, err)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateInstallation(t *testing.T) {
+	testCases := []struct {
+		name        string
+		setup       func(t *testing.T) (string, string)
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "not a git repository",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				// No .git directory
+				return tmpDir, "pre-commit"
+			},
+			expectError: true,
+			errorMsg:    "not a git repository",
+		},
+		{
+			name: "invalid hook type",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				gitDir := filepath.Join(tmpDir, ".git")
+				err := os.MkdirAll(gitDir, 0o750)
+				require.NoError(t, err)
+				return tmpDir, "invalid-hook"
+			},
+			expectError: true,
+			errorMsg:    "unsupported hook type",
+		},
+		{
+			name: "pre-commit directory does not exist",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				gitDir := filepath.Join(tmpDir, ".git")
+				err := os.MkdirAll(gitDir, 0o750)
+				require.NoError(t, err)
+				// No .github/pre-commit directory
+				return tmpDir, "pre-commit"
+			},
+			expectError: true,
+			errorMsg:    "pre-commit directory does not exist",
+		},
+		{
+			name: "valid installation",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				gitDir := filepath.Join(tmpDir, ".git")
+				err := os.MkdirAll(gitDir, 0o750)
+				require.NoError(t, err)
+
+				preCommitDir := filepath.Join(tmpDir, ".github", "pre-commit")
+				err = os.MkdirAll(preCommitDir, 0o750)
+				require.NoError(t, err)
+				return tmpDir, "pre-commit"
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir, hookType := tc.setup(t)
+			installer := NewInstaller(tmpDir, ".github/pre-commit")
+
+			err := installer.validateInstallation(hookType)
+
+			if tc.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorMsg)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestVerifyInstallation(t *testing.T) {
+	testCases := []struct {
+		name        string
+		setup       func(t *testing.T) string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "hook not found",
+			setup: func(t *testing.T) string {
+				tmpDir := t.TempDir()
+				return filepath.Join(tmpDir, "nonexistent-hook")
+			},
+			expectError: true,
+			errorMsg:    "hook file not found",
+		},
+		{
+			name: "hook not executable",
+			setup: func(t *testing.T) string {
+				tmpDir := t.TempDir()
+				hookPath := filepath.Join(tmpDir, "pre-commit")
+				// #nosec G306 -- Test file, 0644 is intentionally not executable for testing
+				err := os.WriteFile(hookPath, []byte("#!/bin/bash\n# Go Pre-commit Hook\necho test"), 0o644)
+				require.NoError(t, err)
+				return hookPath
+			},
+			expectError: true,
+			errorMsg:    "not executable",
+		},
+		{
+			name: "hook missing marker",
+			setup: func(t *testing.T) string {
+				tmpDir := t.TempDir()
+				hookPath := filepath.Join(tmpDir, "pre-commit")
+				// #nosec G306 -- Test hook file needs executable permissions
+				err := os.WriteFile(hookPath, []byte("#!/bin/bash\necho test"), 0o755)
+				require.NoError(t, err)
+				return hookPath
+			},
+			expectError: true,
+			errorMsg:    "expected marker",
+		},
+		{
+			name: "valid installation",
+			setup: func(t *testing.T) string {
+				tmpDir := t.TempDir()
+				hookPath := filepath.Join(tmpDir, "pre-commit")
+				// #nosec G306 -- Test hook file needs executable permissions
+				err := os.WriteFile(hookPath, []byte("#!/bin/bash\n# Go Pre-commit Hook\necho test"), 0o755)
+				require.NoError(t, err)
+				return hookPath
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			hookPath := tc.setup(t)
+			installer := NewInstaller("/test/repo", ".github/pre-commit")
+
+			err := installer.verifyInstallation(hookPath)
+
+			if tc.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorMsg)
+			} else {
+				require.NoError(t, err)
+			}
+		})
 	}
 }
