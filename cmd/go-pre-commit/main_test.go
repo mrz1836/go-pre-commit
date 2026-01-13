@@ -12,9 +12,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/cmd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/cmd"
 )
 
 func TestMain(t *testing.T) {

@@ -9,10 +9,11 @@ import (
 	"text/tabwriter"
 
 	"github.com/fatih/color"
-	"github.com/mrz1836/go-pre-commit/internal/config"
-	"github.com/mrz1836/go-pre-commit/internal/plugins"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+
+	"github.com/mrz1836/go-pre-commit/internal/config"
+	"github.com/mrz1836/go-pre-commit/internal/plugins"
 )
 
 // Define plugin command errors

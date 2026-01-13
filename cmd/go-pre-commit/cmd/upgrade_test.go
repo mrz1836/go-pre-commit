@@ -395,3 +395,26 @@ func TestIsLikelyCommitHash(t *testing.T) {
 		})
 	}
 }
+
+// TestGetInstalledVersion tests the GetInstalledVersion function
+func TestGetInstalledVersion(t *testing.T) {
+	version, err := GetInstalledVersion()
+	if err != nil {
+		require.Error(t, err)
+		assert.Empty(t, version)
+	} else {
+		assert.NotEmpty(t, version)
+	}
+}
+
+// TestGetInstalledVersionErrorHandling tests error handling
+func TestGetInstalledVersionErrorPaths(t *testing.T) {
+	originalPath := os.Getenv("PATH")
+	defer func() {
+		_ = os.Setenv("PATH", originalPath)
+	}()
+
+	_ = os.Setenv("PATH", "/nonexistent")
+	_, err := GetInstalledVersion()
+	assert.Error(t, err)
+}

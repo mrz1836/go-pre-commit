@@ -9,9 +9,10 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/mrz1836/go-pre-commit/internal/git"
 	"github.com/mrz1836/go-pre-commit/internal/version"
-	"github.com/spf13/cobra"
 )
 
 var (

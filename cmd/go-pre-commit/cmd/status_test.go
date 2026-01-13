@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -231,4 +232,25 @@ func setupTempGitRepoForStatus(t *testing.T, enabled, hasConfig bool) string {
 	}
 
 	return tempDir
+}
+
+// TestPrintDetail tests the printDetail function
+func TestPrintDetail(t *testing.T) {
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	printDetail("Key", "Value")
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	assert.Contains(t, output, "Key")
+	assert.Contains(t, output, "Value")
 }
