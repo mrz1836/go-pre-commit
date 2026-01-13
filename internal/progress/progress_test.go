@@ -2,7 +2,10 @@
 package progress
 
 import (
+	"bytes"
 	"context"
+	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -358,5 +361,133 @@ func TestTracker_ZeroTimeout(t *testing.T) {
 		tracker.Start(ctx)
 		time.Sleep(20 * time.Millisecond)
 		tracker.Stop()
+	})
+}
+
+// TestUpdateProgressBranches tests all branches in updateProgress function
+
+// TestUpdateProgressBranches tests uncovered branches in updateProgress
+func TestUpdateProgressBranches(t *testing.T) {
+	t.Run("canceled tracker skips update", func(t *testing.T) {
+		ctx := context.Background()
+		tracker := New(Options{
+			Operation: "test",
+			Timeout:   1 * time.Second,
+		})
+		tracker.Start(ctx)
+
+		// Stop the tracker which sets canceled = true
+		tracker.Stop()
+
+		// Call updateProgress after cancellation - should return early
+		tracker.updateProgress()
+		// Test passes if no panic
+	})
+
+	t.Run("remaining time <= 0 skips output", func(t *testing.T) {
+		ctx := context.Background()
+		tracker := New(Options{
+			Operation: "test",
+			Timeout:   1 * time.Millisecond, // Very short timeout
+		})
+		tracker.Start(ctx)
+		defer tracker.Stop()
+
+		// Wait for timeout to definitely pass
+		time.Sleep(50 * time.Millisecond)
+
+		// Call updateProgress - should return early due to remaining <= 0
+		tracker.updateProgress()
+		// Test passes if no panic
+	})
+
+	t.Run("suppressOutput prevents output", func(t *testing.T) {
+		ctx := context.Background()
+		tracker := New(Options{
+			Operation:      "test",
+			Timeout:        5 * time.Second,
+			SuppressOutput: true,
+		})
+		tracker.Start(ctx)
+		defer tracker.Stop()
+
+		// Capture stdout to verify no output
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		tracker.updateProgress()
+
+		_ = w.Close()
+		os.Stdout = oldStdout
+
+		var buf bytes.Buffer
+		_, _ = buf.ReadFrom(r)
+		output := buf.String()
+
+		// Should have no output when suppressed
+		assert.Empty(t, output)
+	})
+
+	t.Run("context string is included in output", func(t *testing.T) {
+		ctx := context.Background()
+		tracker := New(Options{
+			Operation: "test",
+			Context:   "test-context",
+			Timeout:   5 * time.Second,
+		})
+		tracker.Start(ctx)
+		defer tracker.Stop()
+
+		// Capture output
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		tracker.updateProgress()
+
+		_ = w.Close()
+		os.Stdout = oldStdout
+
+		var buf bytes.Buffer
+		_, _ = buf.ReadFrom(r)
+		output := buf.String()
+
+		// Should contain context in parentheses
+		assert.Contains(t, output, "(test-context)")
+	})
+
+	t.Run("empty context omits parentheses", func(t *testing.T) {
+		ctx := context.Background()
+		tracker := New(Options{
+			Operation: "test",
+			Timeout:   5 * time.Second,
+			// No Context field - should be empty
+		})
+		tracker.Start(ctx)
+		defer tracker.Stop()
+
+		// Capture output
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		tracker.updateProgress()
+
+		_ = w.Close()
+		os.Stdout = oldStdout
+
+		var buf bytes.Buffer
+		_, _ = buf.ReadFrom(r)
+		output := buf.String()
+
+		// Should contain test but not empty parentheses
+		assert.Contains(t, output, "test")
+		// Context parentheses should not appear for empty context
+		lines := strings.Split(strings.TrimSpace(output), "\n")
+		if len(lines) > 0 {
+			// Check that line doesn't have empty context
+			assert.NotContains(t, lines[0], "()")
+		}
 	})
 }
