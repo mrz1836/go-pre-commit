@@ -212,8 +212,9 @@ func (r *Runner) runCheck(ctx context.Context, check checks.Check, files []strin
 		fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] Starting check '%s' with timeout: %v\n", checkName, timeout)
 	}
 
-	// Filter files for this check
-	filteredFiles := check.FilterFiles(files)
+	// Apply configured exclude patterns, then filter files for this check
+	nonExcludedFiles := r.applyExcludePatterns(files)
+	filteredFiles := check.FilterFiles(nonExcludedFiles)
 	if len(filteredFiles) == 0 {
 		return CheckResult{
 			Name:     check.Name(),
@@ -376,6 +377,44 @@ func (r *Runner) isCheckEnabled(name string) bool {
 	default:
 		return false
 	}
+}
+
+// applyExcludePatterns filters out files matching configured exclude patterns
+func (r *Runner) applyExcludePatterns(files []string) []string {
+	patterns := r.config.Git.ExcludePatterns
+	if len(patterns) == 0 {
+		return files
+	}
+
+	filtered := make([]string, 0, len(files))
+	for _, file := range files {
+		excluded := false
+		for _, pattern := range patterns {
+			if matchesExcludePattern(file, pattern) {
+				excluded = true
+				break
+			}
+		}
+		if !excluded {
+			filtered = append(filtered, file)
+		}
+	}
+	return filtered
+}
+
+// matchesExcludePattern checks if a file path matches an exclude pattern
+func matchesExcludePattern(filePath, pattern string) bool {
+	// Empty pattern matches nothing
+	if pattern == "" {
+		return false
+	}
+	// Directory pattern (ends with /)
+	if strings.HasSuffix(pattern, "/") {
+		// Match if file is in this directory or subdirectory
+		return strings.Contains(filePath, pattern) || strings.HasPrefix(filePath, pattern)
+	}
+	// Exact or substring match
+	return strings.Contains(filePath, pattern)
 }
 
 // combineSkipSources processes SKIP environment variables and combines them with CLI skip options
