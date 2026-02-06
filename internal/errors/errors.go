@@ -15,8 +15,8 @@ var (
 	// ErrNoChecksToRun is returned when no checks are configured to run
 	ErrNoChecksToRun = errors.New("no checks to run")
 
-	// ErrEnvFileNotFound is returned when .env.base cannot be found
-	ErrEnvFileNotFound = errors.New("failed to find .env.base")
+	// ErrEnvFileNotFound is returned when environment configuration cannot be found
+	ErrEnvFileNotFound = errors.New("failed to find environment configuration (.github/env/ directory or .github/.env.base)")
 
 	// ErrRepositoryRootNotFound is returned when git repository root cannot be determined
 	ErrRepositoryRootNotFound = errors.New("unable to determine repository root")

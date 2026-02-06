@@ -34,7 +34,7 @@ func (s *ErrorTestSuite) TestCommonErrors() {
 	}{
 		{"ErrChecksFailed", pkgerrors.ErrChecksFailed, "checks failed"},
 		{"ErrNoChecksToRun", pkgerrors.ErrNoChecksToRun, "no checks to run"},
-		{"ErrEnvFileNotFound", pkgerrors.ErrEnvFileNotFound, "failed to find .env.base"},
+		{"ErrEnvFileNotFound", pkgerrors.ErrEnvFileNotFound, "failed to find environment configuration (.github/env/ directory or .github/.env.base)"},
 		{"ErrRepositoryRootNotFound", pkgerrors.ErrRepositoryRootNotFound, "unable to determine repository root"},
 		{"ErrToolNotFound", pkgerrors.ErrToolNotFound, "required tool not found"},
 		{"ErrLintingIssues", pkgerrors.ErrLintingIssues, "linting issues found"},
