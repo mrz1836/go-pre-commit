@@ -40,6 +40,7 @@ func (s *EnvFileTestSuite) clearEnv() {
 		"KEY_WITH_COMMENT", "QUOTED_VALUE", "SINGLE_QUOTED",
 		"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
 		"EXISTING_VAR", "NEW_VAR", "OVERRIDE_ME",
+		"CORE_VAR", "TOOLS_VAR", "PROJECT_VAR", "SHARED_VAR", "LOCAL_VAR", "ORDER_VAR",
 	}
 	for _, key := range testEnvVars {
 		_ = os.Unsetenv(key)
@@ -321,6 +322,103 @@ SHARED_VAR=custom_shared
 	s.Equal("base_value", os.Getenv("BASE_VAR"))      // Unchanged
 	s.Equal("custom_shared", os.Getenv("SHARED_VAR")) // Overridden
 	s.Equal("custom_value", os.Getenv("CUSTOM_VAR"))  // New
+}
+
+// TestLoadDir tests that LoadDir loads multiple env files in order with last-wins semantics
+func (s *EnvFileTestSuite) TestLoadDir() {
+	envDir := filepath.Join(s.tempDir, "env")
+	s.Require().NoError(os.MkdirAll(envDir, 0o750))
+
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "00-core.env"), []byte("CORE_VAR=core\nSHARED_VAR=core\n"), 0o600))
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "10-tools.env"), []byte("TOOLS_VAR=tools\nSHARED_VAR=tools\n"), 0o600))
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "90-project.env"), []byte("PROJECT_VAR=project\nSHARED_VAR=project\n"), 0o600))
+
+	err := LoadDir(envDir, false)
+	s.Require().NoError(err)
+
+	s.Equal("core", os.Getenv("CORE_VAR"))
+	s.Equal("tools", os.Getenv("TOOLS_VAR"))
+	s.Equal("project", os.Getenv("PROJECT_VAR"))
+	s.Equal("project", os.Getenv("SHARED_VAR")) // last-wins
+}
+
+// TestLoadDirSkipsLocalInCI tests that 99-local.env is skipped when skipLocal=true
+func (s *EnvFileTestSuite) TestLoadDirSkipsLocalInCI() {
+	envDir := filepath.Join(s.tempDir, "env")
+	s.Require().NoError(os.MkdirAll(envDir, 0o750))
+
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "00-core.env"), []byte("CORE_VAR=core\n"), 0o600))
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "99-local.env"), []byte("LOCAL_VAR=local\n"), 0o600))
+
+	err := LoadDir(envDir, true)
+	s.Require().NoError(err)
+
+	s.Equal("core", os.Getenv("CORE_VAR"))
+	s.Empty(os.Getenv("LOCAL_VAR")) // skipped
+}
+
+// TestLoadDirIncludesLocalWhenNotCI tests that 99-local.env is loaded when skipLocal=false
+func (s *EnvFileTestSuite) TestLoadDirIncludesLocalWhenNotCI() {
+	envDir := filepath.Join(s.tempDir, "env")
+	s.Require().NoError(os.MkdirAll(envDir, 0o750))
+
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "00-core.env"), []byte("CORE_VAR=core\n"), 0o600))
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "99-local.env"), []byte("LOCAL_VAR=local\n"), 0o600))
+
+	err := LoadDir(envDir, false)
+	s.Require().NoError(err)
+
+	s.Equal("core", os.Getenv("CORE_VAR"))
+	s.Equal("local", os.Getenv("LOCAL_VAR")) // loaded
+}
+
+// TestLoadDirEmptyDirectory tests error when directory has no .env files
+func (s *EnvFileTestSuite) TestLoadDirEmptyDirectory() {
+	envDir := filepath.Join(s.tempDir, "empty-env")
+	s.Require().NoError(os.MkdirAll(envDir, 0o750))
+
+	err := LoadDir(envDir, false)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "no .env files found")
+}
+
+// TestLoadDirNonexistentDirectory tests error when directory doesn't exist
+func (s *EnvFileTestSuite) TestLoadDirNonexistentDirectory() {
+	err := LoadDir(filepath.Join(s.tempDir, "nonexistent"), false)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "env directory not found")
+}
+
+// TestLoadDirSortOrder tests that files load in correct lexicographic order regardless of creation order
+func (s *EnvFileTestSuite) TestLoadDirSortOrder() {
+	envDir := filepath.Join(s.tempDir, "env")
+	s.Require().NoError(os.MkdirAll(envDir, 0o750))
+
+	// Create files in reverse order
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "90-project.env"), []byte("ORDER_VAR=90\n"), 0o600))
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "10-tools.env"), []byte("ORDER_VAR=10\n"), 0o600))
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "00-core.env"), []byte("ORDER_VAR=00\n"), 0o600))
+
+	err := LoadDir(envDir, false)
+	s.Require().NoError(err)
+
+	// 90-project.env is last in sort order, so it wins
+	s.Equal("90", os.Getenv("ORDER_VAR"))
+}
+
+// TestLoadDirOnlyEnvFiles tests that non-.env files are ignored
+func (s *EnvFileTestSuite) TestLoadDirOnlyEnvFiles() {
+	envDir := filepath.Join(s.tempDir, "env")
+	s.Require().NoError(os.MkdirAll(envDir, 0o750))
+
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "00-core.env"), []byte("CORE_VAR=core\n"), 0o600))
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "README.md"), []byte("# Env files\n"), 0o600))
+	s.Require().NoError(os.WriteFile(filepath.Join(envDir, "load-env.sh"), []byte("#!/bin/bash\n"), 0o600))
+
+	err := LoadDir(envDir, false)
+	s.Require().NoError(err)
+
+	s.Equal("core", os.Getenv("CORE_VAR"))
 }
 
 // TestEnvFileTestSuite runs the test suite

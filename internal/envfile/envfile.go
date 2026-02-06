@@ -2,9 +2,21 @@
 package envfile
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"sort"
 	"strings"
+)
+
+// Sentinel errors for LoadDir
+var (
+	// ErrNotDirectory is returned when the provided path is not a directory
+	ErrNotDirectory = errors.New("path is not a directory")
+
+	// ErrNoEnvFiles is returned when no .env files are found in the directory
+	ErrNoEnvFiles = errors.New("no .env files found")
 )
 
 // Load reads environment variables from a file and sets them in the current environment.
@@ -17,6 +29,43 @@ func Load(filename string) error {
 // It overrides existing environment variables.
 func Overload(filename string) error {
 	return loadFile(filename, true)
+}
+
+// LoadDir loads all *.env files from dirPath in lexicographic sort order.
+// Each file overrides variables set by previous files (last wins).
+// If skipLocal is true, 99-local.env is skipped (CI environments).
+func LoadDir(dirPath string, skipLocal bool) error {
+	info, err := os.Stat(dirPath)
+	if err != nil {
+		return fmt.Errorf("env directory not found: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%w: %s", ErrNotDirectory, dirPath)
+	}
+
+	matches, err := filepath.Glob(filepath.Join(dirPath, "*.env"))
+	if err != nil {
+		return fmt.Errorf("failed to glob env files in %s: %w", dirPath, err)
+	}
+
+	sort.Strings(matches)
+
+	loaded := 0
+	for _, envFile := range matches {
+		if skipLocal && filepath.Base(envFile) == "99-local.env" {
+			continue
+		}
+		if err := Overload(envFile); err != nil {
+			return fmt.Errorf("failed to load %s: %w", envFile, err)
+		}
+		loaded++
+	}
+
+	if loaded == 0 {
+		return fmt.Errorf("%w in %s", ErrNoEnvFiles, dirPath)
+	}
+
+	return nil
 }
 
 // loadFile reads a .env file and sets environment variables

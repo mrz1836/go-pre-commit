@@ -1,6 +1,8 @@
 package envfile
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -80,6 +82,33 @@ func FuzzProcessValue(f *testing.F) {
 				}
 			}
 		}
+	})
+}
+
+// FuzzLoadDir tests the LoadDir function with various file contents
+func FuzzLoadDir(f *testing.F) {
+	// Seed corpus: coreContent, localContent, skipLocal
+	f.Add("CORE_VAR=value1\nSHARED=core\n", "LOCAL_VAR=local\nSHARED=local\n", false)
+	f.Add("# comment only\n", "\n", false)
+	f.Add("OVERRIDE=base\n", "OVERRIDE=local\n", true)
+	f.Add("", "", false)
+
+	f.Fuzz(func(t *testing.T, coreContent, localContent string, skipLocal bool) {
+		tmpDir := t.TempDir()
+		envDir := filepath.Join(tmpDir, "env")
+		if err := os.MkdirAll(envDir, 0o750); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := os.WriteFile(filepath.Join(envDir, "00-core.env"), []byte(coreContent), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(envDir, "99-local.env"), []byte(localContent), 0o600); err != nil {
+			t.Fatal(err)
+		}
+
+		// Should not panic on any input
+		_ = LoadDir(envDir, skipLocal)
 	})
 }
 
