@@ -244,6 +244,8 @@ func (s *ConfigTestSuite) clearEnvVars() {
 		"CODEBUILD_BUILD_ID",
 		"GO_PRE_COMMIT_AUTO_ADJUST_CI_TIMEOUTS",
 		"GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT",
+		"GO_PRE_COMMIT_TEST_CONFIG_DIR",
+		"CORE_VAR", "TOOLS_VAR", "PROJECT_VAR", "SHARED_VAR", "LOCAL_VAR",
 	}
 
 	for _, envVar := range envVars {
@@ -392,7 +394,7 @@ func (s *ConfigTestSuite) TestLoadMissingEnvFile() {
 	cfg, err := Load()
 	s.Require().Error(err)
 	s.Nil(cfg)
-	s.Contains(err.Error(), "failed to find .env.base")
+	s.Contains(err.Error(), "failed to find environment configuration")
 }
 
 // TestLoadCorruptedEnvFile tests behavior with corrupted env file
@@ -472,6 +474,116 @@ func (s *ConfigTestSuite) TestConfigStructInitialization() {
 	s.Positive(cfg.CheckTimeouts.Whitespace)
 	s.Positive(cfg.CheckTimeouts.EOF)
 	s.NotEmpty(cfg.Git.HooksPath)
+}
+
+// createEnvDir creates a .github/env/ directory with the given files
+func (s *ConfigTestSuite) createEnvDir(files map[string]string) {
+	envDir := filepath.Join(s.tempDir, ".github", "env")
+	err := os.MkdirAll(envDir, 0o750)
+	s.Require().NoError(err)
+
+	for name, content := range files {
+		err = os.WriteFile(filepath.Join(envDir, name), []byte(content), 0o600)
+		s.Require().NoError(err)
+	}
+}
+
+// TestLoadModularMode tests basic modular env loading
+func (s *ConfigTestSuite) TestLoadModularMode() {
+	s.createEnvDir(map[string]string{
+		"00-core.env": "ENABLE_GO_PRE_COMMIT=true\nGO_PRE_COMMIT_LOG_LEVEL=debug\n",
+	})
+
+	cfg, err := Load()
+	s.Require().NoError(err)
+	s.NotNil(cfg)
+	s.True(cfg.Enabled)
+	s.Equal("debug", cfg.LogLevel)
+}
+
+// TestLoadModularModeOverrideOrder tests that later files override earlier ones
+func (s *ConfigTestSuite) TestLoadModularModeOverrideOrder() {
+	s.createEnvDir(map[string]string{
+		"00-core.env":    "ENABLE_GO_PRE_COMMIT=true\nGO_PRE_COMMIT_LOG_LEVEL=info\n",
+		"90-project.env": "GO_PRE_COMMIT_LOG_LEVEL=debug\n",
+	})
+
+	cfg, err := Load()
+	s.Require().NoError(err)
+	s.NotNil(cfg)
+	s.Equal("debug", cfg.LogLevel) // 90-project.env wins
+}
+
+// TestLoadModularModePrefersOverLegacy tests that modular mode is preferred when both exist
+func (s *ConfigTestSuite) TestLoadModularModePrefersOverLegacy() {
+	// Create both legacy and modular configs with different values
+	s.createEnvFile("ENABLE_GO_PRE_COMMIT=true\nGO_PRE_COMMIT_LOG_LEVEL=warn\n")
+	s.createEnvDir(map[string]string{
+		"00-core.env": "ENABLE_GO_PRE_COMMIT=true\nGO_PRE_COMMIT_LOG_LEVEL=debug\n",
+	})
+
+	cfg, err := Load()
+	s.Require().NoError(err)
+	s.NotNil(cfg)
+	s.Equal("debug", cfg.LogLevel) // modular wins
+}
+
+// TestLoadLegacyFallbackWhenNoEnvDir tests legacy mode when no env/ dir exists
+func (s *ConfigTestSuite) TestLoadLegacyFallbackWhenNoEnvDir() {
+	s.createEnvFile("ENABLE_GO_PRE_COMMIT=true\nGO_PRE_COMMIT_LOG_LEVEL=warn\n")
+
+	cfg, err := Load()
+	s.Require().NoError(err)
+	s.NotNil(cfg)
+	s.Equal("warn", cfg.LogLevel) // legacy file loaded
+}
+
+// TestFindEnvDirInParentDirectory tests that findEnvDir walks up to find env/ in parent
+func (s *ConfigTestSuite) TestFindEnvDirInParentDirectory() {
+	s.createEnvDir(map[string]string{
+		"00-core.env": "ENABLE_GO_PRE_COMMIT=true\n",
+	})
+
+	// Create subdirectory and change to it
+	subDir := filepath.Join(s.tempDir, "subdir", "deep")
+	err := os.MkdirAll(subDir, 0o750)
+	s.Require().NoError(err)
+	err = os.Chdir(subDir)
+	s.Require().NoError(err)
+
+	cfg, loadErr := Load()
+	s.Require().NoError(loadErr)
+	s.NotNil(cfg)
+	s.True(cfg.Enabled)
+}
+
+// TestLoadModularModeSkipsLocalInCI tests that 99-local.env is skipped when CI=true
+func (s *ConfigTestSuite) TestLoadModularModeSkipsLocalInCI() {
+	s.createEnvDir(map[string]string{
+		"00-core.env":  "ENABLE_GO_PRE_COMMIT=true\nGO_PRE_COMMIT_LOG_LEVEL=info\n",
+		"99-local.env": "GO_PRE_COMMIT_LOG_LEVEL=debug\n",
+	})
+
+	s.Require().NoError(os.Setenv("CI", "true"))
+
+	cfg, err := Load()
+	s.Require().NoError(err)
+	s.NotNil(cfg)
+	s.Equal("info", cfg.LogLevel) // 99-local.env skipped
+}
+
+// TestLoadModularModeIncludesLocalWhenNotCI tests that 99-local.env is loaded when CI is not set
+func (s *ConfigTestSuite) TestLoadModularModeIncludesLocalWhenNotCI() {
+	s.createEnvDir(map[string]string{
+		"00-core.env":  "ENABLE_GO_PRE_COMMIT=true\nGO_PRE_COMMIT_LOG_LEVEL=info\n",
+		"99-local.env": "GO_PRE_COMMIT_LOG_LEVEL=debug\n",
+	})
+
+	// CI is unset (clearEnvVars ensures this)
+	cfg, err := Load()
+	s.Require().NoError(err)
+	s.NotNil(cfg)
+	s.Equal("debug", cfg.LogLevel) // 99-local.env loaded
 }
 
 // Unit tests for edge cases and error conditions

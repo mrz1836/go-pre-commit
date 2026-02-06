@@ -109,26 +109,28 @@ type Config struct {
 	}
 }
 
-// Load reads configuration from .github/.env.base and .github/.env.custom
+// Load reads configuration from modular .github/env/*.env files or legacy .github/.env.base
 func Load() (*Config, error) {
-	// Try to find .env.base file (optional - can fall back to env vars)
-	basePath, err := findBaseEnvFile()
-	if err == nil {
-		// Load base environment file if found
+	// Try modular mode first (preferred)
+	if envDir := findEnvDir(); envDir != "" {
+		if err := envfile.LoadDir(envDir, isCI()); err != nil {
+			return nil, fmt.Errorf("failed to load modular configuration from %s: %w", envDir, err)
+		}
+	} else {
+		// Fall back to legacy mode
+		basePath, err := findBaseEnvFile()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load configuration: %w", err)
+		}
 		if loadErr := envfile.Load(basePath); loadErr != nil {
 			return nil, fmt.Errorf("failed to load %s: %w", basePath, loadErr)
 		}
-
-		// Load custom environment file if it exists (overrides base)
 		customPath := findCustomEnvFile(basePath)
 		if customPath != "" {
 			if overloadErr := envfile.Overload(customPath); overloadErr != nil {
 				return nil, fmt.Errorf("failed to load %s: %w", customPath, overloadErr)
 			}
 		}
-	} else {
-		// When .env.base file is not found, fail with configuration error
-		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	cfg := &Config{
@@ -413,28 +415,43 @@ Git Settings:
 UI Settings:
   GO_PRE_COMMIT_COLOR_OUTPUT=true           Enable colored output
 
-Example .github/.env.base:
-  # Enable the system
-  ENABLE_GO_PRE_COMMIT=true
+Configuration Methods (auto-detected):
 
-  # Configure checks
+  Modular (preferred): .github/env/*.env
+    Files are loaded in lexicographic order (00-core.env, 10-tools.env, 90-project.env).
+    Later files override earlier ones (last wins). 99-local.env is skipped in CI (CI=true).
+
+  Legacy: .github/.env.base + optional .github/.env.custom
+    Base file is loaded first, custom file overrides base values.
+
+  Detection: If .github/env/ exists with >=1 .env file, modular mode is used.
+  Otherwise, falls back to legacy .env.base/.env.custom.
+
+Example .github/env/ (modular):
+  00-core.env:
+    ENABLE_GO_PRE_COMMIT=true
+    GO_PRE_COMMIT_LOG_LEVEL=info
+
+  10-tools.env:
+    GO_PRE_COMMIT_FUMPT_VERSION=v0.9.1
+    GO_PRE_COMMIT_GOLANGCI_LINT_VERSION=v2.5.0
+
+  90-project.env:
+    GO_PRE_COMMIT_LINT_TIMEOUT=120
+    GO_PRE_COMMIT_EXCLUDE_PATTERNS="vendor/,node_modules/,.git/"
+
+  99-local.env (git-ignored, skipped in CI):
+    GO_PRE_COMMIT_ENABLE_AI_DETECTION=false
+
+Example .github/.env.base (legacy):
+  ENABLE_GO_PRE_COMMIT=true
   GO_PRE_COMMIT_ENABLE_FMT=true
   GO_PRE_COMMIT_ENABLE_FUMPT=true
-  GO_PRE_COMMIT_ENABLE_LINT=true
-  GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
-
-  # Set timeouts
-  GO_PRE_COMMIT_FUMPT_TIMEOUT=30
   GO_PRE_COMMIT_LINT_TIMEOUT=120
-
-  # Exclude patterns
   GO_PRE_COMMIT_EXCLUDE_PATTERNS="vendor/,node_modules/,.git/,*.tmp,*.log"
 
-Example .github/.env.custom (optional overrides):
-  # Override timeout for your project
+Example .github/.env.custom (legacy, optional overrides):
   GO_PRE_COMMIT_LINT_TIMEOUT=180
-
-  # Disable specific checks
   GO_PRE_COMMIT_ENABLE_AI_DETECTION=false
 `
 }
@@ -487,6 +504,64 @@ func findCustomEnvFile(basePath string) string {
 		return customPath
 	}
 	return ""
+}
+
+// findEnvDir locates .github/env/ directory with modular env files.
+// Walks up directory tree (same strategy as findBaseEnvFile).
+// Returns path if found with >=1 .env file, or empty string.
+func findEnvDir() string {
+	// Check for test-specific config directory override
+	if testConfigDir := os.Getenv("GO_PRE_COMMIT_TEST_CONFIG_DIR"); testConfigDir != "" {
+		envDir := filepath.Join(testConfigDir, ".github", "env")
+		if hasEnvFiles(envDir) {
+			return envDir
+		}
+		return ""
+	}
+
+	// Check .github/env relative to cwd
+	if hasEnvFiles(".github/env") {
+		return ".github/env"
+	}
+
+	// Walk up directory tree
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+
+	for {
+		envDir := filepath.Join(cwd, ".github", "env")
+		if hasEnvFiles(envDir) {
+			return envDir
+		}
+
+		parent := filepath.Dir(cwd)
+		if parent == cwd {
+			break
+		}
+		cwd = parent
+	}
+
+	return ""
+}
+
+// hasEnvFiles checks if dirPath exists, is a directory, and contains >=1 *.env file.
+func hasEnvFiles(dirPath string) bool {
+	info, err := os.Stat(dirPath)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+	matches, err := filepath.Glob(filepath.Join(dirPath, "*.env"))
+	if err != nil {
+		return false
+	}
+	return len(matches) > 0
+}
+
+// isCI returns true if CI environment variable equals "true"
+func isCI() bool {
+	return os.Getenv("CI") == "true"
 }
 
 // Helper functions for environment variable parsing
