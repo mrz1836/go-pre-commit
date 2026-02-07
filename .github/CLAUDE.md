@@ -8,12 +8,11 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 
 **What it does:**
 - Provides git pre-commit hooks as a single Go binary
-- Runs checks in parallel: `ai_detection`, `fumpt`, `lint`, `mod-tidy`, `whitespace`, `eof`, `fmt`, `goimports`
+- Runs checks in parallel: `eof`, `fumpt`, `gitleaks`, `lint`, `mod-tidy`, `whitespace`
 - **Pure Go implementation** - all checks run directly without Make dependencies
-- **Auto-installs tools** - fumpt, goimports, and golangci-lint are installed automatically when needed
+- **Auto-installs tools** - fumpt, golangci-lint, goimports, and gitleaks are installed automatically when needed
 - **Plugin system** - Extend with custom checks in any language (Shell, Python, Go, Docker, etc.)
-- Configures via `.github/.env.base` (default configuration) and optionally `.github/.env.custom` (project-specific overrides) - no YAML files
-- Pure Go implementation with no external dependencies
+- Configures via environment files: `.github/env/` (modular, preferred) or `.github/.env.base` + `.github/.env.custom` (legacy fallback)
 
 **Key commands:**
 - `go-pre-commit install` - Install hooks in repository
@@ -25,7 +24,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 - `go-pre-commit uninstall` - Remove installed hooks
 
 **Available checks:**
-- `ai_detection`, `fumpt`, `lint`, `mod-tidy`, `whitespace`, `eof`, `fmt`, `goimports`, `gitleaks`
+- `eof`, `fumpt`, `gitleaks`, `lint`, `mod-tidy`, `whitespace`
 
 ### 📚 Documentation Hierarchy
 
@@ -46,29 +45,37 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
   └── main.go          # Entry point
 /internal/             # Core packages
   ├── checks/          # Check implementations
-  │   ├── builtin/     # Built-in checks (ai_detection, whitespace, eof)
-  │   └── gotools/     # Go tool checks (fumpt, lint, mod-tidy)
-  ├── config/          # Configuration loader
+  │   ├── builtin/     # Built-in checks (whitespace, eof)
+  │   └── gotools/     # Go tool checks (fumpt, gitleaks, lint, mod-tidy)
+  ├── config/          # Configuration loader (modular + legacy)
+  ├── envfile/         # Environment file parsing (Load, Overload, LoadDir)
+  ├── errors/          # Sentinel errors and error types
   ├── git/             # Git operations and hook management
-  ├── plugins/         # Plugin system (loader, registry, protocol)
+  ├── output/          # Formatted output and color control
+  ├── plugins/         # Plugin system (registry, JSON protocol)
   ├── runner/          # Parallel check execution
-  └── output/          # Formatted output
+  ├── shared/          # Shared context for check coordination
+  ├── tools/           # Tool auto-installation (fumpt, golangci-lint, goimports, gitleaks)
+  ├── validation/      # Input validation
+  └── version/         # Version management
 /examples/             # Plugin examples
   ├── shell-plugin/    # Shell script plugin example
   ├── python-plugin/   # Python plugin example
   ├── go-plugin/       # Go binary plugin example
-  └── docker-plugin/   # Docker-based plugin example
+  ├── docker-plugin/   # Docker-based plugin example
+  └── composite-plugin/ # Multi-step composite plugin example
+/docs/                 # Documentation
 ```
 
 ### ⚙️ Technical Requirements
 
 - **Go version:** 1.24+ (check `go.mod`)
 - **Build system:** [Magex](https://github.com/mrz1836/mage-x) - enterprise-grade build automation
-- **Dependencies:** Minimal - Cobra, testify, color, godotenv
+- **Dependencies:** Minimal - Cobra, testify, color, go-isatty, yaml.v3
 - **Configuration:**
-  - `.env.base` contains default configuration that works for most projects
-  - `.env.custom` (optional) contains project-specific overrides
-  - Custom values override base values when both files are present
+  - **Modular (preferred):** `.github/env/*.env` files loaded in lexicographic order (last wins)
+  - **Legacy (fallback):** `.github/.env.base` (defaults) + optional `.github/.env.custom` (overrides)
+  - If `.github/env/` exists with >=1 `.env` file, modular mode is used; otherwise falls back to legacy
 - **Build targets:** All checks work with pure Go
 
 ### 🎨 Color Output Control
@@ -96,7 +103,7 @@ TERM=dumb                           # Disable colors (terminal detection)
 ```
 
 **CI Environment Detection:**
-Automatically detected: GitHub Actions, GitLab CI, Jenkins, CircleCI, Travis CI, BuildKite, Drone, TeamCity, Azure DevOps, AppVeyor, AWS CodeBuild
+Automatically detected: GitHub Actions, GitLab CI, Jenkins, CircleCI, Travis CI, BuildKite, Drone, TeamCity, Azure DevOps, AppVeyor, AWS CodeBuild, Semaphore
 
 ### 🛠️ Magex Build System
 
@@ -167,14 +174,15 @@ magex audit:report    # Security and dependency audit
    ```
 
 6. **Environment configuration**
-   All settings controlled via `GO_PRE_COMMIT_*` variables in `.github/.env.base` (defaults) and `.github/.env.custom` (optional project-specific overrides)
+   All settings controlled via `GO_PRE_COMMIT_*` variables in `.github/env/` (modular, preferred) or `.github/.env.base` + `.github/.env.custom` (legacy fallback)
 
    **Color output priority:**
    1. Command-line flags (`--color`, `--no-color`)
    2. `NO_COLOR` environment variable
    3. `GO_PRE_COMMIT_COLOR_OUTPUT` setting
-   4. CI environment detection
-   5. Terminal/TTY detection
+   4. `TERM=dumb` terminal detection
+   5. CI environment detection
+   6. Terminal/TTY detection
 
 ### 🧪 Testing Notes
 
@@ -186,7 +194,7 @@ magex audit:report    # Security and dependency audit
 ### 🚀 CI/CD Integration
 
 - GitHub Actions workflows in `.github/workflows/`
-- All CI configuration via `.github/.env.base` (defaults) and `.github/.env.custom` (optional overrides)
+- CI configuration via `.github/env/` (modular, preferred) or `.github/.env.base` + `.github/.env.custom` (legacy fallback)
 - GoReleaser handles releases (`.goreleaser.yml`)
 - Pre-commit checks run automatically in CI
 
@@ -202,11 +210,11 @@ magex audit:report    # Security and dependency audit
 ### 🔌 Plugin System Notes
 
 - **Plugin directory**: `.pre-commit-plugins/` by default
-- **Manifest files**: `plugin.yaml` or `plugin.json` define plugin metadata
+- **Manifest files**: `plugin.yaml`, `plugin.yml`, or `plugin.json` define plugin metadata
 - **Communication**: JSON over stdin/stdout protocol
-- **Examples**: See `/examples/` for Shell, Python, Go, and Docker plugins
+- **Examples**: See `/examples/` for Shell, Python, Go, Docker, and Composite plugins
 - **CLI commands**: `go-pre-commit plugin list/add/remove/validate/info`
-- **Configuration**: Enable with `GO_PRE_COMMIT_ENABLE_PLUGINS=true` in .env.custom or .env.base
+- **Configuration**: Enable with `GO_PRE_COMMIT_ENABLE_PLUGINS=true` in `.github/env/` or `.github/.env.custom`
 
 If you encounter conflicting guidance elsewhere, `AGENTS.md` wins.
 Questions or ambiguities? Open a discussion or ping @mrz1836 instead of guessing.
