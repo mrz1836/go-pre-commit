@@ -500,31 +500,12 @@ git commit -m "Initial commit"
 ## 📚 Advanced Documentation
 
 <details>
-<summary><strong><code>Repository Features</code></strong></summary>
+<summary><strong>Repository Features</strong></summary>
 <br/>
 
-* **Continuous Integration on Autopilot** with [GitHub Actions](https://github.com/features/actions) – every push is built, tested, and reported in minutes.
-* **Pull‑Request Flow That Merges Itself** thanks to [auto‑merge](.github/workflows/auto-merge-on-approval.yml) and hands‑free [Dependabot auto‑merge](.github/workflows/dependabot-auto-merge.yml).
-* **One‑Command Builds** powered by modern [MAGE-X](https://github.com/mrz1836/mage-x) with 343+ built-in commands for linting, testing, releases, and more.
-* **First‑Class Dependency Management** using native [Go Modules](https://github.com/golang/go/wiki/Modules).
-* **Uniform Code Style** via [gofumpt](https://github.com/mvdan/gofumpt) plus zero‑noise linting with [golangci‑lint](https://github.com/golangci/golangci-lint).
-* **Confidence‑Boosting Tests** with [testify](https://github.com/stretchr/testify), the Go [race detector](https://blog.golang.org/race-detector), crystal‑clear [HTML coverage](https://blog.golang.org/cover) snapshots, and automatic uploads to [Codecov](https://codecov.io/).
-* **Hands‑Free Releases** delivered by [GoReleaser](https://github.com/goreleaser/goreleaser) whenever you create a [new Tag](https://git-scm.com/book/en/v2/Git-Basics-Tagging).
-* **Relentless Dependency & Vulnerability Scans** via [Dependabot](https://dependabot.com), [Nancy](https://github.com/sonatype-nexus-community/nancy), and [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck).
-* **Security Posture by Default** with [CodeQL](https://docs.github.com/en/github/finding-security-vulnerabilities-and-errors-in-your-code/about-code-scanning), [OpenSSF Scorecard](https://openssf.org), and secret‑leak detection via [gitleaks](https://github.com/gitleaks/gitleaks).
-* **Automatic Syndication** to [pkg.go.dev](https://pkg.go.dev/) on every release for instant godoc visibility.
-* **Polished Community Experience** using rich templates for [Issues & PRs](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository).
-* **All the Right Meta Files** (`LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SUPPORT.md`, `SECURITY.md`) pre‑filled and ready.
-* **Code Ownership** clarified through a [CODEOWNERS](.github/CODEOWNERS) file, keeping reviews fast and focused.
-* **Zero‑Noise Dev Environments** with tuned editor settings (`.editorconfig`) plus curated *ignore* files for [VS Code](.editorconfig), [Docker](.dockerignore), and [Git](.gitignore).
-* **Label Sync Magic**: your repo labels stay in lock‑step with [.github/labels.yml](.github/labels.yml).
-* **Friendly First PR Workflow** – newcomers get a warm welcome thanks to a dedicated [workflow](.github/workflows/pull-request-management.yml).
-* **Standards‑Compliant Docs** adhering to the [standard‑readme](https://github.com/RichardLitt/standard-readme/blob/master/spec.md) spec.
-* **Instant Cloud Workspaces** via [Gitpod](https://gitpod.io/) – spin up a fully configured dev environment with automatic linting and tests.
-* **Out‑of‑the‑Box VS Code Happiness** with a preconfigured [Go](https://code.visualstudio.com/docs/languages/go) workspace and [`.vscode`](.vscode) folder with all the right settings.
-* **Optional Release Broadcasts** to your community via [Slack](https://slack.com), [Discord](https://discord.com), or [Twitter](https://twitter.com) – plug in your webhook.
-* **AI Playbook** – machine‑readable guidelines in [tech conventions](.github/tech-conventions/ai-compliance.md)
-* **DevContainers for Instant Onboarding** – Launch a ready-to-code environment in seconds with [VS Code DevContainers](https://containers.dev/) and the included [.devcontainer.json](.devcontainer.json) config.
+This repository includes 25+ built-in features covering CI/CD, security, code quality, developer experience, and community tooling.
+
+**[View the full Repository Features list →](.github/docs/repository-features.md)**
 
 </details>
 
@@ -563,41 +544,12 @@ magex help
 </details>
 
 <details>
-<summary><strong><code>GitHub Workflows</code></strong></summary>
+<summary><strong>GitHub Workflows</strong></summary>
 <br/>
 
+All workflows are driven by modular configuration in [`.github/env/`](.github/env/README.md) — no YAML editing required.
 
-### 🎛️ The Workflow Control Center
-
-All GitHub Actions workflows in this repository are powered by environment configuration files – your one-stop shop for tweaking CI/CD behavior without touching a single YAML file! 🎯
-
-**Configuration (auto-detected):**
-- **[.github/env/](.github/env/)** – Modular configuration (preferred) — files load in lexicographic order, last wins
-- **[.env.base](.github/.env.base)** – Legacy default configuration (fallback if `.github/env/` doesn't exist)
-- **[.env.custom](.github/.env.custom)** – Legacy project-specific overrides
-
-These files control everything from:
-- **🚀 Go version matrix** (test on multiple versions or just one)
-- **🏃 Runner selection** (Ubuntu or macOS, your wallet decides)
-- **🔬 Feature toggles** (coverage, fuzzing, linting, race detection, benchmarks)
-- **🛡️ Security tool versions** (gitleaks, nancy, govulncheck)
-- **🤖 Auto-merge behaviors** (how aggressive should the bots be?)
-- **🏷️ PR management rules** (size labels, auto-assignment, welcome messages)
-
-> **Pro tip:** Want to disable code coverage? Just add `ENABLE_CODE_COVERAGE=false` to `.github/env/90-project.env` (or `.env.custom` in legacy mode) and push. No YAML archaeology required!
-
-<br/>
-
-| Workflow Name                                                                      | Description                                                                                                            |
-|------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| [auto-merge-on-approval.yml](.github/workflows/auto-merge-on-approval.yml)         | Automatically merges PRs after approval and all required checks, following strict rules.                               |
-| [codeql-analysis.yml](.github/workflows/codeql-analysis.yml)                       | Analyzes code for security vulnerabilities using [GitHub CodeQL](https://codeql.github.com/).                          |
-| [dependabot-auto-merge.yml](.github/workflows/dependabot-auto-merge.yml)           | Automatically merges [Dependabot](https://github.com/dependabot) PRs that meet all requirements.                       |
-| [fortress.yml](.github/workflows/fortress.yml)                                     | Runs the GoFortress security and testing workflow, including linting, testing, releasing, and vulnerability checks.    |
-| [pull-request-management.yml](.github/workflows/pull-request-management.yml)       | Labels PRs by branch prefix, assigns a default user if none is assigned, and welcomes new contributors with a comment. |
-| [scorecard.yml](.github/workflows/scorecard.yml)                                   | Runs [OpenSSF](https://openssf.org/) Scorecard to assess supply chain security.                                        |
-| [stale.yml](.github/workflows/stale-check.yml)                                     | Warns about (and optionally closes) inactive issues and PRs on a schedule or manual trigger.                           |
-| [sync-labels.yml](.github/workflows/sync-labels.yml)                               | Keeps GitHub labels in sync with the declarative manifest at [`.github/labels.yml`](./.github/labels.yml).             |
+**[View all workflows and the control center →](.github/docs/workflows.md)**
 
 </details>
 
