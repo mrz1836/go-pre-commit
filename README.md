@@ -76,21 +76,10 @@
        🔌&nbsp;<a href="#-plugin-system"><code>Plugin&nbsp;System</code></a>
     </td>
     <td align="center">
-       🤖&nbsp;<a href="#-sub-agents-team"><code>Sub-Agents</code></a>
-    </td>
-    <td align="center">
-       ⚡&nbsp;<a href="#-custom-claude-commands"><code>Claude&nbsp;Commands</code></a>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
        🧪&nbsp;<a href="#-examples--tests"><code>Examples&nbsp;&&nbsp;Tests</code></a>
     </td>
     <td align="center">
        🤝&nbsp;<a href="#-contributing"><code>Contributing</code></a>
-    </td>
-    <td align="center">
-       📝&nbsp;<a href="#-license"><code>License</code></a>
     </td>
   </tr>
 </table>
@@ -146,12 +135,11 @@ git add test.go
 git commit -m "Test commit"
 
 # The pre-commit system will automatically run checks:
-# ✓ Checking for AI attribution
+# ✓ Ensuring files end with newline
 # ✓ Running fumpt formatter
 # ✓ Running linter (golangci-lint)
 # ✓ Running go mod tidy
 # ✓ Fixing trailing whitespace
-# ✓ Ensuring files end with newline
 ```
 
 > **Good to know:** `go-pre-commit` is a pure Go solution with minimal external dependencies.
@@ -166,31 +154,26 @@ git commit -m "Test commit"
 <summary><strong><code>Environment Configuration</code></strong></summary>
 <br/>
 
-`go-pre-commit` uses environment variables from `.github/.env.base` (default configuration) and optionally `.github/.env.custom` (project-specific overrides) for configuration:
+`go-pre-commit` uses environment variables for configuration, loaded from `.github/env/` (modular, preferred) or `.github/.env.base` + `.github/.env.custom` (legacy fallback):
 
 ```bash
 # Core settings
 ENABLE_GO_PRE_COMMIT=true              # Enable/disable the system
 GO_PRE_COMMIT_FAIL_FAST=false          # Stop on first failure
-GO_PRE_COMMIT_TIMEOUT_SECONDS=120      # Overall timeout
+GO_PRE_COMMIT_TIMEOUT_SECONDS=720      # Overall timeout
 GO_PRE_COMMIT_PARALLEL_WORKERS=2       # Number of parallel workers
 
 # Individual checks
-GO_PRE_COMMIT_ENABLE_AI_DETECTION=true  # Detect AI attribution in code and commits
 GO_PRE_COMMIT_ENABLE_EOF=true           # Ensure files end with newline
-GO_PRE_COMMIT_ENABLE_FMT=true           # Format with go fmt
 GO_PRE_COMMIT_ENABLE_FUMPT=true         # Format with fumpt
-GO_PRE_COMMIT_ENABLE_GOIMPORTS=true     # Format and manage imports
+GO_PRE_COMMIT_ENABLE_GITLEAKS=false     # Scan for secrets and credentials
 GO_PRE_COMMIT_ENABLE_LINT=true          # Run golangci-lint
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=true      # Run go mod tidy
 GO_PRE_COMMIT_ENABLE_WHITESPACE=true    # Fix trailing whitespace
 
-# Auto-staging and auto-fix (automatically stage/fix issues)
-GO_PRE_COMMIT_AI_DETECTION_AUTO_FIX=false  # Auto-fix AI attribution (disabled by default)
+# Auto-staging (automatically stage fixed files)
 GO_PRE_COMMIT_EOF_AUTO_STAGE=true
-GO_PRE_COMMIT_FMT_AUTO_STAGE=true
 GO_PRE_COMMIT_FUMPT_AUTO_STAGE=true
-GO_PRE_COMMIT_GOIMPORTS_AUTO_STAGE=true
 GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true
 
 # Color output settings (auto-detected by default)
@@ -198,11 +181,10 @@ GO_PRE_COMMIT_COLOR_OUTPUT=true             # Enable/disable color output
 NO_COLOR=                                   # Set to any value to disable colors (follows standard)
 ```
 
-**Configuration System:**
-- `.env.base` contains default configuration that works for most projects
-- `.env.custom` (optional) contains project-specific overrides
-- Custom values override base values when both files are present
-- Only create `.env.custom` if you need to modify the defaults
+**Configuration System (auto-detected):**
+- **Modular (preferred):** `.github/env/*.env` files loaded in lexicographic order (last wins)
+- **Legacy (fallback):** `.github/.env.base` (defaults) + optional `.github/.env.custom` (overrides)
+- If `.github/env/` exists with >=1 `.env` file, modular mode is used; otherwise falls back to legacy
 
 **Color Output:**
 - Colors are auto-detected based on terminal capabilities and environment
@@ -319,11 +301,8 @@ go-pre-commit uninstall --hook-type pre-commit
 
 | Check            | Description                                        | Auto-fix | Configuration                  |
 |------------------|----------------------------------------------------|----------|--------------------------------|
-| **ai_detection** | Detects AI attribution in code and commit messages | ✅        | Auto-fix disabled by default   |
 | **eof**          | Ensures files end with a newline                   | ✅        | Auto-stages changes if enabled |
-| **fmt**          | Formats Go code with standard `go fmt`             | ✅        | Pure Go - no dependencies      |
 | **fumpt**        | Formats Go code with stricter rules than `gofmt`   | ✅        | Auto-installs if needed        |
-| **goimports**    | Formats code and manages imports automatically     | ✅        | Auto-installs if needed        |
 | **gitleaks**     | Scans for secrets and credentials in code          | ❌        | Auto-installs if needed        |
 | **lint**         | Runs golangci-lint for comprehensive linting       | ❌        | Auto-installs if needed        |
 | **mod-tidy**     | Ensures go.mod and go.sum are tidy                 | ✅        | Pure Go - no dependencies      |
@@ -355,7 +334,7 @@ Plugins are external executables (scripts or binaries) that integrate seamlessly
 
 **Enable plugins** in your configuration files:
 ```bash
-# Add to .env.custom to override defaults
+# Add to .github/env/90-project.env (modular) or .env.custom (legacy)
 GO_PRE_COMMIT_ENABLE_PLUGINS=true
 GO_PRE_COMMIT_PLUGIN_DIR=.pre-commit-plugins
 ```
@@ -402,7 +381,7 @@ go-pre-commit plugin info my-plugin
 ### Creating Your Own Plugin
 
 Every plugin needs:
-1. A manifest file (`plugin.yaml`)
+1. A manifest file (`plugin.yaml`, `plugin.yml`, or `plugin.json`)
 2. An executable script or binary
 3. JSON-based communication protocol
 
@@ -479,15 +458,12 @@ curl -o .github/.env.base https://raw.githubusercontent.com/mrz1836/go-pre-commi
 # Optionally create project-specific overrides
 cat > .github/.env.custom << 'EOF'
 ENABLE_GO_PRE_COMMIT=true
-GO_PRE_COMMIT_ENABLE_AI_DETECTION=true
 GO_PRE_COMMIT_ENABLE_EOF=true
-GO_PRE_COMMIT_ENABLE_FMT=true
 GO_PRE_COMMIT_ENABLE_FUMPT=true
-GO_PRE_COMMIT_ENABLE_GOIMPORTS=true
+GO_PRE_COMMIT_ENABLE_GITLEAKS=false
 GO_PRE_COMMIT_ENABLE_LINT=true
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
 GO_PRE_COMMIT_ENABLE_WHITESPACE=true
-GO_PRE_COMMIT_AI_DETECTION_AUTO_FIX=false
 EOF
 ```
 
@@ -593,13 +569,14 @@ magex help
 
 ### 🎛️ The Workflow Control Center
 
-All GitHub Actions workflows in this repository are powered by configuration files: [**.env.base**](.github/.env.base) (default configuration) and optionally **.env.custom** (project-specific overrides) – your one-stop shop for tweaking CI/CD behavior without touching a single YAML file! 🎯
+All GitHub Actions workflows in this repository are powered by environment configuration files – your one-stop shop for tweaking CI/CD behavior without touching a single YAML file! 🎯
 
-**Configuration Files:**
-- **[.env.base](.github/.env.base)** – Default configuration that works for most Go projects
-- **[.env.custom](.github/.env.custom)** – Optional project-specific overrides
+**Configuration (auto-detected):**
+- **[.github/env/](.github/env/)** – Modular configuration (preferred) — files load in lexicographic order, last wins
+- **[.env.base](.github/.env.base)** – Legacy default configuration (fallback if `.github/env/` doesn't exist)
+- **[.env.custom](.github/.env.custom)** – Legacy project-specific overrides
 
-This magical file controls everything from:
+These files control everything from:
 - **🚀 Go version matrix** (test on multiple versions or just one)
 - **🏃 Runner selection** (Ubuntu or macOS, your wallet decides)
 - **🔬 Feature toggles** (coverage, fuzzing, linting, race detection, benchmarks)
@@ -607,7 +584,7 @@ This magical file controls everything from:
 - **🤖 Auto-merge behaviors** (how aggressive should the bots be?)
 - **🏷️ PR management rules** (size labels, auto-assignment, welcome messages)
 
-> **Pro tip:** Want to disable code coverage? Just add `ENABLE_CODE_COVERAGE=false` to your .env.custom to override the default in .env.base and push. No YAML archaeology required!
+> **Pro tip:** Want to disable code coverage? Just add `ENABLE_CODE_COVERAGE=false` to `.github/env/90-project.env` (or `.env.custom` in legacy mode) and push. No YAML archaeology required!
 
 <br/>
 
@@ -719,254 +696,6 @@ Read more about this Go project's [code standards](.github/CODE_STANDARDS.md).
 
 ## 🤖 AI Usage & Assistant Guidelines
 Read the [AI Usage & Assistant Guidelines](.github/tech-conventions/ai-compliance.md) for details on how AI is used in this project and how to interact with the AI assistants.
-
-<br/>
-
-## 🤖 Sub-Agents Team
-
-This project includes a comprehensive team of **12 specialized AI sub-agents** designed to help manage the repository lifecycle. These agents work cohesively to maintain code quality, manage dependencies, orchestrate releases, and ensure the project adheres to its high standards.
-
-<details>
-<summary><strong><code>Available Sub-Agents (12 Specialists)</code></strong></summary>
-<br/>
-
-The sub-agents are located in `.claude/agents/` and can be invoked by Claude Code to handle specific tasks:
-
-| Agent                     | Specialization          | Primary Responsibilities                                                                          |
-|---------------------------|-------------------------|---------------------------------------------------------------------------------------------------|
-| **go-standards-enforcer** | Go Standards Compliance | Enforces AGENTS.md coding standards, context-first design, interface patterns, and error handling |
-| **go-tester**             | Testing & Coverage      | Runs tests with testify, fixes failures, ensures 90%+ coverage, manages test suites               |
-| **go-formatter**          | Code Formatting         | Runs fumpt, golangci-lint, fixes whitespace/EOF issues, maintains consistent style                |
-| **hook-specialist**       | Pre-commit Hooks        | Manages hook installation, configuration via .env.base/.env.custom, troubleshoots hook issues     |
-| **ci-guardian**           | CI/CD Pipeline          | Monitors GitHub Actions, fixes workflow issues, optimizes pipeline performance                    |
-| **doc-maintainer**        | Documentation           | Updates README, maintains AGENTS.md compliance, ensures documentation consistency                 |
-| **dependency-auditor**    | Security & Dependencies | Runs govulncheck/nancy/gitleaks, manages Go modules, handles vulnerability fixes                  |
-| **release-coordinator**   | Release Management      | Prepares releases following semver, manages goreleaser                                            |
-| **code-reviewer**         | Code Quality            | Reviews changes for security, performance, maintainability, provides prioritized feedback         |
-| **performance-optimizer** | Performance Tuning      | Profiles code, runs benchmarks, optimizes hot paths, reduces allocations                          |
-| **build-expert**          | Build System            | Manages build targets, fixes build issues, maintains build configuration                          |
-| **pr-orchestrator**       | Pull Requests           | Ensures PR conventions, coordinates validation, manages labels and CI checks                      |
-
-</details>
-
-<details>
-<summary><strong><code>Using Sub-Agents</code></strong></summary>
-<br/>
-
-Sub-agents can be invoked in several ways:
-
-#### Automatic Invocation
-Many agents are configured to run **PROACTIVELY** when Claude Code detects relevant changes:
-```
-# After modifying Go code, these agents may automatically activate:
-- go-standards-enforcer (checks compliance)
-- go-formatter (fixes formatting)
-- go-tester (runs tests)
-- code-reviewer (reviews changes)
-```
-
-#### Explicit Invocation
-You can explicitly request specific agents:
-```
-> Use the dependency-auditor to check for vulnerabilities
-> Have the performance-optimizer analyze the runner benchmarks
-> Ask the pr-orchestrator to prepare a pull request
-```
-
-#### Agent Collaboration
-Agents can invoke each other for complex tasks:
-```
-pr-orchestrator → code-reviewer → go-standards-enforcer
-                ↘ go-tester → go-formatter
-```
-
-</details>
-
-<details>
-<summary><strong><code>Common Workflows with Sub-Agents</code></strong></summary>
-<br/>
-
-#### 1. Adding a New Feature
-```bash
-# The pr-orchestrator coordinates the entire flow:
-1. Creates properly named branch (feat/feature-name)
-2. Invokes go-standards-enforcer for compliance
-3. Runs go-tester for test coverage
-4. Uses go-formatter for code style
-5. Calls code-reviewer for quality check
-6. Prepares PR with proper format
-```
-
-#### 2. Fixing CI Failures
-```bash
-# The ci-guardian takes the lead:
-1. Analyzes failing GitHub Actions
-2. Invokes go-tester for test failures
-3. Calls dependency-auditor for security scan issues
-4. Uses go-formatter for linting problems
-5. Fixes workflow configuration issues
-```
-
-#### 3. Preparing a Release
-```bash
-# The release-coordinator manages the process:
-1. Validates all tests pass (go-tester)
-2. Ensures security scans clean (dependency-auditor)
-3. Prepares changelog
-4. Coordinates with ci-guardian for release workflow
-```
-
-#### 4. Security Audit
-```bash
-# The dependency-auditor performs comprehensive scanning:
-1. Runs govulncheck for Go vulnerabilities
-2. Executes nancy for dependency issues
-3. Uses gitleaks for secret detection
-4. Updates dependencies safely
-5. Documents any exclusions
-```
-
-</details>
-
-<details>
-<summary><strong><code>Sub-Agent Configuration</code></strong></summary>
-<br/>
-
-Each agent is defined with:
-- **name**: Unique identifier
-- **description**: When the agent should be used (many include "use PROACTIVELY")
-- **tools**: Limited tool access for security and focus
-- **system prompt**: Detailed instructions following AGENTS.md standards
-
-Example agent structure:
-```yaml
----
-name: agent-name
-description: Specialization and when to use PROACTIVELY
-tools: Read, Edit, Bash, Grep
----
-[Detailed system prompt with specific responsibilities]
-```
-
-### Benefits of the Sub-Agent Team
-
-- **Parallel Execution**: Multiple agents can work simultaneously on different aspects
-- **Specialized Expertise**: Each agent deeply understands its domain
-- **Security**: Limited tool access per agent reduces risk
-- **Consistency**: All agents follow AGENTS.md standards strictly
-- **Reusability**: Agents can be used across different scenarios
-- **Smart Collaboration**: Agents invoke each other strategically
-
-### Creating Custom Sub-Agents
-
-To add new sub-agents for your specific needs:
-
-1. Create a new file in `.claude/agents/`
-2. Define the agent's specialization and tools
-3. Write a detailed system prompt following existing patterns
-4. Test the agent with sample tasks
-
-For more information about sub-agents, see the [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code/sub-agents).
-
-</details>
-
-<br/>
-
-## ⚡ Custom Claude Commands
-
-This project includes **23 custom slash commands** that leverage our specialized sub-agents for efficient project management. These commands provide streamlined workflows for common development tasks.
-
-<details>
-<summary><strong><code>Quick Command Categories</code></strong></summary>
-<br/>
-
-- **Core Commands** (6): `/fix`, `/test`, `/review`, `/docs`, `/clean`, `/validate`
-- **Workflow Commands** (5): `/pr`, `/ci`, `/explain`, `/prd`, `/refactor`
-- **Specialized Commands** (6): `/audit`, `/optimize`, `/release`, `/hooks`, `/build`, `/standards`
-- **Advanced Commands** (6): `/dev:feature`, `/dev:hotfix`, `/dev:debug`, `/go:bench`, `/go:deps`, `/go:profile`
-
-</details>
-
-<details>
-<summary><strong><code>Example Command Usage</code></strong></summary>
-<br/>
-
-### Fix Issues Quickly
-```bash
-# Fix all test and linting issues in parallel
-/fix internal/runner
-
-# Create comprehensive tests
-/test ProcessCheck
-
-# Get thorough code review
-/review feat/new-feature
-```
-
-### Development Workflows
-```bash
-# Start a new feature
-/dev:feature parallel-execution
-
-# Emergency hotfix
-/dev:hotfix "race condition in runner"
-
-# Debug complex issues
-/dev:debug "timeout in CI"
-```
-
-### Performance & Security
-```bash
-# Security audit with all scanners
-/audit
-
-# Profile and optimize performance
-/go:profile cpu internal/runner
-/optimize ProcessCheck
-
-# Benchmark analysis
-/go:bench Runner
-```
-
-### Release Management
-```bash
-# Full validation before release
-/validate
-
-# Prepare release
-/release v1.2.3
-```
-
-</details>
-
-<details>
-<summary><strong><code>Command Features</code></strong></summary>
-<br/>
-
-- **Parallel Execution**: Commands like `/fix`, `/review`, and `/validate` run multiple agents simultaneously
-- **Intelligent Model Selection**: Uses Haiku for simple tasks, Sonnet for standard work, Opus for complex analysis
-- **Focused Scope**: All commands accept arguments to target specific files or packages
-- **Multi-Agent Coordination**: Most commands coordinate multiple specialized agents
-- **Comprehensive Output**: Detailed reports with actionable feedback
-
-</details>
-
-<details>
-<summary><strong><code>Full Documentation</code></strong></summary>
-<br/>
-
-For complete command reference, usage examples, and workflow patterns, see:
-
-**[Commands Documentation](docs/USING_CLAUDE_COMMANDS.md)**
-
-This comprehensive guide includes:
-- Detailed descriptions of all 23 commands
-- Common workflow patterns
-- Performance optimization tips
-- Custom command creation guide
-- Troubleshooting help
-
-</details>
 
 <br/>
 
