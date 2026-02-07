@@ -397,12 +397,9 @@ func showAvailableChecks(cfg *config.Config, formatter *output.Formatter) error 
 		description string
 		enabled     bool
 	}{
-		{"ai_detection", "Detect AI attribution in code and commit messages", cfg.Checks.AIDetection},
 		{"eof", "Ensure files end with newline", cfg.Checks.EOF},
-		{"fmt", "Format code with go fmt", cfg.Checks.Fmt},
 		{"fumpt", "Format code with gofumpt", cfg.Checks.Fumpt},
 		{"gitleaks", "Scan for secrets and credentials in code", cfg.Checks.Gitleaks},
-		{"goimports", "Format code and manage imports", cfg.Checks.Goimports},
 		{"lint", "Run golangci-lint", cfg.Checks.Lint},
 		{"mod-tidy", "Ensure go.mod and go.sum are tidy", cfg.Checks.ModTidy},
 		{"whitespace", "Fix trailing whitespace", cfg.Checks.Whitespace},

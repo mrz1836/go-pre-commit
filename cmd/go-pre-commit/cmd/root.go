@@ -56,7 +56,7 @@ of code quality checks with zero Python dependencies.
 Key features:
   - Lightning fast parallel execution
   - Zero runtime dependencies (single binary)
-  - Environment-based configuration via .github/.env.base
+  - Environment-based configuration via .github/env/ (modular) or .github/.env.base (legacy)
   - Seamless CI/CD integration
   - Direct tool execution without build system dependencies`,
 		SilenceUsage:  true,
@@ -154,17 +154,31 @@ func (cb *CommandBuilder) initConfig() {
 
 	// Set up paths relative to repository root
 	// The binary should be run from the repository root or have access to .github/
-	if _, err := os.Stat(".github/.env.base"); os.IsNotExist(err) {
+	if !hasGitHubConfig(".") {
 		// Try to find the repository root
 		cwd, _ := os.Getwd()
 		for cwd != "/" && cwd != "" {
-			if _, err := os.Stat(filepath.Join(cwd, ".github/.env.base")); err == nil {
+			if hasGitHubConfig(cwd) {
 				_ = os.Chdir(cwd)
 				break
 			}
 			cwd = filepath.Dir(cwd)
 		}
 	}
+}
+
+// hasGitHubConfig checks if the given directory contains GitHub config files
+// (modular .github/env/ directory or legacy .github/.env.base)
+func hasGitHubConfig(dir string) bool {
+	// Check modular config first (preferred)
+	if info, err := os.Stat(filepath.Join(dir, ".github", "env")); err == nil && info.IsDir() {
+		return true
+	}
+	// Fall back to legacy config
+	if _, err := os.Stat(filepath.Join(dir, ".github", ".env.base")); err == nil {
+		return true
+	}
+	return false
 }
 
 // Helper functions for consistent output - these will be updated to use app config
