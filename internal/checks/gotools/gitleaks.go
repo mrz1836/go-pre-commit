@@ -225,7 +225,7 @@ func (c *GitleaksCheck) findGitleaksConfig(repoRoot string) string {
 			if !filepath.IsAbs(customPath) {
 				absPath = filepath.Join(repoRoot, customPath)
 			}
-			if _, err := os.Stat(absPath); err == nil {
+			if _, err := os.Stat(absPath); err == nil { // #nosec G703 - path constructed from known config location
 				return absPath
 			}
 		}

@@ -894,20 +894,20 @@ func (r *ProductionReadinessReport) FormatReport() string {
 	var report strings.Builder
 
 	report.WriteString("# GoFortress Pre-commit System - Production Readiness Report\n\n")
-	report.WriteString(fmt.Sprintf("Generated: %s\n", r.GeneratedAt.Format(time.RFC3339)))
-	report.WriteString(fmt.Sprintf("Version: %s\n", r.Version))
-	report.WriteString(fmt.Sprintf("Environment: %s\n\n", r.Environment))
+	fmt.Fprintf(&report, "Generated: %s\n", r.GeneratedAt.Format(time.RFC3339))
+	fmt.Fprintf(&report, "Version: %s\n", r.Version)
+	fmt.Fprintf(&report, "Environment: %s\n\n", r.Environment)
 
 	// System Information
 	report.WriteString("## System Information\n")
-	report.WriteString(fmt.Sprintf("- Go Version: %s\n", r.SystemInfo.GoVersion))
-	report.WriteString(fmt.Sprintf("- OS: %s\n", r.SystemInfo.OS))
-	report.WriteString(fmt.Sprintf("- Architecture: %s\n", r.SystemInfo.Architecture))
-	report.WriteString(fmt.Sprintf("- CPU Cores: %d\n\n", r.SystemInfo.NumCPU))
+	fmt.Fprintf(&report, "- Go Version: %s\n", r.SystemInfo.GoVersion)
+	fmt.Fprintf(&report, "- OS: %s\n", r.SystemInfo.OS)
+	fmt.Fprintf(&report, "- Architecture: %s\n", r.SystemInfo.Architecture)
+	fmt.Fprintf(&report, "- CPU Cores: %d\n\n", r.SystemInfo.NumCPU)
 
 	// Overall Assessment
 	report.WriteString("## Overall Assessment\n")
-	report.WriteString(fmt.Sprintf("- **Overall Score: %d/100**\n", r.OverallScore))
+	fmt.Fprintf(&report, "- **Overall Score: %d/100**\n", r.OverallScore)
 	if r.ProductionReady {
 		report.WriteString("- **Status: ✅ PRODUCTION READY**\n\n")
 	} else {
@@ -916,40 +916,40 @@ func (r *ProductionReadinessReport) FormatReport() string {
 
 	// Performance Metrics
 	report.WriteString("## Performance Metrics\n")
-	report.WriteString(fmt.Sprintf("- Score: %d/100\n", r.PerformanceMetrics.Score))
-	report.WriteString(fmt.Sprintf("- Small Commit Avg: %v\n", r.PerformanceMetrics.SmallCommitAvg))
-	report.WriteString(fmt.Sprintf("- Typical Commit Avg: %v\n", r.PerformanceMetrics.TypicalCommitAvg))
-	report.WriteString(fmt.Sprintf("- Cold Start Time: %v\n", r.PerformanceMetrics.ColdStartTime))
-	report.WriteString(fmt.Sprintf("- Warm Run Time: %v\n", r.PerformanceMetrics.WarmRunTime))
-	report.WriteString(fmt.Sprintf("- Meets <2s Target: %v\n", r.PerformanceMetrics.MeetsTargetTime))
-	report.WriteString(fmt.Sprintf("- Parallel Scaling: %v\n", r.PerformanceMetrics.ParallelScaling))
-	report.WriteString(fmt.Sprintf("- Memory Efficient: %v\n\n", r.PerformanceMetrics.MemoryEfficient))
+	fmt.Fprintf(&report, "- Score: %d/100\n", r.PerformanceMetrics.Score)
+	fmt.Fprintf(&report, "- Small Commit Avg: %v\n", r.PerformanceMetrics.SmallCommitAvg)
+	fmt.Fprintf(&report, "- Typical Commit Avg: %v\n", r.PerformanceMetrics.TypicalCommitAvg)
+	fmt.Fprintf(&report, "- Cold Start Time: %v\n", r.PerformanceMetrics.ColdStartTime)
+	fmt.Fprintf(&report, "- Warm Run Time: %v\n", r.PerformanceMetrics.WarmRunTime)
+	fmt.Fprintf(&report, "- Meets <2s Target: %v\n", r.PerformanceMetrics.MeetsTargetTime)
+	fmt.Fprintf(&report, "- Parallel Scaling: %v\n", r.PerformanceMetrics.ParallelScaling)
+	fmt.Fprintf(&report, "- Memory Efficient: %v\n\n", r.PerformanceMetrics.MemoryEfficient)
 
 	// Configuration Health
 	report.WriteString("## Configuration Health\n")
-	report.WriteString(fmt.Sprintf("- Score: %d/100\n", r.ConfigurationHealth.Score))
-	report.WriteString(fmt.Sprintf("- Loads Successfully: %v\n", r.ConfigurationHealth.LoadsSuccessfully))
-	report.WriteString(fmt.Sprintf("- Validates Correctly: %v\n", r.ConfigurationHealth.ValidatesCorrectly))
-	report.WriteString(fmt.Sprintf("- Appropriate Defaults: %v\n", r.ConfigurationHealth.DefaultsAppropriate))
-	report.WriteString(fmt.Sprintf("- Environment Precedence: %v\n", r.ConfigurationHealth.EnvironmentPrecedence))
-	report.WriteString(fmt.Sprintf("- Error Handling: %v\n", r.ConfigurationHealth.ErrorHandling))
-	report.WriteString(fmt.Sprintf("- Documentation Complete: %v\n\n", r.ConfigurationHealth.DocumentationComplete))
+	fmt.Fprintf(&report, "- Score: %d/100\n", r.ConfigurationHealth.Score)
+	fmt.Fprintf(&report, "- Loads Successfully: %v\n", r.ConfigurationHealth.LoadsSuccessfully)
+	fmt.Fprintf(&report, "- Validates Correctly: %v\n", r.ConfigurationHealth.ValidatesCorrectly)
+	fmt.Fprintf(&report, "- Appropriate Defaults: %v\n", r.ConfigurationHealth.DefaultsAppropriate)
+	fmt.Fprintf(&report, "- Environment Precedence: %v\n", r.ConfigurationHealth.EnvironmentPrecedence)
+	fmt.Fprintf(&report, "- Error Handling: %v\n", r.ConfigurationHealth.ErrorHandling)
+	fmt.Fprintf(&report, "- Documentation Complete: %v\n\n", r.ConfigurationHealth.DocumentationComplete)
 
 	// CI Compatibility
 	report.WriteString("## CI Compatibility\n")
-	report.WriteString(fmt.Sprintf("- Score: %d/100\n", r.CICompatibility.Score))
-	report.WriteString(fmt.Sprintf("- GitHub Actions: %v\n", r.CICompatibility.GitHubActions))
-	report.WriteString(fmt.Sprintf("- GitLab CI: %v\n", r.CICompatibility.GitLabCI))
-	report.WriteString(fmt.Sprintf("- Jenkins: %v\n", r.CICompatibility.Jenkins))
-	report.WriteString(fmt.Sprintf("- Generic CI: %v\n", r.CICompatibility.GenericCI))
-	report.WriteString(fmt.Sprintf("- Network Constrained: %v\n", r.CICompatibility.NetworkConstrained))
-	report.WriteString(fmt.Sprintf("- Resource Limited: %v\n\n", r.CICompatibility.ResourceLimited))
+	fmt.Fprintf(&report, "- Score: %d/100\n", r.CICompatibility.Score)
+	fmt.Fprintf(&report, "- GitHub Actions: %v\n", r.CICompatibility.GitHubActions)
+	fmt.Fprintf(&report, "- GitLab CI: %v\n", r.CICompatibility.GitLabCI)
+	fmt.Fprintf(&report, "- Jenkins: %v\n", r.CICompatibility.Jenkins)
+	fmt.Fprintf(&report, "- Generic CI: %v\n", r.CICompatibility.GenericCI)
+	fmt.Fprintf(&report, "- Network Constrained: %v\n", r.CICompatibility.NetworkConstrained)
+	fmt.Fprintf(&report, "- Resource Limited: %v\n\n", r.CICompatibility.ResourceLimited)
 
 	// Critical Issues
 	if len(r.CriticalIssues) > 0 {
 		report.WriteString("## Critical Issues\n")
 		for _, issue := range r.CriticalIssues {
-			report.WriteString(fmt.Sprintf("- ❌ %s\n", issue))
+			fmt.Fprintf(&report, "- ❌ %s\n", issue)
 		}
 		report.WriteString("\n")
 	}
@@ -958,7 +958,7 @@ func (r *ProductionReadinessReport) FormatReport() string {
 	if len(r.Recommendations) > 0 {
 		report.WriteString("## Recommendations\n")
 		for _, rec := range r.Recommendations {
-			report.WriteString(fmt.Sprintf("- 💡 %s\n", rec))
+			fmt.Fprintf(&report, "- 💡 %s\n", rec)
 		}
 		report.WriteString("\n")
 	}
@@ -967,7 +967,7 @@ func (r *ProductionReadinessReport) FormatReport() string {
 	if len(r.KnownLimitations) > 0 {
 		report.WriteString("## Known Limitations\n")
 		for _, limitation := range r.KnownLimitations {
-			report.WriteString(fmt.Sprintf("- ⚠️  %s\n", limitation))
+			fmt.Fprintf(&report, "- ⚠️  %s\n", limitation)
 		}
 		report.WriteString("\n")
 	}

@@ -103,7 +103,7 @@ func (r *Repository) GetFileContent(path string) ([]byte, error) {
 
 // IsFileTracked checks if a file is tracked by git
 func (r *Repository) IsFileTracked(path string) bool {
-	cmd := exec.CommandContext(context.Background(), "git", "ls-files", "--error-unmatch", path)
+	cmd := exec.CommandContext(context.Background(), "git", "ls-files", "--error-unmatch", path) // #nosec G204 - git binary path is fixed
 	cmd.Dir = r.root
 
 	err := cmd.Run()

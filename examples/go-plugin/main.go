@@ -117,7 +117,7 @@ func readLicenseHeader(licenseFile string) (string, error) {
 	}
 
 	for _, path := range paths {
-		content, err := os.ReadFile(path) // #nosec G304 - Reading license file from known paths
+		content, err := os.ReadFile(path) // #nosec G304 G703 - Reading license file from known paths
 		if err == nil {
 			// Extract first paragraph as header
 			lines := strings.Split(string(content), "\n")
@@ -141,7 +141,7 @@ func readLicenseHeader(licenseFile string) (string, error) {
 
 func isGeneratedFile(filepath string) bool {
 	// Check if file contains generated code marker
-	file, err := os.Open(filepath) // #nosec G304 - Opening files specified by pre-commit for checking
+	file, err := os.Open(filepath) // #nosec G304 G703 - Opening files specified by pre-commit for checking
 	if err != nil {
 		return false
 	}
@@ -165,7 +165,7 @@ func isGeneratedFile(filepath string) bool {
 }
 
 func fileHasLicenseHeader(filepath, expectedHeader string) (bool, error) {
-	file, err := os.Open(filepath) // #nosec G304 - Opening files specified by pre-commit for checking
+	file, err := os.Open(filepath) // #nosec G304 G703 - Opening files specified by pre-commit for checking
 	if err != nil {
 		return false, err
 	}

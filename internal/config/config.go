@@ -461,7 +461,7 @@ func findBaseEnvFile() (string, error) {
 	// Check for test-specific config directory override (used by integration tests)
 	if testConfigDir := os.Getenv("GO_PRE_COMMIT_TEST_CONFIG_DIR"); testConfigDir != "" {
 		envPath := filepath.Join(testConfigDir, ".github", ".env.base")
-		if _, err := os.Stat(envPath); err == nil {
+		if _, err := os.Stat(envPath); err == nil { // #nosec G703 - path constructed from config dir env var
 			return envPath, nil
 		}
 		// If test config dir is set but file doesn't exist, don't walk up
@@ -548,7 +548,7 @@ func findEnvDir() string {
 
 // hasEnvFiles checks if dirPath exists, is a directory, and contains >=1 *.env file.
 func hasEnvFiles(dirPath string) bool {
-	info, err := os.Stat(dirPath)
+	info, err := os.Stat(dirPath) // #nosec G703 - path is validated by caller
 	if err != nil || !info.IsDir() {
 		return false
 	}

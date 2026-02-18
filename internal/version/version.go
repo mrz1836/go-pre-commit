@@ -109,7 +109,7 @@ func getGitHubToken() string {
 // formatGitHubError formats GitHub API errors with helpful suggestions
 func formatGitHubError(statusCode int, body string, headers http.Header) string {
 	var msg strings.Builder
-	msg.WriteString(fmt.Sprintf("status %d: %s", statusCode, body))
+	fmt.Fprintf(&msg, "status %d: %s", statusCode, body) // #nosec G705 - msg is a strings.Builder, not an HTTP response writer
 
 	// Handle rate limiting specifically
 	if statusCode == 403 && strings.Contains(body, "rate limit") {
@@ -120,15 +120,15 @@ func formatGitHubError(statusCode int, body string, headers http.Header) string 
 
 		// Show rate limit info if available
 		if limit := headers.Get("X-RateLimit-Limit"); limit != "" {
-			msg.WriteString(fmt.Sprintf("\n• Current limit: %s requests/hour", limit))
+			fmt.Fprintf(&msg, "\n• Current limit: %s requests/hour", limit) // #nosec G705 - msg is a strings.Builder, not an HTTP response writer
 		}
 		if remaining := headers.Get("X-RateLimit-Remaining"); remaining != "" {
-			msg.WriteString(fmt.Sprintf("\n• Remaining: %s requests", remaining))
+			fmt.Fprintf(&msg, "\n• Remaining: %s requests", remaining) // #nosec G705 - msg is a strings.Builder, not an HTTP response writer
 		}
 		if reset := headers.Get("X-RateLimit-Reset"); reset != "" {
 			if resetTime, err := strconv.ParseInt(reset, 10, 64); err == nil {
 				resetAt := time.Unix(resetTime, 0)
-				msg.WriteString(fmt.Sprintf("\n• Rate limit resets at: %s", resetAt.Format("15:04:05 MST")))
+				fmt.Fprintf(&msg, "\n• Rate limit resets at: %s", resetAt.Format("15:04:05 MST")) // #nosec G705 - msg is a strings.Builder, not an HTTP response writer
 			}
 		}
 	}

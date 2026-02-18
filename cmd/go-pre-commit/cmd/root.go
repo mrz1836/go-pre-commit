@@ -203,7 +203,7 @@ func printInfo(format string, args ...interface{}) {
 	if !color.NoColor {
 		color.Blue("ℹ " + fmt.Sprintf(format, args...))
 	} else {
-		_, _ = fmt.Fprintf(os.Stdout, "ℹ %s\n", fmt.Sprintf(format, args...))
+		_, _ = fmt.Fprintf(os.Stdout, "ℹ %s\n", fmt.Sprintf(format, args...)) // #nosec G705 - output goes to stdout, not a web response
 	}
 }
 
