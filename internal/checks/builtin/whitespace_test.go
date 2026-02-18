@@ -908,9 +908,9 @@ func TestWhitespaceCheckLargeFiles(t *testing.T) {
 	var content strings.Builder
 	for i := 0; i < 10000; i++ {
 		if i%2 == 0 {
-			content.WriteString(fmt.Sprintf("line %d   \n", i)) // trailing spaces
+			fmt.Fprintf(&content, "line %d   \n", i) // trailing spaces
 		} else {
-			content.WriteString(fmt.Sprintf("line %d\n", i)) // no trailing spaces
+			fmt.Fprintf(&content, "line %d\n", i) // no trailing spaces
 		}
 	}
 

@@ -39,7 +39,7 @@ func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	client := &http.Client{
 		Timeout: 15 * time.Second, // Match the timeout from version.go
 	}
-	return client.Do(newReq)
+	return client.Do(newReq) // #nosec G704 - request is made to a controlled test server
 }
 
 // NetworkErrorTestSuite tests network error handling across the application

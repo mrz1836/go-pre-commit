@@ -777,7 +777,7 @@ func TestMain_Help(t *testing.T) {
 		return
 	}
 
-	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 - test binary path is safe
+	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 G702 - test binary path is safe
 	cmd.Env = append(os.Environ(), "GO_TEST_SUBPROCESS=1", "GO_TEST_CASE=help")
 
 	err := cmd.Run()
@@ -790,7 +790,7 @@ func TestMain_Version(t *testing.T) {
 		return
 	}
 
-	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 - test binary path is safe
+	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 G702 - test binary path is safe
 	cmd.Env = append(os.Environ(), "GO_TEST_SUBPROCESS=1", "GO_TEST_CASE=version")
 
 	err := cmd.Run()
@@ -803,7 +803,7 @@ func TestMain_InvalidCommand(t *testing.T) {
 		return
 	}
 
-	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 - test binary path is safe
+	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 G702 - test binary path is safe
 	cmd.Env = append(os.Environ(), "GO_TEST_SUBPROCESS=1", "GO_TEST_CASE=invalid")
 
 	err := cmd.Run()

@@ -307,7 +307,7 @@ func TestGetGitHubToken(t *testing.T) {
 			ghToken:     "",
 			expectedHas: false,
 		},
-		{
+		{ // #nosec G101 - test data with example token values
 			name:        "GITHUB_TOKEN set",
 			githubToken: "test-github-token",
 			ghToken:     "",
@@ -319,7 +319,7 @@ func TestGetGitHubToken(t *testing.T) {
 			ghToken:     "test-gh-token",
 			expectedHas: true,
 		},
-		{
+		{ // #nosec G101 - test data with example token values
 			name:        "both tokens set - GITHUB_TOKEN takes precedence",
 			githubToken: "test-github-token",
 			ghToken:     "test-gh-token",

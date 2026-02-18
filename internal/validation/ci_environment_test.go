@@ -109,7 +109,7 @@ func (s *CIEnvironmentTestSuite) findGitRoot() (string, error) {
 	// Try common project paths relative to GOPATH or GOMOD
 	if goPath := os.Getenv("GOPATH"); goPath != "" {
 		projectPath := filepath.Join(goPath, "src", "github.com", "mrz1836", "go-pre-commit")
-		if _, err := os.Stat(projectPath); err == nil {
+		if _, err := os.Stat(projectPath); err == nil { // #nosec G703 - path constructed from GOPATH env var
 			return projectPath, nil
 		}
 	}

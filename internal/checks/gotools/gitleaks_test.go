@@ -390,7 +390,7 @@ func TestFormatGitleaksErrors(t *testing.T) {
 		expectedCount int
 		shouldContain []string
 	}{
-		{
+		{ // #nosec G101 - test data with well-known example AWS key
 			name: "single finding",
 			input: `Finding: AWS Access Key
 File: config.go

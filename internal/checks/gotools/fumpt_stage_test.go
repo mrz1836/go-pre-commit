@@ -313,7 +313,7 @@ func (s *FumptStageTestSuite) isGitAvailable() bool {
 
 // resetGitHead resets git HEAD for a file
 func (s *FumptStageTestSuite) resetGitHead(file string) {
-	cmd := exec.CommandContext(context.Background(), "git", "reset", "HEAD", file)
+	cmd := exec.CommandContext(context.Background(), "git", "reset", "HEAD", file) // #nosec G204 - git binary path is fixed
 	cmd.Dir = s.tempDir
 	_ = cmd.Run() // Ignore errors as file might not be tracked
 }

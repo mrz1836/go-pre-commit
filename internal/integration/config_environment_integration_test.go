@@ -485,7 +485,7 @@ func (s *ConfigEnvironmentIntegrationTestSuite) commitFiles(message string) {
 	gitAdd := exec.CommandContext(ctx, "git", "add", ".")
 	s.Require().NoError(gitAdd.Run())
 
-	gitCommit := exec.CommandContext(ctx, "git", "commit", "-m", message)
+	gitCommit := exec.CommandContext(ctx, "git", "commit", "-m", message) // #nosec G204 - git binary path is fixed
 	s.Require().NoError(gitCommit.Run())
 }
 
