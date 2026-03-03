@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/mrz1836/go-pre-commit/internal/git"
+	"github.com/mrz1836/go-pre-commit/internal/update"
 	"github.com/mrz1836/go-pre-commit/internal/version"
 )
 
@@ -143,6 +144,15 @@ func (cb *CommandBuilder) runUpgradeWithConfig(config UpgradeConfig) error {
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to upgrade: %w", err)
+	}
+
+	// Clear the update cache to prevent showing stale "update available" banner
+	// after the user just upgraded. The cache will be refreshed on next check.
+	if err := update.ClearCache(); err != nil {
+		// Cache clear failure is non-critical, just log and continue
+		if cb.app.config.Verbose {
+			printWarning("Failed to clear update cache: %v", err)
+		}
 	}
 
 	printSuccess("Successfully upgraded to version %s", formatVersion(latestVersion))

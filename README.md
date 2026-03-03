@@ -18,7 +18,7 @@
        <code>CI / CD</code> &nbsp;&nbsp;
     </td>
     <td align="left">
-       <a href="https://github.com/mrz1836/go-pre-commit/actions"><img src="https://img.shields.io/github/actions/workflow/status/mrz1836/go-pre-commit/fortress.yml?branch=master&label=build&logo=github&style=flat-square" alt="Build"></a>
+       <a href="https://github.com/mrz1836/go-pre-commit/actions"><img src="https://img.shields.io/github/actions/workflow/status/mrz1836/go-pre-commit/fortress.yml?branch=master&label=build&logo=github&style=flat-square&v=2" alt="Build"></a>
        <a href="https://github.com/mrz1836/go-pre-commit/commits/master"><img src="https://img.shields.io/github/last-commit/mrz1836/go-pre-commit?style=flat-square&logo=git&logoColor=white&label=last%20update" alt="Last Commit"></a>
     </td>
     <td align="right">
