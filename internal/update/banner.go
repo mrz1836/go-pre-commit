@@ -128,8 +128,6 @@ func formatBannerASCII(current, latest string) string {
 
 // padVersion pads a version string to a fixed width (Unicode-safe)
 // Uses rune count for proper handling of multi-byte characters
-//
-//nolint:unparam // width is a parameter for flexibility, even though currently always versionDisplayWidth
 func padVersion(version string, width int) string {
 	runeCount := utf8.RuneCountInString(version)
 	if runeCount >= width {
@@ -142,8 +140,6 @@ func padVersion(version string, width int) string {
 
 // padRight pads a string to a fixed width on the right (Unicode-safe)
 // Uses rune count for proper handling of multi-byte characters
-//
-//nolint:unparam // width is a parameter for flexibility, even though currently always boxWidth
 func padRight(s string, width int) string {
 	runeCount := utf8.RuneCountInString(s)
 	if runeCount >= width {
