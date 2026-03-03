@@ -2,11 +2,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/cmd"
+	"github.com/mrz1836/go-pre-commit/internal/update"
 )
 
 func main() {
@@ -25,8 +27,14 @@ func run() int {
 		version += "-dirty"
 	}
 
+	// Start background update check (non-blocking)
+	// This runs early in the CLI lifecycle to maximize time for the network request
+	ctx := context.Background()
+	updateChan := update.StartBackgroundCheck(ctx, version)
+
 	// Create CLI application with dependency injection
 	app := cmd.NewCLIApp(version, buildInfo.Commit(), buildInfo.BuildDate())
+	app.SetUpdateChan(updateChan)
 	builder := cmd.NewCommandBuilder(app)
 
 	// Execute the root command

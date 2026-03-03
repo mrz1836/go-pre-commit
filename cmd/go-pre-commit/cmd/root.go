@@ -4,17 +4,21 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+
+	"github.com/mrz1836/go-pre-commit/internal/update"
 )
 
 // CLIApp holds the application state and configuration
 type CLIApp struct {
-	version   string
-	commit    string
-	buildDate string
-	config    *AppConfig
+	version    string
+	commit     string
+	buildDate  string
+	config     *AppConfig
+	updateChan <-chan *update.CheckResult
 }
 
 // AppConfig holds global application configuration
@@ -32,6 +36,11 @@ func NewCLIApp(version, commit, buildDate string) *CLIApp {
 		buildDate: buildDate,
 		config:    &AppConfig{},
 	}
+}
+
+// SetUpdateChan sets the update check result channel
+func (app *CLIApp) SetUpdateChan(updateChan <-chan *update.CheckResult) {
+	app.updateChan = updateChan
 }
 
 // CommandBuilder creates cobra commands with dependency injection
@@ -79,6 +88,37 @@ Key features:
 	cmd.PersistentFlags().Bool("verbose", false, "Enable verbose output")
 	cmd.PersistentFlags().Bool("no-color", false, "Disable colored output (same as --color=never)")
 	cmd.PersistentFlags().String("color", "auto", "Control color output: auto, always, never")
+
+	// Add PersistentPostRunE to check for updates after command execution
+	// This runs after ALL subcommands complete, which is the desired behavior
+	cmd.PersistentPostRunE = func(cmd *cobra.Command, _ []string) error {
+		// Skip update banner for the upgrade command itself
+		// This prevents showing "upgrade available" right after the user upgraded
+		if cmd.Name() == "upgrade" {
+			return nil
+		}
+
+		// Skip if update channel was never initialized (shouldn't happen in normal flow)
+		if cb.app.updateChan == nil {
+			return nil
+		}
+
+		// Wait up to 500ms for the background update check to complete
+		// If it completes sooner, we show the banner immediately
+		// If it takes longer, we skip the notification to avoid delaying the CLI
+		select {
+		case result := <-cb.app.updateChan:
+			// Result arrived in time, show banner if update is available
+			if result != nil {
+				update.ShowBanner(result)
+			}
+		case <-time.After(500 * time.Millisecond):
+			// Update check didn't complete in time, skip notification
+			// The check will be cached for the next CLI invocation
+		}
+
+		return nil
+	}
 
 	return cmd
 }
