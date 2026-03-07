@@ -116,7 +116,7 @@ func (c *EOFCheck) processFile(filename string) (bool, error) {
 		// Add newline
 		content = append(content, '\n')
 
-		if err := os.WriteFile(filename, content, 0o600); err != nil {
+		if err := os.WriteFile(filename, content, 0o600); err != nil { //nolint:gosec // G703: filename comes from user-provided file path, same as ReadFile above
 			return false, fmt.Errorf("failed to write file: %w", err)
 		}
 		return true, nil
