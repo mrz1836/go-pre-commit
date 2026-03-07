@@ -25,7 +25,7 @@ func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	// Replace the GitHub API URL with our test server URL
 	req.URL.Host = ""
 	req.URL.Scheme = ""
-	newReq, err := http.NewRequestWithContext(req.Context(), req.Method, m.testServerURL+req.URL.Path, req.Body)
+	newReq, err := http.NewRequestWithContext(req.Context(), req.Method, m.testServerURL+req.URL.Path, req.Body) //nolint:gosec // G704: testServerURL is a controlled test server URL, not user input
 	if err != nil {
 		return nil, err
 	}
