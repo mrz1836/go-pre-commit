@@ -164,7 +164,7 @@ func WithContext(ctx context.Context, opts Options) (*Tracker, context.Context) 
 	tracker := New(opts)
 
 	// Create a context that will be canceled when the original context is done
-	childCtx, cancel := context.WithCancel(ctx)
+	childCtx, cancel := context.WithCancel(ctx) //nolint:gosec // G118: cancel is called in the goroutine below when childCtx is done
 
 	// Start tracking
 	tracker.Start(childCtx)
