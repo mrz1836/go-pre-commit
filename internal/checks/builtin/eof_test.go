@@ -548,7 +548,7 @@ func TestEOFCheckBinaryFileHandling(t *testing.T) {
 
 	// Create a binary file
 	binaryFile := filepath.Join(tmpDir, "binary.bin")
-	binaryContent := []byte{0x00, 0xFF, 0xDE, 0xAD, 0xBE, 0xEF}
+	binaryContent := []byte{0x00, 0xFF, 0xDE, 0xAD, 0xBE, 0xEF} //nolint:prealloc // false positive: slice literal is already fully initialized
 	err := os.WriteFile(binaryFile, binaryContent, 0o600)
 	require.NoError(t, err)
 

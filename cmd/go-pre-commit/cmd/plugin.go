@@ -435,7 +435,7 @@ func copyFile(src, dst string) error {
 		return err
 	}
 
-	return os.WriteFile(dst, data, info.Mode())
+	return os.WriteFile(dst, data, info.Mode()) //nolint:gosec // G703: dst is constructed via filepath.Join in controlled plugin installation context
 }
 
 func displayPluginDetails(plugin *plugins.Plugin) {

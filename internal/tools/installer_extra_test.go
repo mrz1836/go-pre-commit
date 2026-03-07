@@ -114,6 +114,7 @@ func TestRetryWithBackoff_NonNetworkError(t *testing.T) {
 
 func TestRetryWithBackoff_ContextCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	callCount := 0
 
 	operation := func() error {
