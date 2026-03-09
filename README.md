@@ -93,7 +93,7 @@ Get up and running with `go-pre-commit` in 30 seconds:
 ### Install the binary
 
 ```bash
-# Install from source (requires Go 1.24+)
+# Install from source (requires Go 1.25+)
 go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
 
 # Upgrade to the latest version
@@ -571,7 +571,7 @@ This command ensures all dependencies are brought up to date in a single step, i
 
 ## 🧪 Examples & Tests
 
-All unit tests and fuzz tests run via [GitHub Actions](https://github.com/mrz1836/go-pre-commit/actions) and use [Go version 1.24.x](https://go.dev/doc/go1.24). View the [configuration file](.github/workflows/fortress.yml).
+All unit tests and fuzz tests run via [GitHub Actions](https://github.com/mrz1836/go-pre-commit/actions) and use [Go version 1.25.x](https://go.dev/doc/go1.25). View the [configuration file](.github/workflows/fortress.yml).
 
 Run all tests (fast):
 

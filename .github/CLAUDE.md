@@ -69,7 +69,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 
 ### ⚙️ Technical Requirements
 
-- **Go version:** 1.24+ (check `go.mod`)
+- **Go version:** 1.25+ (check `go.mod`)
 - **Build system:** [Magex](https://github.com/mrz1836/mage-x) - enterprise-grade build automation
 - **Dependencies:** Minimal - Cobra, testify, color, go-isatty, yaml.v3
 - **Configuration:**
