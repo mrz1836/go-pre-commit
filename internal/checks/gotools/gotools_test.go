@@ -862,6 +862,10 @@ func TestLintCheckBuildErrorScenarios(t *testing.T) {
 			require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", "test@example.com").Run())
 			require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", "Test User").Run())
 
+			// Create a Go module so the orphaned-file skip doesn't hide the tool error.
+			err = os.WriteFile(fileGoMod, []byte(testGoModContent), 0o600)
+			require.NoError(t, err)
+
 			// Create a test Go file with linting issues
 			goFile := `package main
 import "fmt"
@@ -893,8 +897,10 @@ func TestLintCheckDirectErrorScenarios(t *testing.T) {
 	}{
 		{
 			name: "golangci-lint not available",
-			setupFunc: func(_ *testing.T, _ string) {
-				// This test only works if golangci-lint is not installed
+			setupFunc: func(t *testing.T, _ string) {
+				// A go.mod must exist so the orphaned-file skip doesn't mask the error.
+				require.NoError(t, os.WriteFile(fileGoMod, []byte(testGoModContent), 0o600))
+				require.NoError(t, os.WriteFile(testFileMainGo, []byte("package main\n\nfunc main() {}\n"), 0o600))
 			},
 			expectedError: "golangci-lint",
 		},
