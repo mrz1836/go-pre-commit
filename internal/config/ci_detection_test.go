@@ -45,14 +45,14 @@ func TestDetectCIEnvironment(t *testing.T) {
 		{
 			name:             "GitHub Actions",
 			envVar:           "GITHUB_ACTIONS",
-			envValue:         "true",
+			envValue:         envValueTrue,
 			expectedIsCI:     true,
 			expectedProvider: "github-actions",
 		},
 		{
 			name:             "GitLab CI",
 			envVar:           "GITLAB_CI",
-			envValue:         "true",
+			envValue:         envValueTrue,
 			expectedIsCI:     true,
 			expectedProvider: "gitlab",
 		},
@@ -66,21 +66,21 @@ func TestDetectCIEnvironment(t *testing.T) {
 		{
 			name:             "Buildkite",
 			envVar:           "BUILDKITE",
-			envValue:         "true",
+			envValue:         envValueTrue,
 			expectedIsCI:     true,
 			expectedProvider: "buildkite",
 		},
 		{
 			name:             "CircleCI",
 			envVar:           "CIRCLECI",
-			envValue:         "true",
+			envValue:         envValueTrue,
 			expectedIsCI:     true,
 			expectedProvider: "circleci",
 		},
 		{
 			name:             "Travis CI",
 			envVar:           "TRAVIS",
-			envValue:         "true",
+			envValue:         envValueTrue,
 			expectedIsCI:     true,
 			expectedProvider: "travis",
 		},
@@ -108,14 +108,14 @@ func TestDetectCIEnvironment(t *testing.T) {
 		{
 			name:             "Drone",
 			envVar:           "DRONE",
-			envValue:         "true",
+			envValue:         envValueTrue,
 			expectedIsCI:     true,
 			expectedProvider: "drone",
 		},
 		{
 			name:             "Semaphore",
 			envVar:           "SEMAPHORE",
-			envValue:         "true",
+			envValue:         envValueTrue,
 			expectedIsCI:     true,
 			expectedProvider: "semaphore",
 		},
@@ -129,7 +129,7 @@ func TestDetectCIEnvironment(t *testing.T) {
 		{
 			name:             "Generic CI",
 			envVar:           "CI",
-			envValue:         "true",
+			envValue:         envValueTrue,
 			expectedIsCI:     true,
 			expectedProvider: "unknown",
 		},
@@ -183,9 +183,9 @@ func TestDetectCIEnvironment_Priority(t *testing.T) {
 	}()
 
 	// Set multiple CI environment variables - should detect the first specific one
-	_ = os.Setenv("GITHUB_ACTIONS", "true")
-	_ = os.Setenv("GITLAB_CI", "true")
-	_ = os.Setenv("CI", "true")
+	_ = os.Setenv("GITHUB_ACTIONS", envValueTrue)
+	_ = os.Setenv("GITLAB_CI", envValueTrue)
+	_ = os.Setenv("CI", envValueTrue)
 
 	isCI, provider := detectCIEnvironment()
 
@@ -370,7 +370,7 @@ GO_PRE_COMMIT_LOG_LEVEL=info
 		{
 			name:             "CI detected with auto-adjust explicitly enabled",
 			setGitHubActions: true,
-			autoAdjust:       "true",
+			autoAdjust:       envValueTrue,
 			expectAdjusted:   true,
 		},
 		{
@@ -396,7 +396,7 @@ GO_PRE_COMMIT_LOG_LEVEL=info
 
 			// Set test conditions
 			if tt.setGitHubActions {
-				_ = os.Setenv("GITHUB_ACTIONS", "true")
+				_ = os.Setenv("GITHUB_ACTIONS", envValueTrue)
 			}
 			if tt.autoAdjust != "" {
 				_ = os.Setenv("GO_PRE_COMMIT_AUTO_ADJUST_CI_TIMEOUTS", tt.autoAdjust)
@@ -440,7 +440,7 @@ func TestCIDetection_EdgeCases(t *testing.T) {
 	}{
 		{
 			name:     "CI=true",
-			ciValue:  "true",
+			ciValue:  envValueTrue,
 			expected: true,
 		},
 		{
@@ -497,7 +497,7 @@ func TestCIDetection_EdgeCases(t *testing.T) {
 
 func BenchmarkDetectCIEnvironment(b *testing.B) {
 	// Benchmark CI detection performance
-	_ = os.Setenv("GITHUB_ACTIONS", "true")
+	_ = os.Setenv("GITHUB_ACTIONS", envValueTrue)
 	defer func() { _ = os.Unsetenv("GITHUB_ACTIONS") }()
 
 	b.ResetTimer()

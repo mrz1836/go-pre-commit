@@ -17,6 +17,20 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/tools"
 )
 
+// Check name constants
+const (
+	checkNameFmt         = "fmt"
+	checkNameFumpt       = "fumpt"
+	checkNameGitleaks    = "gitleaks"
+	checkNameGoimports   = "goimports"
+	checkNameLint        = "lint"
+	checkNameModTidy     = "mod-tidy"
+	checkNameEOF         = "eof"
+	checkNameAIDetection = "ai_detection"
+	checkNameWhitespace  = "whitespace"
+	envSkip              = "SKIP"
+)
+
 // Runner executes pre-commit checks
 type Runner struct {
 	config   *config.Config
@@ -330,23 +344,23 @@ func (r *Runner) determineChecks(opts Options) ([]checks.Check, error) {
 // getCheckTimeout returns the timeout for a specific check
 func (r *Runner) getCheckTimeout(checkName string) time.Duration {
 	switch checkName {
-	case "fmt":
+	case checkNameFmt:
 		return time.Duration(r.config.CheckTimeouts.Fmt) * time.Second
-	case "fumpt":
+	case checkNameFumpt:
 		return time.Duration(r.config.CheckTimeouts.Fumpt) * time.Second
-	case "gitleaks":
+	case checkNameGitleaks:
 		return time.Duration(r.config.CheckTimeouts.Gitleaks) * time.Second
-	case "goimports":
+	case checkNameGoimports:
 		return time.Duration(r.config.CheckTimeouts.Goimports) * time.Second
-	case "lint":
+	case checkNameLint:
 		return time.Duration(r.config.CheckTimeouts.Lint) * time.Second
-	case "mod-tidy":
+	case checkNameModTidy:
 		return time.Duration(r.config.CheckTimeouts.ModTidy) * time.Second
-	case "whitespace":
+	case checkNameWhitespace:
 		return time.Duration(r.config.CheckTimeouts.Whitespace) * time.Second
-	case "eof":
+	case checkNameEOF:
 		return time.Duration(r.config.CheckTimeouts.EOF) * time.Second
-	case "ai_detection":
+	case checkNameAIDetection:
 		return time.Duration(r.config.CheckTimeouts.AIDetection) * time.Second
 	default:
 		return time.Duration(r.config.Timeout) * time.Second
@@ -356,23 +370,23 @@ func (r *Runner) getCheckTimeout(checkName string) time.Duration {
 // isCheckEnabled checks if a check is enabled in the configuration
 func (r *Runner) isCheckEnabled(name string) bool {
 	switch name {
-	case "ai_detection":
+	case checkNameAIDetection:
 		return r.config.Checks.AIDetection
-	case "eof":
+	case checkNameEOF:
 		return r.config.Checks.EOF
-	case "fmt":
+	case checkNameFmt:
 		return r.config.Checks.Fmt
-	case "fumpt":
+	case checkNameFumpt:
 		return r.config.Checks.Fumpt
-	case "gitleaks":
+	case checkNameGitleaks:
 		return r.config.Checks.Gitleaks
-	case "goimports":
+	case checkNameGoimports:
 		return r.config.Checks.Goimports
-	case "lint":
+	case checkNameLint:
 		return r.config.Checks.Lint
-	case "mod-tidy":
+	case checkNameModTidy:
 		return r.config.Checks.ModTidy
-	case "whitespace":
+	case checkNameWhitespace:
 		return r.config.Checks.Whitespace
 	default:
 		return false
@@ -441,7 +455,7 @@ func (r *Runner) processSkipEnvironment() []string {
 
 	// Check multiple environment variables in order of precedence
 	skipEnvVars := []string{
-		"SKIP",               // Standard pre-commit convention
+		envSkip,              // Standard pre-commit convention
 		"GO_PRE_COMMIT_SKIP", // GoFortress-specific
 	}
 
@@ -468,7 +482,7 @@ func (r *Runner) parseSkipValue(value string) []string {
 
 	// Handle special values
 	if strings.ToLower(value) == "all" {
-		return []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"}
+		return []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection}
 	}
 
 	// Split by comma and clean up
@@ -476,15 +490,15 @@ func (r *Runner) parseSkipValue(value string) []string {
 	var skips []string
 	var hasContent bool // Track if we found any non-empty content
 	validChecks := map[string]bool{
-		"fmt":          true,
-		"fumpt":        true,
-		"gitleaks":     true,
-		"goimports":    true,
-		"lint":         true,
-		"mod-tidy":     true,
-		"whitespace":   true,
-		"eof":          true,
-		"ai_detection": true,
+		checkNameFmt:         true,
+		checkNameFumpt:       true,
+		checkNameGitleaks:    true,
+		checkNameGoimports:   true,
+		checkNameLint:        true,
+		checkNameModTidy:     true,
+		checkNameWhitespace:  true,
+		checkNameEOF:         true,
+		checkNameAIDetection: true,
 	}
 	for _, part := range parts {
 		if cleaned := strings.TrimSpace(part); cleaned != "" {
@@ -515,15 +529,15 @@ func (r *Runner) deduplicateAndValidateSkips(skips []string) []string {
 	result := make([]string, 0, len(skips))
 
 	validChecks := map[string]bool{
-		"fmt":          true,
-		"fumpt":        true,
-		"gitleaks":     true,
-		"goimports":    true,
-		"lint":         true,
-		"mod-tidy":     true,
-		"whitespace":   true,
-		"eof":          true,
-		"ai_detection": true,
+		checkNameFmt:         true,
+		checkNameFumpt:       true,
+		checkNameGitleaks:    true,
+		checkNameGoimports:   true,
+		checkNameLint:        true,
+		checkNameModTidy:     true,
+		checkNameWhitespace:  true,
+		checkNameEOF:         true,
+		checkNameAIDetection: true,
 	}
 
 	for _, skip := range skips {

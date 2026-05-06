@@ -56,7 +56,7 @@ func TestParseFileList(t *testing.T) {
 		{
 			name:     "single file",
 			input:    []byte("file.go\n"),
-			expected: []string{"file.go"},
+			expected: []string{testFileFileGo},
 		},
 		{
 			name:     "multiple files",
@@ -176,7 +176,7 @@ func TestRepository_GetFileContent_ErrorCases(t *testing.T) {
 func TestRepository_GetFileContent_FallbackToFile(t *testing.T) {
 	// Create a temporary directory with a file
 	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "test.go")
+	testFile := filepath.Join(tmpDir, testFileTestGo)
 	testContent := "package main\n\nfunc main() {}\n"
 
 	err := os.WriteFile(testFile, []byte(testContent), 0o600)
@@ -185,7 +185,7 @@ func TestRepository_GetFileContent_FallbackToFile(t *testing.T) {
 	repo := NewRepository(tmpDir)
 
 	// Since this isn't a git repo, git show will fail and it will fallback to reading the file
-	content, err := repo.GetFileContent("test.go")
+	content, err := repo.GetFileContent(testFileTestGo)
 	require.NoError(t, err)
 	assert.Equal(t, testContent, string(content))
 }

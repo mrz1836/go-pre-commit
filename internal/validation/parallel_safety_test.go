@@ -134,7 +134,7 @@ func (s *ParallelSafetyTestSuite) initGitRepo() error {
 // createTestFiles creates a variety of test files for parallel processing
 func (s *ParallelSafetyTestSuite) createTestFiles() []string {
 	files := map[string]string{
-		"main.go": `package main
+		testFileMain: `package main
 
 import "fmt"
 
@@ -142,7 +142,7 @@ func main() {
 	fmt.Println("Hello, World!")
 }
 `,
-		"service.go": `package main
+		testFileService: `package main
 
 type Service struct {
 	name string
@@ -173,7 +173,7 @@ func add(a, b int) int {
 	return a + b
 }
 `,
-		"README.md": `# Test Project
+		testFileReadme: `# Test Project
 
 This is a test project for parallel safety validation.
 
@@ -189,7 +189,7 @@ This is a test project for parallel safety validation.
 - Initial release
 - Parallel execution support
 `,
-		"config.yaml": `
+		testFileConfig: `
 app:
   name: test-app
   version: 1.0.0

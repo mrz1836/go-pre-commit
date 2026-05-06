@@ -34,10 +34,10 @@ func TestGitleaksCheck_FilterFiles(t *testing.T) {
 	check := &GitleaksCheck{}
 
 	files := []string{
-		"main.go",
-		"test.go",
+		testFileMainGo,
+		testFileTestGo,
 		"doc.md",
-		"Makefile",
+		testFileMakefile,
 		"test.txt",
 		"pkg/foo.go",
 		".env",
@@ -77,7 +77,7 @@ func TestGitleaksCheck_Run_NoTool(t *testing.T) {
 
 	check := NewGitleaksCheck()
 
-	err = check.Run(ctx, []string{"test.go"})
+	err = check.Run(ctx, []string{testFileTestGo})
 	require.Error(t, err)
 	// When gitleaks is not installed, it should return a ToolNotFoundError
 	assert.Contains(t, err.Error(), "gitleaks")
@@ -173,11 +173,11 @@ func main() {
 	fmt.Println("hello world")
 }
 `
-	err := os.WriteFile("main.go", []byte(goFile), 0o600)
+	err := os.WriteFile(testFileMainGo, []byte(goFile), 0o600)
 	s.Require().NoError(err)
 
 	check := NewGitleaksCheck()
-	err = check.Run(context.Background(), []string{"main.go"})
+	err = check.Run(context.Background(), []string{testFileMainGo})
 
 	// Should succeed when no secrets are found
 	s.NoError(err)
@@ -241,7 +241,7 @@ regex = '''TESTSECRET'''
 
 const secret = "TESTSECRET123"
 `
-	err = os.WriteFile("test.go", []byte(testFile), 0o600)
+	err = os.WriteFile(testFileTestGo, []byte(testFile), 0o600)
 	s.Require().NoError(err)
 
 	check := NewGitleaksCheck()
@@ -319,10 +319,10 @@ func (s *GitleaksCheckTestSuite) TestRunWithTimeout() {
 
 func main() {}
 `
-	err := os.WriteFile("main.go", []byte(goFile), 0o600)
+	err := os.WriteFile(testFileMainGo, []byte(goFile), 0o600)
 	s.Require().NoError(err)
 
-	err = check.Run(context.Background(), []string{"main.go"})
+	err = check.Run(context.Background(), []string{testFileMainGo})
 	// May or may not timeout depending on system speed
 	// If it times out, error should mention timeout
 	if err != nil && strings.Contains(err.Error(), "timed out") {
@@ -360,18 +360,18 @@ func TestGitleaksCheckEdgeCases(t *testing.T) {
 		cancel() // Cancel immediately
 
 		check := NewGitleaksCheck()
-		err := check.Run(ctx, []string{"test.go"})
+		err := check.Run(ctx, []string{testFileTestGo})
 		assert.Error(t, err)
 	})
 
 	t.Run("all file types", func(t *testing.T) {
 		check := NewGitleaksCheck()
 		files := []string{
-			"main.go",
+			testFileMainGo,
 			".env",
 			"config.json",
 			"README.md",
-			"Makefile",
+			testFileMakefile,
 			"secrets.txt",
 		}
 		filtered := check.FilterFiles(files)
@@ -465,7 +465,7 @@ func TestGitleaksRepositoryRootFailures(t *testing.T) {
 		}
 
 		check := NewGitleaksCheck()
-		err = check.Run(ctx, []string{"test.go"})
+		err = check.Run(ctx, []string{testFileTestGo})
 		require.Error(t, err)
 		// Should error due to missing git repo
 		assert.Contains(t, err.Error(), "repository root")
@@ -499,7 +499,7 @@ func TestGitleaksSpecificErrorPaths(t *testing.T) {
 		cancel()
 
 		check := NewGitleaksCheck()
-		err = check.Run(canceledCtx, []string{"test.go"})
+		err = check.Run(canceledCtx, []string{testFileTestGo})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "context")
 	})
@@ -561,12 +561,12 @@ func TestGitleaksVariousFileTypes(t *testing.T) {
 
 	// Create various file types
 	files := map[string]string{
-		"main.go":     "package main\n\nfunc main() {}\n",
-		".env":        "DATABASE_URL=localhost\n",
-		"config.json": "{\"key\": \"value\"}\n",
-		"README.md":   "# Project\n",
-		"Makefile":    "all:\n\t@echo done\n",
-		"script.sh":   "#!/bin/bash\necho hello\n",
+		testFileMainGo:   "package main\n\nfunc main() {}\n",
+		".env":           "DATABASE_URL=localhost\n",
+		"config.json":    "{\"key\": \"value\"}\n",
+		"README.md":      "# Project\n",
+		testFileMakefile: "all:\n\t@echo done\n",
+		"script.sh":      "#!/bin/bash\necho hello\n",
 	}
 
 	for filename, content := range files {
@@ -575,7 +575,7 @@ func TestGitleaksVariousFileTypes(t *testing.T) {
 	}
 
 	check := NewGitleaksCheck()
-	fileList := []string{"main.go", ".env", "config.json", "README.md", "Makefile", "script.sh"}
+	fileList := []string{testFileMainGo, ".env", "config.json", "README.md", testFileMakefile, "script.sh"}
 
 	err = check.Run(ctx, fileList)
 	// Should succeed with clean files (no secrets)

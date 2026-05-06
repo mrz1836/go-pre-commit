@@ -40,7 +40,7 @@ func TestNewPlugin(t *testing.T) {
 		{
 			name: "empty executable",
 			manifest: &PluginManifest{
-				Name:       "test-plugin",
+				Name:       testPluginName,
 				Executable: "",
 			},
 			directory: "/tmp",
@@ -50,11 +50,11 @@ func TestNewPlugin(t *testing.T) {
 		{
 			name: "valid plugin",
 			manifest: &PluginManifest{
-				Name:         "test-plugin",
+				Name:         testPluginName,
 				Version:      "1.0.0",
 				Description:  "Test plugin",
 				Executable:   "test.sh",
-				FilePatterns: []string{"*.go"},
+				FilePatterns: []string{testFilePatternGoStar},
 				Timeout:      "30s",
 				Category:     "testing",
 			},
@@ -64,7 +64,7 @@ func TestNewPlugin(t *testing.T) {
 		{
 			name: "invalid timeout",
 			manifest: &PluginManifest{
-				Name:       "test-plugin",
+				Name:       testPluginName,
 				Executable: "test.sh",
 				Timeout:    "invalid",
 			},
@@ -97,12 +97,12 @@ func TestNewPlugin(t *testing.T) {
 
 func TestPluginMetadata(t *testing.T) {
 	manifest := &PluginManifest{
-		Name:          "test-plugin",
+		Name:          testPluginName,
 		Version:       "1.0.0",
 		Description:   "Test plugin",
 		Author:        "Test Author",
 		Executable:    "test.sh",
-		FilePatterns:  []string{"*.go", "*.js"},
+		FilePatterns:  []string{testFilePatternGoStar, "*.js"},
 		Timeout:       "45s",
 		Category:      "linting",
 		RequiresFiles: true,
@@ -114,12 +114,12 @@ func TestPluginMetadata(t *testing.T) {
 
 	metadata := plugin.Metadata().(PluginMetadata)
 
-	assert.Equal(t, "test-plugin", metadata.Name)
+	assert.Equal(t, testPluginName, metadata.Name)
 	assert.Equal(t, "Test plugin", metadata.Description)
 	assert.Equal(t, "1.0.0", metadata.Version)
 	assert.Equal(t, "Test Author", metadata.Author)
 	assert.Equal(t, "linting", metadata.Category)
-	assert.Equal(t, []string{"*.go", "*.js"}, metadata.FilePatterns)
+	assert.Equal(t, []string{testFilePatternGoStar, "*.js"}, metadata.FilePatterns)
 	assert.Equal(t, []string{"bash", "grep"}, metadata.Dependencies)
 	assert.Equal(t, 45*time.Second, metadata.DefaultTimeout)
 	assert.True(t, metadata.RequiresFiles)
@@ -140,13 +140,13 @@ func TestPluginFilterFiles(t *testing.T) {
 		},
 		{
 			name:          "extension filter",
-			patterns:      []string{"*.go"},
+			patterns:      []string{testFilePatternGoStar},
 			inputFiles:    []string{"main.go", "test.js", "doc.md", "utils.go"},
 			expectedFiles: []string{"main.go", "utils.go"},
 		},
 		{
 			name:          "multiple patterns",
-			patterns:      []string{"*.go", "*.js"},
+			patterns:      []string{testFilePatternGoStar, "*.js"},
 			inputFiles:    []string{"main.go", "test.js", "doc.md", "utils.go"},
 			expectedFiles: []string{"main.go", "test.js", "utils.go"},
 		},
@@ -161,7 +161,7 @@ func TestPluginFilterFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			manifest := &PluginManifest{
-				Name:         "test-plugin",
+				Name:         testPluginName,
 				Executable:   "test.sh",
 				FilePatterns: tt.patterns,
 			}
@@ -190,7 +190,7 @@ echo '{"success": true, "output": "Test passed"}'
 	require.NoError(t, err)
 
 	manifest := &PluginManifest{
-		Name:       "test-plugin",
+		Name:       testPluginName,
 		Executable: "./test.sh",
 		Timeout:    "5s",
 	}

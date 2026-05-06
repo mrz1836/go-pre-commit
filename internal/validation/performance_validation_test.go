@@ -498,10 +498,10 @@ func (s *PerformanceValidationTestSuite) TestErrorHandlingPerformance() {
 
 	// Create files that will cause some checks to be skipped (but not fail)
 	files := []string{
-		"main.go",     // Valid Go file
-		"README.md",   // Valid markdown
-		"binary.exe",  // Should be filtered out
-		"config.yaml", // Valid YAML
+		testFileMain,   // Valid Go file
+		testFileReadme, // Valid markdown
+		"binary.exe",   // Should be filtered out
+		testFileConfig, // Valid YAML
 	}
 	s.createBasicFiles(files)
 
@@ -569,15 +569,15 @@ func (s *PerformanceValidationTestSuite) TestResourceConstrainedPerformance() {
 // Helper methods for creating test files and configurations
 
 func (s *PerformanceValidationTestSuite) createSmallCommitFiles() []string {
-	files := []string{"main.go", "README.md", "config.yaml"}
+	files := []string{testFileMain, testFileReadme, testFileConfig}
 	s.createBasicFiles(files)
 	return files
 }
 
 func (s *PerformanceValidationTestSuite) createTypicalCommitFiles() []string {
 	files := []string{
-		"main.go", "service.go", "handler.go", "model.go",
-		"utils.go", "README.md", "CHANGELOG.md", "config.yaml",
+		testFileMain, testFileService, "handler.go", "model.go",
+		"utils.go", testFileReadme, "CHANGELOG.md", testFileConfig,
 		"docker-compose.yml",
 	}
 	s.createBasicFiles(files)

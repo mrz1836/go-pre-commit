@@ -17,8 +17,8 @@ func TestCompareVersions(t *testing.T) {
 	}{
 		{
 			name:     "equal versions",
-			v1:       "1.0.0",
-			v2:       "1.0.0",
+			v1:       testVersionBase,
+			v2:       testVersionBase,
 			expected: 0,
 		},
 		{
@@ -30,18 +30,18 @@ func TestCompareVersions(t *testing.T) {
 		{
 			name:     "mixed v prefix",
 			v1:       "v1.0.0",
-			v2:       "1.0.0",
+			v2:       testVersionBase,
 			expected: 0,
 		},
 		{
 			name:     "major version greater",
 			v1:       "2.0.0",
-			v2:       "1.0.0",
+			v2:       testVersionBase,
 			expected: 1,
 		},
 		{
 			name:     "major version less",
-			v1:       "1.0.0",
+			v1:       testVersionBase,
 			v2:       "2.0.0",
 			expected: -1,
 		},
@@ -72,7 +72,7 @@ func TestCompareVersions(t *testing.T) {
 		{
 			name:     "dev version always older",
 			v1:       "dev",
-			v2:       "1.0.0",
+			v2:       testVersionBase,
 			expected: -1,
 		},
 		{
@@ -84,24 +84,24 @@ func TestCompareVersions(t *testing.T) {
 		{
 			name:     "version with suffix",
 			v1:       "1.0.0-dirty",
-			v2:       "1.0.0",
+			v2:       testVersionBase,
 			expected: 0,
 		},
 		{
 			name:     "version with rc suffix",
 			v1:       "1.0.0-rc1",
-			v2:       "1.0.0",
+			v2:       testVersionBase,
 			expected: 0,
 		},
 		{
 			name:     "different length versions",
 			v1:       "1.0",
-			v2:       "1.0.0",
+			v2:       testVersionBase,
 			expected: 0,
 		},
 		{
 			name:     "different length versions 2",
-			v1:       "1.0.0",
+			v1:       testVersionBase,
 			v2:       "1.0",
 			expected: 0,
 		},
@@ -124,26 +124,26 @@ func TestIsNewerVersion(t *testing.T) {
 	}{
 		{
 			name:           "newer version available",
-			currentVersion: "1.0.0",
+			currentVersion: testVersionBase,
 			latestVersion:  "1.1.0",
 			expected:       true,
 		},
 		{
 			name:           "same version",
-			currentVersion: "1.0.0",
-			latestVersion:  "1.0.0",
+			currentVersion: testVersionBase,
+			latestVersion:  testVersionBase,
 			expected:       false,
 		},
 		{
 			name:           "older version",
 			currentVersion: "2.0.0",
-			latestVersion:  "1.0.0",
+			latestVersion:  testVersionBase,
 			expected:       false,
 		},
 		{
 			name:           "dev version",
 			currentVersion: "dev",
-			latestVersion:  "1.0.0",
+			latestVersion:  testVersionBase,
 			expected:       true,
 		},
 		{
@@ -176,33 +176,33 @@ func TestNormalizeVersion(t *testing.T) {
 	}{
 		{
 			name:     "already normalized",
-			input:    "1.0.0",
-			expected: "1.0.0",
+			input:    testVersionBase,
+			expected: testVersionBase,
 		},
 		{
 			name:     "with v prefix",
 			input:    "v1.0.0",
-			expected: "1.0.0",
+			expected: testVersionBase,
 		},
 		{
 			name:     "with whitespace",
 			input:    "  1.0.0  ",
-			expected: "1.0.0",
+			expected: testVersionBase,
 		},
 		{
 			name:     "with suffix",
 			input:    "1.0.0-dirty",
-			expected: "1.0.0",
+			expected: testVersionBase,
 		},
 		{
 			name:     "with rc suffix",
 			input:    "1.0.0-rc1",
-			expected: "1.0.0",
+			expected: testVersionBase,
 		},
 		{
 			name:     "with git hash",
 			input:    "1.0.0-g1234567",
-			expected: "1.0.0",
+			expected: testVersionBase,
 		},
 		{
 			name:     "complex version",
@@ -370,12 +370,12 @@ func TestCompareVersions_CommitHashCases(t *testing.T) {
 		{
 			name:     "commit hash vs version",
 			v1:       "abc1234",
-			v2:       "1.0.0",
+			v2:       testVersionBase,
 			expected: -1,
 		},
 		{
 			name:     "version vs commit hash",
-			v1:       "1.0.0",
+			v1:       testVersionBase,
 			v2:       "abc1234",
 			expected: 1,
 		},
@@ -388,12 +388,12 @@ func TestCompareVersions_CommitHashCases(t *testing.T) {
 		{
 			name:     "empty version vs version",
 			v1:       "",
-			v2:       "1.0.0",
+			v2:       testVersionBase,
 			expected: -1,
 		},
 		{
 			name:     "version vs empty",
-			v1:       "1.0.0",
+			v1:       testVersionBase,
 			v2:       "",
 			expected: 1,
 		},

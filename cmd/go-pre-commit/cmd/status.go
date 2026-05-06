@@ -57,7 +57,7 @@ func (cb *CommandBuilder) runStatus(_ *cobra.Command, _ []string) error {
 	installer := git.NewInstallerWithConfig(repoRoot, cfg.Directory, cfg)
 
 	// Check status of common hook types
-	supportedHooks := []string{"pre-commit", "pre-push", "commit-msg", "post-commit"}
+	supportedHooks := []string{hookTypePreCommit, hookTypePrePush, "commit-msg", "post-commit"}
 
 	printHeader("Go Pre-commit System Status")
 

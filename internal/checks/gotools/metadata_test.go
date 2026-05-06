@@ -104,7 +104,7 @@ func TestModTidyCheck_Metadata(t *testing.T) {
 
 	assert.Equal(t, "mod-tidy", metadata.Name)
 	assert.Equal(t, "Ensure go.mod and go.sum are up to date and tidy", metadata.Description)
-	assert.Equal(t, []string{"*.go", "go.mod", "go.sum"}, metadata.FilePatterns)
+	assert.Equal(t, []string{"*.go", fileGoMod, "go.sum"}, metadata.FilePatterns)
 	assert.Equal(t, 5*time.Second, metadata.EstimatedDuration)
 	assert.Equal(t, []string{"mod-tidy"}, metadata.Dependencies)
 	assert.Equal(t, 30*time.Second, metadata.DefaultTimeout)
@@ -125,7 +125,7 @@ func TestModTidyCheckWithConfig_Metadata(t *testing.T) {
 
 	assert.Equal(t, "mod-tidy", metadata.Name)
 	assert.Equal(t, "Ensure go.mod and go.sum are up to date and tidy", metadata.Description)
-	assert.Equal(t, []string{"*.go", "go.mod", "go.sum"}, metadata.FilePatterns)
+	assert.Equal(t, []string{"*.go", fileGoMod, "go.sum"}, metadata.FilePatterns)
 	assert.Equal(t, 5*time.Second, metadata.EstimatedDuration)
 	assert.Equal(t, []string{"mod-tidy"}, metadata.Dependencies)
 	assert.Equal(t, customTimeout, metadata.DefaultTimeout)

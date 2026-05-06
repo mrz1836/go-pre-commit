@@ -43,7 +43,7 @@ func (s *FumptStageTestSuite) SetupSuite() {
 	s.Require().NoError(os.Chdir(s.tempDir))
 
 	// Create test Go file
-	s.testFile = filepath.Join(s.tempDir, "test.go")
+	s.testFile = filepath.Join(s.tempDir, testFileTestGo)
 	testContent := `package main
 
 import "fmt"
@@ -192,7 +192,7 @@ func (s *FumptStageTestSuite) TestFumptCheck_StageFiles_ContextCancellation() {
 func (s *FumptStageTestSuite) TestFumptCheck_StageFiles_NoGitRepo() {
 	// Create a separate temp directory without git
 	nonGitDir := s.T().TempDir()
-	testFileNonGit := filepath.Join(nonGitDir, "test.go")
+	testFileNonGit := filepath.Join(nonGitDir, testFileTestGo)
 	s.Require().NoError(os.WriteFile(testFileNonGit, []byte("package main\n"), 0o600))
 
 	check := NewFumptCheckWithSharedContext(s.sharedCtx)

@@ -95,22 +95,22 @@ func TestMainFunction(t *testing.T) {
 	}{
 		{
 			name:        "help flag",
-			args:        []string{"go-pre-commit", "--no-color", "--help"},
+			args:        []string{binaryCLIName, flagNoColor, "--help"},
 			expectError: false,
 		},
 		{
 			name:        "version flag",
-			args:        []string{"go-pre-commit", "--no-color", "--version"},
+			args:        []string{binaryCLIName, flagNoColor, "--version"},
 			expectError: false,
 		},
 		{
 			name:        "show checks",
-			args:        []string{"go-pre-commit", "--no-color", "run", "--show-checks"},
+			args:        []string{binaryCLIName, flagNoColor, "run", "--show-checks"},
 			expectError: false,
 		},
 		{
 			name:        "invalid command",
-			args:        []string{"go-pre-commit", "--no-color", "invalid"},
+			args:        []string{binaryCLIName, flagNoColor, "invalid"},
 			expectError: true,
 		},
 	}
@@ -188,7 +188,7 @@ func TestDirectExecution(t *testing.T) {
 
 	// Test successful execution
 	t.Run("successful help", func(t *testing.T) {
-		os.Args = []string{"go-pre-commit", "--no-color", "--help"}
+		os.Args = []string{binaryCLIName, flagNoColor, "--help"}
 
 		// Capture output
 		r, w, _ := os.Pipe()
@@ -229,7 +229,7 @@ func TestMainFunctionErrorHandling(t *testing.T) {
 	}{
 		{
 			name: "successful help command",
-			args: []string{"go-pre-commit", "--no-color", "--help"},
+			args: []string{binaryCLIName, flagNoColor, "--help"},
 			setupFunc: func() {
 				cmd.SetVersionInfo("test", "test-commit", "test-date")
 			},
@@ -237,7 +237,7 @@ func TestMainFunctionErrorHandling(t *testing.T) {
 		},
 		{
 			name: "invalid command should error",
-			args: []string{"go-pre-commit", "--no-color", "invalid-command"},
+			args: []string{binaryCLIName, flagNoColor, "invalid-command"},
 			setupFunc: func() {
 				cmd.ResetCommand()
 				cmd.SetVersionInfo("test", "test-commit", "test-date")
@@ -282,7 +282,7 @@ func TestMainComponents(t *testing.T) {
 		// Execute version command to verify version info was set
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
-		os.Args = []string{"go-pre-commit", "--no-color", "--version"}
+		os.Args = []string{binaryCLIName, flagNoColor, "--version"}
 
 		// Capture output
 		oldStdout := os.Stdout
@@ -318,7 +318,7 @@ func TestMainComponents(t *testing.T) {
 
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
-		os.Args = []string{"go-pre-commit", "invalid-command"}
+		os.Args = []string{binaryCLIName, "invalid-command"}
 
 		// This should return an error (not call os.Exit)
 		err := cmd.Execute()
@@ -374,7 +374,7 @@ func TestVersionInfo(t *testing.T) {
 	// No need to defer cleanup - test binary is in temp dir which gets cleaned up automatically
 
 	// Run with version flag and no-color flag
-	testCmd := exec.CommandContext(ctx, testBinary, "--no-color", "--version") //nolint:gosec // Safe: testBinary is our own built binary
+	testCmd := exec.CommandContext(ctx, testBinary, flagNoColor, "--version") //nolint:gosec // Safe: testBinary is our own built binary
 	output, err := testCmd.Output()
 	require.NoError(t, err)
 
@@ -382,7 +382,7 @@ func TestVersionInfo(t *testing.T) {
 	t.Logf("Version command output: %q", outputStr)
 
 	// Check that version command works and outputs version information
-	assert.Contains(t, outputStr, "go-pre-commit")
+	assert.Contains(t, outputStr, binaryCLIName)
 	assert.Contains(t, outputStr, "version")
 	// The version should contain some value (may be from BuildInfo or ldflags)
 	// We can't predict exact values since they depend on build context
@@ -445,7 +445,7 @@ func TestMainExitOnError(t *testing.T) {
 	// No need to defer cleanup - test binary is in temp dir which gets cleaned up automatically
 
 	// Run with invalid command and no-color flag
-	testCmd := exec.CommandContext(ctx, testBinary, "--no-color", "invalid-command") //nolint:gosec // Safe: testBinary is our own built binary
+	testCmd := exec.CommandContext(ctx, testBinary, flagNoColor, "invalid-command") //nolint:gosec // Safe: testBinary is our own built binary
 	err = testCmd.Run()
 
 	// Should exit with status 1
@@ -483,7 +483,7 @@ func BenchmarkMain(b *testing.B) {
 	}()
 
 	// Use help command for fast execution
-	os.Args = []string{"go-pre-commit", "--help"}
+	os.Args = []string{binaryCLIName, "--help"}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -514,7 +514,7 @@ func TestRunFunction(t *testing.T) {
 	}{
 		{
 			name: "successful help command returns 0",
-			args: []string{"go-pre-commit", "--no-color", "--help"},
+			args: []string{binaryCLIName, flagNoColor, "--help"},
 			setupFunc: func() {
 				cmd.ResetCommand()
 				cmd.SetVersionInfo("test", "test-commit", "test-date")
@@ -523,7 +523,7 @@ func TestRunFunction(t *testing.T) {
 		},
 		{
 			name: "successful version command returns 0",
-			args: []string{"go-pre-commit", "--no-color", "--version"},
+			args: []string{binaryCLIName, flagNoColor, "--version"},
 			setupFunc: func() {
 				cmd.ResetCommand()
 				cmd.SetVersionInfo("1.0.0", "abc123", "2023-01-01")
@@ -532,7 +532,7 @@ func TestRunFunction(t *testing.T) {
 		},
 		{
 			name: "invalid command returns 1",
-			args: []string{"go-pre-commit", "--no-color", "invalid-command"},
+			args: []string{binaryCLIName, flagNoColor, "invalid-command"},
 			setupFunc: func() {
 				cmd.ResetCommand()
 				cmd.SetVersionInfo("test", "test", "test")
@@ -541,7 +541,7 @@ func TestRunFunction(t *testing.T) {
 		},
 		{
 			name: "status command returns 0",
-			args: []string{"go-pre-commit", "--no-color", "status"},
+			args: []string{binaryCLIName, flagNoColor, "status"},
 			setupFunc: func() {
 				cmd.ResetCommand()
 				cmd.SetVersionInfo("test", "test", "test")
@@ -624,7 +624,7 @@ func TestRunFunctionVersionInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set args for version command
-			os.Args = []string{"go-pre-commit", "--no-color", "--version"}
+			os.Args = []string{binaryCLIName, flagNoColor, "--version"}
 
 			// Reset command and set version info
 			cmd.ResetCommand()
@@ -673,7 +673,7 @@ func TestRunFunctionVersionDirtySuffix(t *testing.T) {
 	defer func() { os.Args = oldArgs }()
 
 	// Set args for version command
-	os.Args = []string{"go-pre-commit", "--no-color", "--version"}
+	os.Args = []string{binaryCLIName, flagNoColor, "--version"}
 
 	// Test with a version that already has -dirty suffix
 	t.Run("version already has dirty suffix", func(t *testing.T) {
@@ -760,13 +760,13 @@ func TestMainProcess(_ *testing.T) {
 	// Run main() based on test case
 	switch os.Getenv("GO_TEST_CASE") {
 	case "help":
-		os.Args = []string{"go-pre-commit", "--help"}
+		os.Args = []string{binaryCLIName, "--help"}
 		main()
 	case "version":
-		os.Args = []string{"go-pre-commit", "--version"}
+		os.Args = []string{binaryCLIName, "--version"}
 		main()
 	case "invalid":
-		os.Args = []string{"go-pre-commit", "invalid-command-xyz"}
+		os.Args = []string{binaryCLIName, "invalid-command-xyz"}
 		main()
 	}
 }

@@ -31,17 +31,17 @@ func TestRegistryLoadPlugins(t *testing.T) {
 	assert.Empty(t, registry.GetAll())
 
 	// Create plugin directory with valid plugin
-	pluginDir := filepath.Join(tmpDir, "test-plugin")
+	pluginDir := filepath.Join(tmpDir, testPluginName)
 	err = os.MkdirAll(pluginDir, 0o750)
 	require.NoError(t, err)
 
 	// Create plugin manifest
 	manifest := &PluginManifest{
-		Name:         "test-plugin",
+		Name:         testPluginName,
 		Version:      "1.0.0",
 		Description:  "Test plugin",
 		Executable:   "./test.sh",
-		FilePatterns: []string{"*.go"},
+		FilePatterns: []string{testFilePatternGoStar},
 		Timeout:      "30s",
 		Category:     "testing",
 	}
@@ -67,17 +67,17 @@ echo '{"success": true}'
 	// Verify plugin was loaded
 	plugins := registry.GetAll()
 	assert.Len(t, plugins, 1)
-	assert.Equal(t, "test-plugin", plugins[0].Name())
+	assert.Equal(t, testPluginName, plugins[0].Name())
 
 	// Test Get
-	plugin, found := registry.Get("test-plugin")
+	plugin, found := registry.Get(testPluginName)
 	assert.True(t, found)
 	assert.NotNil(t, plugin)
-	assert.Equal(t, "test-plugin", plugin.Name())
+	assert.Equal(t, testPluginName, plugin.Name())
 
 	// Test Names
 	names := registry.Names()
-	assert.Equal(t, []string{"test-plugin"}, names)
+	assert.Equal(t, []string{testPluginName}, names)
 }
 
 func TestRegistryLoadPluginsWithErrors(t *testing.T) {
@@ -103,7 +103,7 @@ func TestRegistryAddPlugin(t *testing.T) {
 
 	// Create a plugin
 	manifest := &PluginManifest{
-		Name:       "test-plugin",
+		Name:       testPluginName,
 		Executable: "test.sh",
 	}
 	plugin, err := NewPlugin(manifest, "/tmp")
@@ -114,7 +114,7 @@ func TestRegistryAddPlugin(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify plugin was added
-	retrieved, found := registry.Get("test-plugin")
+	retrieved, found := registry.Get(testPluginName)
 	assert.True(t, found)
 	assert.Equal(t, plugin, retrieved)
 
@@ -134,7 +134,7 @@ func TestRegistryRemovePlugin(t *testing.T) {
 
 	// Create and add a plugin
 	manifest := &PluginManifest{
-		Name:       "test-plugin",
+		Name:       testPluginName,
 		Executable: "test.sh",
 	}
 	plugin, err := NewPlugin(manifest, "/tmp")
@@ -144,11 +144,11 @@ func TestRegistryRemovePlugin(t *testing.T) {
 	require.NoError(t, err)
 
 	// Remove existing plugin
-	removed := registry.RemovePlugin("test-plugin")
+	removed := registry.RemovePlugin(testPluginName)
 	assert.True(t, removed)
 
 	// Verify it's gone
-	_, found := registry.Get("test-plugin")
+	_, found := registry.Get(testPluginName)
 	assert.False(t, found)
 
 	// Try to remove non-existent plugin
@@ -161,11 +161,11 @@ func TestLoadManifestFormats(t *testing.T) {
 	registry := NewRegistry(tmpDir)
 
 	manifest := &PluginManifest{
-		Name:         "test-plugin",
+		Name:         testPluginName,
 		Version:      "1.0.0",
 		Description:  "Test plugin",
 		Executable:   "./test.sh",
-		FilePatterns: []string{"*.go"},
+		FilePatterns: []string{testFilePatternGoStar},
 	}
 
 	tests := []struct {
@@ -234,11 +234,11 @@ func TestValidateManifest(t *testing.T) {
 		{
 			name: "valid manifest",
 			manifest: &PluginManifest{
-				Name:         "test-plugin",
+				Name:         testPluginName,
 				Version:      "1.0.0",
 				Description:  "Test plugin",
 				Executable:   "./test.sh",
-				FilePatterns: []string{"*.go"},
+				FilePatterns: []string{testFilePatternGoStar},
 				Timeout:      "30s",
 				Category:     "linting",
 			},
@@ -262,7 +262,7 @@ func TestValidateManifest(t *testing.T) {
 				Version:      "1.0.0",
 				Description:  "Test",
 				Executable:   "./test",
-				FilePatterns: []string{"*.go"},
+				FilePatterns: []string{testFilePatternGoStar},
 				Timeout:      "invalid",
 			},
 			wantErrs: []string{
@@ -276,7 +276,7 @@ func TestValidateManifest(t *testing.T) {
 				Version:      "1.0.0",
 				Description:  "Test",
 				Executable:   "./test",
-				FilePatterns: []string{"*.go"},
+				FilePatterns: []string{testFilePatternGoStar},
 				Category:     "invalid-category",
 			},
 			wantErrs: []string{

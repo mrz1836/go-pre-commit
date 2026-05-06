@@ -37,55 +37,55 @@ func TestGetCheckTimeout(t *testing.T) {
 	}{
 		{
 			name:         "Fmt timeout",
-			checkName:    "fmt",
+			checkName:    checkNameFmt,
 			expectedTime: 30 * time.Second,
 			description:  "Should return configured fmt timeout",
 		},
 		{
 			name:         "Fumpt timeout",
-			checkName:    "fumpt",
+			checkName:    checkNameFumpt,
 			expectedTime: 45 * time.Second,
 			description:  "Should return configured fumpt timeout",
 		},
 		{
 			name:         "Gitleaks timeout",
-			checkName:    "gitleaks",
+			checkName:    checkNameGitleaks,
 			expectedTime: 60 * time.Second,
 			description:  "Should return configured gitleaks timeout",
 		},
 		{
 			name:         "Goimports timeout",
-			checkName:    "goimports",
+			checkName:    checkNameGoimports,
 			expectedTime: 35 * time.Second,
 			description:  "Should return configured goimports timeout",
 		},
 		{
 			name:         "Lint timeout",
-			checkName:    "lint",
+			checkName:    checkNameLint,
 			expectedTime: 90 * time.Second,
 			description:  "Should return configured lint timeout",
 		},
 		{
 			name:         "ModTidy timeout",
-			checkName:    "mod-tidy",
+			checkName:    checkNameModTidy,
 			expectedTime: 50 * time.Second,
 			description:  "Should return configured mod-tidy timeout",
 		},
 		{
 			name:         "Whitespace timeout",
-			checkName:    "whitespace",
+			checkName:    checkNameWhitespace,
 			expectedTime: 20 * time.Second,
 			description:  "Should return configured whitespace timeout",
 		},
 		{
 			name:         "EOF timeout",
-			checkName:    "eof",
+			checkName:    checkNameEOF,
 			expectedTime: 15 * time.Second,
 			description:  "Should return configured eof timeout",
 		},
 		{
 			name:         "AI Detection timeout",
-			checkName:    "ai_detection",
+			checkName:    checkNameAIDetection,
 			expectedTime: 100 * time.Second,
 			description:  "Should return configured ai_detection timeout",
 		},
@@ -127,9 +127,9 @@ func TestGetCheckTimeoutWithZeroValues(t *testing.T) {
 		checkName    string
 		expectedTime time.Duration
 	}{
-		{"fmt", 0 * time.Second},
-		{"fumpt", 0 * time.Second},
-		{"lint", 0 * time.Second},
+		{checkNameFmt, 0 * time.Second},
+		{checkNameFumpt, 0 * time.Second},
+		{checkNameLint, 0 * time.Second},
 		{"unknown", 60 * time.Second}, // Should still use global timeout
 	}
 
@@ -167,55 +167,55 @@ func TestIsCheckEnabled(t *testing.T) {
 	}{
 		{
 			name:        "AI Detection enabled",
-			checkName:   "ai_detection",
+			checkName:   checkNameAIDetection,
 			expected:    true,
 			description: "Should return true when ai_detection is enabled",
 		},
 		{
 			name:        "EOF enabled",
-			checkName:   "eof",
+			checkName:   checkNameEOF,
 			expected:    true,
 			description: "Should return true when eof is enabled",
 		},
 		{
 			name:        "Fmt disabled",
-			checkName:   "fmt",
+			checkName:   checkNameFmt,
 			expected:    false,
 			description: "Should return false when fmt is disabled",
 		},
 		{
 			name:        "Fumpt enabled",
-			checkName:   "fumpt",
+			checkName:   checkNameFumpt,
 			expected:    true,
 			description: "Should return true when fumpt is enabled",
 		},
 		{
 			name:        "Gitleaks disabled",
-			checkName:   "gitleaks",
+			checkName:   checkNameGitleaks,
 			expected:    false,
 			description: "Should return false when gitleaks is disabled",
 		},
 		{
 			name:        "Goimports enabled",
-			checkName:   "goimports",
+			checkName:   checkNameGoimports,
 			expected:    true,
 			description: "Should return true when goimports is enabled",
 		},
 		{
 			name:        "Lint enabled",
-			checkName:   "lint",
+			checkName:   checkNameLint,
 			expected:    true,
 			description: "Should return true when lint is enabled",
 		},
 		{
 			name:        "ModTidy disabled",
-			checkName:   "mod-tidy",
+			checkName:   checkNameModTidy,
 			expected:    false,
 			description: "Should return false when mod-tidy is disabled",
 		},
 		{
 			name:        "Whitespace enabled",
-			checkName:   "whitespace",
+			checkName:   checkNameWhitespace,
 			expected:    true,
 			description: "Should return true when whitespace is enabled",
 		},
@@ -259,15 +259,15 @@ func TestIsCheckEnabledAllEnabled(t *testing.T) {
 	runner := New(cfg, "/tmp")
 
 	allChecks := []string{
-		"ai_detection",
-		"eof",
-		"fmt",
-		"fumpt",
-		"gitleaks",
-		"goimports",
-		"lint",
-		"mod-tidy",
-		"whitespace",
+		checkNameAIDetection,
+		checkNameEOF,
+		checkNameFmt,
+		checkNameFumpt,
+		checkNameGitleaks,
+		checkNameGoimports,
+		checkNameLint,
+		checkNameModTidy,
+		checkNameWhitespace,
 	}
 
 	for _, checkName := range allChecks {
@@ -295,15 +295,15 @@ func TestIsCheckEnabledAllDisabled(t *testing.T) {
 	runner := New(cfg, "/tmp")
 
 	allChecks := []string{
-		"ai_detection",
-		"eof",
-		"fmt",
-		"fumpt",
-		"gitleaks",
-		"goimports",
-		"lint",
-		"mod-tidy",
-		"whitespace",
+		checkNameAIDetection,
+		checkNameEOF,
+		checkNameFmt,
+		checkNameFumpt,
+		checkNameGitleaks,
+		checkNameGoimports,
+		checkNameLint,
+		checkNameModTidy,
+		checkNameWhitespace,
 	}
 
 	for _, checkName := range allChecks {
@@ -328,8 +328,8 @@ func TestGetCheckTimeoutConsistency(t *testing.T) {
 	// Call multiple times and verify consistency
 	for i := 0; i < 10; i++ {
 		assert.Equal(t, 30*time.Second, runner.getCheckTimeout("fmt"))
-		assert.Equal(t, 45*time.Second, runner.getCheckTimeout("fumpt"))
-		assert.Equal(t, 90*time.Second, runner.getCheckTimeout("lint"))
+		assert.Equal(t, 45*time.Second, runner.getCheckTimeout(checkNameFumpt))
+		assert.Equal(t, 90*time.Second, runner.getCheckTimeout(checkNameLint))
 	}
 }
 
@@ -347,8 +347,8 @@ func TestIsCheckEnabledConsistency(t *testing.T) {
 	// Call multiple times and verify consistency
 	for i := 0; i < 10; i++ {
 		assert.True(t, runner.isCheckEnabled("fmt"))
-		assert.False(t, runner.isCheckEnabled("fumpt"))
-		assert.True(t, runner.isCheckEnabled("lint"))
+		assert.False(t, runner.isCheckEnabled(checkNameFumpt))
+		assert.True(t, runner.isCheckEnabled(checkNameLint))
 	}
 }
 
@@ -429,8 +429,8 @@ func TestCheckNameWithSpecialCharacters(t *testing.T) {
 	runner := New(cfg, "/tmp")
 
 	// mod-tidy has a hyphen, which is valid
-	assert.True(t, runner.isCheckEnabled("mod-tidy"))
-	assert.Equal(t, 50*time.Second, runner.getCheckTimeout("mod-tidy"))
+	assert.True(t, runner.isCheckEnabled(checkNameModTidy))
+	assert.Equal(t, 50*time.Second, runner.getCheckTimeout(checkNameModTidy))
 
 	// Test variations that should not match
 	assert.False(t, runner.isCheckEnabled("mod_tidy"))

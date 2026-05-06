@@ -10,6 +10,10 @@ import (
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 )
 
+const (
+	filePatternMakefile = "Makefile"
+)
+
 // EOFCheck ensures files end with a newline
 type EOFCheck struct {
 	timeout time.Duration
@@ -44,7 +48,7 @@ func (c *EOFCheck) Metadata() interface{} {
 	return CheckMetadata{
 		Name:              "eof",
 		Description:       "Ensure text files end with a newline character",
-		FilePatterns:      []string{"*.go", "*.md", "*.txt", "*.yml", "*.yaml", "*.json", "Makefile"},
+		FilePatterns:      []string{"*.go", "*.md", "*.txt", "*.yml", "*.yaml", "*.json", filePatternMakefile},
 		EstimatedDuration: 1 * time.Second,
 		Dependencies:      []string{}, // No external dependencies
 		DefaultTimeout:    c.timeout,

@@ -16,16 +16,16 @@ import (
 
 func TestNew(t *testing.T) {
 	opts := Options{
-		Operation: "Test operation",
-		Context:   "test-context",
+		Operation: testOperation,
+		Context:   testContext,
 		Timeout:   5 * time.Minute,
 		Interval:  10 * time.Second,
 	}
 
 	tracker := New(opts)
 
-	assert.Equal(t, "Test operation", tracker.operation)
-	assert.Equal(t, "test-context", tracker.context)
+	assert.Equal(t, testOperation, tracker.operation)
+	assert.Equal(t, testContext, tracker.context)
 	assert.Equal(t, 5*time.Minute, tracker.timeout)
 	assert.Equal(t, 10*time.Second, tracker.interval)
 	assert.NotNil(t, tracker.progressFunc)
@@ -34,8 +34,8 @@ func TestNew(t *testing.T) {
 
 func TestNew_DefaultInterval(t *testing.T) {
 	opts := Options{
-		Operation: "Test operation",
-		Context:   "test-context",
+		Operation: testOperation,
+		Context:   testContext,
 		Timeout:   5 * time.Minute,
 		// No interval specified
 	}
@@ -47,8 +47,8 @@ func TestNew_DefaultInterval(t *testing.T) {
 
 func TestNew_DefaultProgressFunc(t *testing.T) {
 	opts := Options{
-		Operation: "Test operation",
-		Context:   "test-context",
+		Operation: testOperation,
+		Context:   testContext,
 		Timeout:   5 * time.Minute,
 		// No progress func specified
 	}
@@ -70,8 +70,8 @@ func TestNew_CustomProgressFunc(t *testing.T) {
 	}
 
 	opts := Options{
-		Operation:    "Test operation",
-		Context:      "test-context",
+		Operation:    testOperation,
+		Context:      testContext,
 		Timeout:      5 * time.Minute,
 		ProgressFunc: customFunc,
 	}
@@ -84,8 +84,8 @@ func TestNew_CustomProgressFunc(t *testing.T) {
 
 func TestTracker_StartStop(t *testing.T) {
 	opts := Options{
-		Operation:      "Test operation",
-		Context:        "test-context",
+		Operation:      testOperation,
+		Context:        testContext,
 		Timeout:        5 * time.Minute,
 		Interval:       50 * time.Millisecond, // Fast interval for testing
 		SuppressOutput: true,                  // Don't print during tests
@@ -113,8 +113,8 @@ func TestTracker_StartStop(t *testing.T) {
 
 func TestTracker_GetElapsed(t *testing.T) {
 	opts := Options{
-		Operation:      "Test operation",
-		Context:        "test-context",
+		Operation:      testOperation,
+		Context:        testContext,
 		Timeout:        5 * time.Minute,
 		SuppressOutput: true,
 	}
@@ -137,8 +137,8 @@ func TestTracker_GetElapsed(t *testing.T) {
 
 func TestTracker_ContextCancellation(t *testing.T) {
 	opts := Options{
-		Operation:      "Test operation",
-		Context:        "test-context",
+		Operation:      testOperation,
+		Context:        testContext,
 		Timeout:        5 * time.Minute,
 		Interval:       10 * time.Millisecond,
 		SuppressOutput: true,
@@ -233,8 +233,8 @@ func TestInstallProgressFunc(t *testing.T) {
 
 func TestWithContext(t *testing.T) {
 	opts := Options{
-		Operation:      "Test operation",
-		Context:        "test-context",
+		Operation:      testOperation,
+		Context:        testContext,
 		Timeout:        100 * time.Millisecond,
 		Interval:       10 * time.Millisecond,
 		SuppressOutput: true,
@@ -259,8 +259,8 @@ func TestWithContext(t *testing.T) {
 
 func TestTracker_StopIdempotent(t *testing.T) {
 	opts := Options{
-		Operation:      "Test operation",
-		Context:        "test-context",
+		Operation:      testOperation,
+		Context:        testContext,
 		Timeout:        5 * time.Minute,
 		SuppressOutput: true,
 	}
@@ -285,8 +285,8 @@ func TestTracker_ProgressInterval(t *testing.T) {
 	var mu sync.Mutex
 
 	opts := Options{
-		Operation:      "Test operation",
-		Context:        "test-context",
+		Operation:      testOperation,
+		Context:        testContext,
 		Timeout:        1 * time.Second,
 		Interval:       25 * time.Millisecond, // Shorter interval for testing
 		SuppressOutput: true,
@@ -345,8 +345,8 @@ func BenchmarkTracker_Performance(b *testing.B) {
 func TestTracker_ZeroTimeout(t *testing.T) {
 	// Edge case: zero timeout
 	opts := Options{
-		Operation:      "Test operation",
-		Context:        "test-context",
+		Operation:      testOperation,
+		Context:        testContext,
 		Timeout:        0, // Zero timeout
 		Interval:       10 * time.Millisecond,
 		SuppressOutput: true,
@@ -433,7 +433,7 @@ func TestUpdateProgressBranches(t *testing.T) {
 		ctx := context.Background()
 		tracker := New(Options{
 			Operation: "test",
-			Context:   "test-context",
+			Context:   testContext,
 			Timeout:   5 * time.Second,
 		})
 		tracker.Start(ctx)

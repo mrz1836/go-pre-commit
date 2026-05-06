@@ -194,7 +194,7 @@ func TestLoadVersionsFromEnv_AllVariables(t *testing.T) {
 	LoadVersionsFromEnv()
 
 	toolsMu.RLock()
-	assert.Equal(t, "v1.55.0", tools["golangci-lint"].Version)
+	assert.Equal(t, "v1.55.0", tools[toolGolangciLint].Version)
 	assert.Equal(t, "v0.6.0", tools["gofumpt"].Version)
 	assert.Equal(t, "v0.15.0", tools["goimports"].Version)
 	assert.Equal(t, "v8.18.0", tools["gitleaks"].Version)
@@ -225,7 +225,7 @@ func TestLoadVersionsFromEnv_PartialVariables(t *testing.T) {
 	LoadVersionsFromEnv()
 
 	toolsMu.RLock()
-	assert.Equal(t, "v1.60.0", tools["golangci-lint"].Version)
+	assert.Equal(t, "v1.60.0", tools[toolGolangciLint].Version)
 	// fumpt should get default version since env var is not set
 	assert.NotEmpty(t, tools["gofumpt"].Version)
 	toolsMu.RUnlock()
@@ -279,7 +279,7 @@ func TestInstallTool_SuccessAlreadyInstalled(t *testing.T) {
 		Name:       "go",
 		ImportPath: "golang.org/cmd/go",
 		Binary:     "go",
-		Version:    "latest",
+		Version:    toolVersionLatest,
 	}
 
 	err := InstallTool(ctx, tool)
@@ -430,7 +430,7 @@ func TestInstallTool_ContextAlreadyCancelled(t *testing.T) {
 		Name:       "test-tool-pre-canceled",
 		ImportPath: "example.com/test-tool",
 		Binary:     "test-tool-pre-canceled",
-		Version:    "latest",
+		Version:    toolVersionLatest,
 	}
 
 	err := InstallTool(ctx, tool)

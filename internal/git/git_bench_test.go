@@ -94,7 +94,7 @@ func BenchmarkRepository_GetFileContent(b *testing.B) {
 	repo := NewRepository(root)
 
 	// Use a test file that exists in the repository
-	testFile := "README.md"
+	testFile := testFileReadme
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

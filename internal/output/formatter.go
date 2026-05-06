@@ -61,6 +61,13 @@ const (
 	ColorNever
 )
 
+const (
+	envNoColor       = "NO_COLOR"
+	envGitHubActions = "GITHUB_ACTIONS"
+	envColorOutput   = "GO_PRE_COMMIT_COLOR_OUTPUT"
+	envValueTrue     = "true"
+)
+
 // NewDefault creates a formatter with default settings, respecting environment variables
 func NewDefault() *Formatter {
 	return NewWithColorMode(ColorAuto)
@@ -86,10 +93,10 @@ func shouldUseColor(mode ColorMode) bool {
 		return false
 	case ColorAuto:
 		// Check explicit disable flags first
-		if os.Getenv("NO_COLOR") != "" {
+		if os.Getenv(envNoColor) != "" {
 			return false
 		}
-		if os.Getenv("GO_PRE_COMMIT_COLOR_OUTPUT") == "false" {
+		if os.Getenv(envColorOutput) == "false" {
 			return false
 		}
 		// Check for dumb terminal
@@ -112,7 +119,7 @@ func isCI() bool {
 	// Check common CI environment variables
 	ciEnvVars := []string{
 		"CI",
-		"GITHUB_ACTIONS",
+		envGitHubActions,
 		"GITLAB_CI",
 		"JENKINS_URL",
 		"CIRCLECI",
@@ -126,7 +133,7 @@ func isCI() bool {
 	}
 
 	for _, envVar := range ciEnvVars {
-		if value := os.Getenv(envVar); value == "true" || value == "1" || (envVar != "CI" && value != "") {
+		if value := os.Getenv(envVar); value == envValueTrue || value == "1" || (envVar != "CI" && value != "") {
 			return true
 		}
 	}

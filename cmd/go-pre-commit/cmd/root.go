@@ -87,7 +87,7 @@ Key features:
 	// Add persistent flags
 	cmd.PersistentFlags().Bool("verbose", false, "Enable verbose output")
 	cmd.PersistentFlags().Bool("no-color", false, "Disable colored output (same as --color=never)")
-	cmd.PersistentFlags().String("color", "auto", "Control color output: auto, always, never")
+	cmd.PersistentFlags().String("color", colorModeAuto, "Control color output: auto, always, never")
 
 	// Add PersistentPostRunE to check for updates after command execution
 	// This runs after ALL subcommands complete, which is the desired behavior
@@ -141,7 +141,7 @@ func (cb *CommandBuilder) Execute() error {
 // Execute runs the default CLI application (legacy compatibility function)
 func Execute() error {
 	// This is a temporary shim - main.go will be updated to use the new pattern
-	app := NewCLIApp("dev", "unknown", "unknown")
+	app := NewCLIApp(versionDev, "unknown", "unknown")
 	builder := NewCommandBuilder(app)
 	return builder.Execute()
 }
@@ -171,11 +171,11 @@ func (cb *CommandBuilder) initConfig() {
 		// Let the formatter handle the smart detection
 		// We'll update the formatter creation in run.go to use the color mode
 		switch cb.app.config.ColorMode {
-		case "never":
+		case colorModeNever:
 			color.NoColor = true
-		case "always":
+		case colorModeAlways:
 			color.NoColor = false
-		case "auto":
+		case colorModeAuto:
 			// Check NO_COLOR environment variable for auto mode
 			if os.Getenv("NO_COLOR") != "" {
 				color.NoColor = true

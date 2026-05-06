@@ -78,7 +78,7 @@ func TestEOFCheckMetadata(t *testing.T) {
 	assert.Equal(t, 1*time.Second, checkMeta.EstimatedDuration)
 
 	// Check file patterns
-	expectedPatterns := []string{"*.go", "*.md", "*.txt", "*.yml", "*.yaml", "*.json", "Makefile"}
+	expectedPatterns := []string{"*.go", "*.md", "*.txt", "*.yml", "*.yaml", "*.json", filePatternMakefile}
 	assert.ElementsMatch(t, expectedPatterns, checkMeta.FilePatterns)
 }
 
@@ -93,10 +93,10 @@ func TestEOFCheckRunValidFiles(t *testing.T) {
 	}{
 		{
 			name:          "file already ends with newline",
-			fileContent:   "hello world\n",
+			fileContent:   testFileContentHelloWorld,
 			expectedFixed: false,
 			expectedError: false,
-			expectedFinal: "hello world\n",
+			expectedFinal: testFileContentHelloWorld,
 		},
 		{
 			name:          "file missing newline at end",
@@ -104,7 +104,7 @@ func TestEOFCheckRunValidFiles(t *testing.T) {
 			expectedFixed: true,
 			expectedError: true,
 			errorType:     prerrors.ErrEOFIssues,
-			expectedFinal: "hello world\n",
+			expectedFinal: testFileContentHelloWorld,
 		},
 		{
 			name:          "multiline file with newline",
@@ -383,26 +383,26 @@ func TestEOFCheckFilterFiles(t *testing.T) {
 		{
 			name: "text files only",
 			inputFiles: []string{
-				"main.go",
+				testFileMainGo,
 				"README.md",
 				"config.yaml",
 				"data.json",
 				"notes.txt",
-				"Makefile",
+				filePatternMakefile,
 			},
 			expectedFiles: []string{
-				"main.go",
+				testFileMainGo,
 				"README.md",
 				"config.yaml",
 				"data.json",
 				"notes.txt",
-				"Makefile",
+				filePatternMakefile,
 			},
 		},
 		{
 			name: "mixed text and binary files",
 			inputFiles: []string{
-				"main.go",
+				testFileMainGo,
 				"image.png",
 				"document.pdf",
 				"README.md",
@@ -411,7 +411,7 @@ func TestEOFCheckFilterFiles(t *testing.T) {
 				"library.so",
 			},
 			expectedFiles: []string{
-				"main.go",
+				testFileMainGo,
 				"README.md",
 				"config.yml",
 			},
@@ -433,13 +433,13 @@ func TestEOFCheckFilterFiles(t *testing.T) {
 				"LICENSE",
 				"README",
 				"randomfile",
-				"Makefile",
+				filePatternMakefile,
 			},
 			expectedFiles: []string{
 				"Dockerfile",
 				"LICENSE",
 				"README",
-				"Makefile",
+				filePatternMakefile,
 			},
 		},
 		{

@@ -309,10 +309,10 @@ func (s *ProductionScenariosTestSuite) TestHighVolumeCommitScenario() {
 func (s *ProductionScenariosTestSuite) TestNetworkConstrainedEnvironment() {
 	// Create files that would typically require network access if tools were missing
 	files := []string{
-		"main.go",
-		"service.go",
-		"README.md",
-		"config.yaml",
+		testFileMain,
+		testFileService,
+		testFileReadme,
+		testFileConfig,
 	}
 
 	// Create the files
@@ -327,8 +327,8 @@ func (s *ProductionScenariosTestSuite) TestNetworkConstrainedEnvironment() {
 		{
 			name: "Offline Environment",
 			envVars: map[string]string{
-				"NO_NETWORK":    "true",
-				"OFFLINE_BUILD": "true",
+				"NO_NETWORK":    testEnvValueTrue,
+				"OFFLINE_BUILD": testEnvValueTrue,
 			},
 			description: "Environment with no network access",
 		},
@@ -343,7 +343,7 @@ func (s *ProductionScenariosTestSuite) TestNetworkConstrainedEnvironment() {
 		{
 			name: "Firewall Restricted",
 			envVars: map[string]string{
-				"RESTRICTED_NETWORK": "true",
+				"RESTRICTED_NETWORK": testEnvValueTrue,
 			},
 			description: "Environment with firewall restrictions",
 		},
@@ -389,8 +389,8 @@ func (s *ProductionScenariosTestSuite) TestNetworkConstrainedEnvironment() {
 func (s *ProductionScenariosTestSuite) TestResourceConstrainedEnvironment() {
 	// Create test files
 	files := s.createBasicFiles([]string{
-		"main.go", "service.go", "handler.go", "model.go",
-		"README.md", "CHANGELOG.md", "config.yaml",
+		testFileMain, testFileService, "handler.go", "model.go",
+		testFileReadme, "CHANGELOG.md", testFileConfig,
 	})
 
 	testCases := []struct {
@@ -409,14 +409,14 @@ func (s *ProductionScenariosTestSuite) TestResourceConstrainedEnvironment() {
 		{
 			name: "Single Worker",
 			config: map[string]string{
-				"GO_PRE_COMMIT_PARALLEL_WORKERS": "1",
+				testEnvParallelWorkers: "1",
 			},
 			description: "Environment with limited CPU (single worker)",
 		},
 		{
 			name: "Short Timeouts",
 			config: map[string]string{
-				"GO_PRE_COMMIT_TIMEOUT_SECONDS":    "30",
+				testEnvTimeoutSeconds:              "30",
 				"GO_PRE_COMMIT_WHITESPACE_TIMEOUT": "10",
 				"GO_PRE_COMMIT_EOF_TIMEOUT":        "10",
 			},
@@ -471,8 +471,8 @@ func (s *ProductionScenariosTestSuite) TestCIEnvironmentScenarios() {
 		{
 			name: "GitHub Actions Push",
 			envVars: map[string]string{
-				"CI":                "true",
-				"GITHUB_ACTIONS":    "true",
+				"CI":                testEnvValueTrue,
+				"GITHUB_ACTIONS":    testEnvValueTrue,
 				"GITHUB_EVENT_NAME": "push",
 				"GITHUB_REF":        "refs/heads/main",
 			},
@@ -481,8 +481,8 @@ func (s *ProductionScenariosTestSuite) TestCIEnvironmentScenarios() {
 		{
 			name: "GitHub Actions Pull Request",
 			envVars: map[string]string{
-				"CI":                "true",
-				"GITHUB_ACTIONS":    "true",
+				"CI":                testEnvValueTrue,
+				"GITHUB_ACTIONS":    testEnvValueTrue,
 				"GITHUB_EVENT_NAME": "pull_request",
 				"GITHUB_REF":        "refs/pull/123/merge",
 			},
@@ -491,8 +491,8 @@ func (s *ProductionScenariosTestSuite) TestCIEnvironmentScenarios() {
 		{
 			name: "GitLab CI Pipeline",
 			envVars: map[string]string{
-				"CI":                 "true",
-				"GITLAB_CI":          "true",
+				"CI":                 testEnvValueTrue,
+				"GITLAB_CI":          testEnvValueTrue,
 				"CI_PIPELINE_SOURCE": "push",
 				"CI_COMMIT_REF_NAME": "main",
 			},
@@ -501,7 +501,7 @@ func (s *ProductionScenariosTestSuite) TestCIEnvironmentScenarios() {
 		{
 			name: "Jenkins Build",
 			envVars: map[string]string{
-				"CI":           "true",
+				"CI":           testEnvValueTrue,
 				"JENKINS_URL":  "http://jenkins.example.com/",
 				"BUILD_NUMBER": "123",
 				"JOB_NAME":     "project-validation",
@@ -634,9 +634,9 @@ func (s *ProductionScenariosTestSuite) cleanupLargeRepository(_ int) {
 
 func (s *ProductionScenariosTestSuite) createMixedFileTypeStructure() []string {
 	fileMap := map[string]string{
-		"main.go":            "package main\n\nfunc main() {}\n",
-		"README.md":          "# Project\n\nDescription\n",
-		"config.yaml":        "app:\n  name: test\n",
+		testFileMain:         "package main\n\nfunc main() {}\n",
+		testFileReadme:       "# Project\n\nDescription\n",
+		testFileConfig:       "app:\n  name: test\n",
 		"data.json":          `{"key": "value"}`,
 		"script.sh":          "#!/bin/bash\necho 'hello'\n",
 		"Dockerfile":         "FROM alpine:latest\n",
@@ -673,7 +673,7 @@ func (s *ProductionScenariosTestSuite) createFeatureBranchFiles() []string {
 		"api/openapi.yaml",
 		"docs/api.md",
 		"test/integration/auth_test.go",
-		"README.md",
+		testFileReadme,
 	}
 
 	s.createBasicFiles(files)
@@ -699,7 +699,7 @@ func (s *ProductionScenariosTestSuite) createRefactoringFiles() []string {
 
 func (s *ProductionScenariosTestSuite) createDocumentationFiles() []string {
 	files := []string{
-		"README.md", "CONTRIBUTING.md", "LICENSE.md",
+		testFileReadme, "CONTRIBUTING.md", "LICENSE.md",
 		"docs/getting-started.md", "docs/api-reference.md",
 		"docs/deployment.md", "docs/troubleshooting.md",
 		"examples/basic/README.md", "examples/advanced/README.md",
@@ -725,11 +725,11 @@ func (s *ProductionScenariosTestSuite) createDependencyUpdateFiles() []string {
 
 func (s *ProductionScenariosTestSuite) createCIRepositoryStructure() []string {
 	files := []string{
-		"main.go", "service.go", "handler.go",
+		testFileMain, testFileService, "handler.go",
 		"pkg/utils/helper.go", "pkg/api/routes.go",
 		"internal/config/config.go", "internal/db/connection.go",
 		"test/integration/api_test.go", "test/unit/service_test.go",
-		"README.md", "CHANGELOG.md", "Dockerfile",
+		testFileReadme, "CHANGELOG.md", "Dockerfile",
 		".github/workflows/ci.yml", ".github/workflows/release.yml",
 		"scripts/build.sh", "scripts/deploy.sh",
 	}
@@ -831,12 +831,12 @@ exit 0
 func (s *ProductionScenariosTestSuite) createConstrainedConfig(overrides map[string]string) {
 	// Start with base config
 	config := map[string]string{
-		"ENABLE_GO_PRE_COMMIT":            "true",
-		"GO_PRE_COMMIT_LOG_LEVEL":         "info",
-		"GO_PRE_COMMIT_ENABLE_WHITESPACE": "true",
-		"GO_PRE_COMMIT_ENABLE_EOF":        "true",
-		"GO_PRE_COMMIT_TIMEOUT_SECONDS":   "120",
-		"GO_PRE_COMMIT_PARALLEL_WORKERS":  "4",
+		testEnvEnablePreCommit:  testEnvValueTrue,
+		testEnvLogLevel:         "info",
+		testEnvEnableWhitespace: testEnvValueTrue,
+		testEnvEnableEOF:        testEnvValueTrue,
+		testEnvTimeoutSeconds:   "120",
+		testEnvParallelWorkers:  "4",
 	}
 
 	// Apply overrides

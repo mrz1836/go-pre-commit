@@ -683,7 +683,7 @@ func TestBuildInfoWithCustomLdflags(t *testing.T) {
 			require.NoError(t, err)
 
 			// Run with version flag
-			testCmd := exec.CommandContext(ctx, testBinary, "--no-color", "--version") //nolint:gosec // Safe: our own binary
+			testCmd := exec.CommandContext(ctx, testBinary, flagNoColor, "--version") //nolint:gosec // Safe: our own binary
 			output, err := testCmd.Output()
 			require.NoError(t, err)
 

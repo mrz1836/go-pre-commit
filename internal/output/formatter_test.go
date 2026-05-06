@@ -13,23 +13,23 @@ import (
 
 func TestNewDefault(t *testing.T) {
 	// Save original env
-	originalNoColor := os.Getenv("NO_COLOR")
-	originalPreCommitColor := os.Getenv("GO_PRE_COMMIT_COLOR_OUTPUT")
+	originalNoColor := os.Getenv(envNoColor)
+	originalPreCommitColor := os.Getenv(envColorOutput)
 
 	defer func() {
-		if err := os.Setenv("NO_COLOR", originalNoColor); err != nil {
+		if err := os.Setenv(envNoColor, originalNoColor); err != nil {
 			t.Errorf("Failed to restore NO_COLOR: %v", err)
 		}
-		if err := os.Setenv("GO_PRE_COMMIT_COLOR_OUTPUT", originalPreCommitColor); err != nil {
+		if err := os.Setenv(envColorOutput, originalPreCommitColor); err != nil {
 			t.Errorf("Failed to restore GO_PRE_COMMIT_COLOR_OUTPUT: %v", err)
 		}
 	}()
 
 	t.Run("DefaultColorEnabled", func(t *testing.T) {
-		if err := os.Unsetenv("NO_COLOR"); err != nil {
+		if err := os.Unsetenv(envNoColor); err != nil {
 			t.Errorf("Failed to unset NO_COLOR: %v", err)
 		}
-		if err := os.Unsetenv("GO_PRE_COMMIT_COLOR_OUTPUT"); err != nil {
+		if err := os.Unsetenv(envColorOutput); err != nil {
 			t.Errorf("Failed to unset GO_PRE_COMMIT_COLOR_OUTPUT: %v", err)
 		}
 
@@ -46,7 +46,7 @@ func TestNewDefault(t *testing.T) {
 	})
 
 	t.Run("NO_COLOR DisablesColor", func(t *testing.T) {
-		if err := os.Setenv("NO_COLOR", "1"); err != nil {
+		if err := os.Setenv(envNoColor, "1"); err != nil {
 			t.Errorf("Failed to set NO_COLOR: %v", err)
 		}
 
@@ -55,10 +55,10 @@ func TestNewDefault(t *testing.T) {
 	})
 
 	t.Run("GO_PRE_COMMIT_COLOR_OUTPUT DisablesColor", func(t *testing.T) {
-		if err := os.Unsetenv("NO_COLOR"); err != nil {
+		if err := os.Unsetenv(envNoColor); err != nil {
 			t.Errorf("Failed to unset NO_COLOR: %v", err)
 		}
-		if err := os.Setenv("GO_PRE_COMMIT_COLOR_OUTPUT", "false"); err != nil {
+		if err := os.Setenv(envColorOutput, "false"); err != nil {
 			t.Errorf("Failed to set GO_PRE_COMMIT_COLOR_OUTPUT: %v", err)
 		}
 
@@ -765,8 +765,8 @@ func TestColorMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.name == "ColorAuto with NO_COLOR" {
-				_ = os.Setenv("NO_COLOR", "1")
-				defer func() { _ = os.Unsetenv("NO_COLOR") }()
+				_ = os.Setenv(envNoColor, "1")
+				defer func() { _ = os.Unsetenv(envNoColor) }()
 			}
 
 			formatter := NewWithColorMode(tt.mode)
@@ -786,7 +786,7 @@ func TestShouldUseColor(t *testing.T) {
 		{
 			name:     "ColorAlways always returns true",
 			mode:     ColorAlways,
-			envVars:  map[string]string{"NO_COLOR": "1"},
+			envVars:  map[string]string{envNoColor: "1"},
 			expected: true,
 		},
 		{
@@ -798,13 +798,13 @@ func TestShouldUseColor(t *testing.T) {
 		{
 			name:     "NO_COLOR disables color",
 			mode:     ColorAuto,
-			envVars:  map[string]string{"NO_COLOR": "1"},
+			envVars:  map[string]string{envNoColor: "1"},
 			expected: false,
 		},
 		{
 			name:     "GO_PRE_COMMIT_COLOR_OUTPUT=false disables color",
 			mode:     ColorAuto,
-			envVars:  map[string]string{"GO_PRE_COMMIT_COLOR_OUTPUT": "false"},
+			envVars:  map[string]string{envColorOutput: "false"},
 			expected: false,
 		},
 		{
@@ -816,13 +816,13 @@ func TestShouldUseColor(t *testing.T) {
 		{
 			name:     "CI=true disables color",
 			mode:     ColorAuto,
-			envVars:  map[string]string{"CI": "true"},
+			envVars:  map[string]string{"CI": envValueTrue},
 			expected: false,
 		},
 		{
 			name:     "GITHUB_ACTIONS=true disables color",
 			mode:     ColorAuto,
-			envVars:  map[string]string{"GITHUB_ACTIONS": "true"},
+			envVars:  map[string]string{envGitHubActions: envValueTrue},
 			expected: false,
 		},
 	}
@@ -835,7 +835,7 @@ func TestShouldUseColor(t *testing.T) {
 				originalEnv[key] = os.Getenv(key)
 			}
 			// Also save some common env vars that might affect the test
-			commonEnvVars := []string{"NO_COLOR", "GO_PRE_COMMIT_COLOR_OUTPUT", "TERM", "CI", "GITHUB_ACTIONS"}
+			commonEnvVars := []string{envNoColor, envColorOutput, "TERM", "CI", envGitHubActions}
 			for _, key := range commonEnvVars {
 				if _, exists := originalEnv[key]; !exists {
 					originalEnv[key] = os.Getenv(key)
@@ -883,7 +883,7 @@ func TestIsCI(t *testing.T) {
 		},
 		{
 			name:     "CI=true",
-			envVars:  map[string]string{"CI": "true"},
+			envVars:  map[string]string{"CI": envValueTrue},
 			expected: true,
 		},
 		{
@@ -893,12 +893,12 @@ func TestIsCI(t *testing.T) {
 		},
 		{
 			name:     "GITHUB_ACTIONS=true",
-			envVars:  map[string]string{"GITHUB_ACTIONS": "true"},
+			envVars:  map[string]string{envGitHubActions: envValueTrue},
 			expected: true,
 		},
 		{
 			name:     "GITLAB_CI=true",
-			envVars:  map[string]string{"GITLAB_CI": "true"},
+			envVars:  map[string]string{"GITLAB_CI": envValueTrue},
 			expected: true,
 		},
 		{
@@ -908,22 +908,22 @@ func TestIsCI(t *testing.T) {
 		},
 		{
 			name:     "CIRCLECI=true",
-			envVars:  map[string]string{"CIRCLECI": "true"},
+			envVars:  map[string]string{"CIRCLECI": envValueTrue},
 			expected: true,
 		},
 		{
 			name:     "TRAVIS=true",
-			envVars:  map[string]string{"TRAVIS": "true"},
+			envVars:  map[string]string{"TRAVIS": envValueTrue},
 			expected: true,
 		},
 		{
 			name:     "BUILDKITE=true",
-			envVars:  map[string]string{"BUILDKITE": "true"},
+			envVars:  map[string]string{"BUILDKITE": envValueTrue},
 			expected: true,
 		},
 		{
 			name:     "DRONE=true",
-			envVars:  map[string]string{"DRONE": "true"},
+			envVars:  map[string]string{"DRONE": envValueTrue},
 			expected: true,
 		},
 		{
@@ -948,7 +948,7 @@ func TestIsCI(t *testing.T) {
 		},
 		{
 			name:     "Multiple CI variables",
-			envVars:  map[string]string{"CI": "true", "GITHUB_ACTIONS": "true"},
+			envVars:  map[string]string{"CI": envValueTrue, envGitHubActions: envValueTrue},
 			expected: true,
 		},
 	}
@@ -956,7 +956,7 @@ func TestIsCI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Save original environment
-			ciEnvVars := []string{"CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID"}
+			ciEnvVars := []string{"CI", envGitHubActions, "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID"}
 			originalEnv := make(map[string]string)
 			for _, key := range ciEnvVars {
 				originalEnv[key] = os.Getenv(key)
@@ -1062,7 +1062,7 @@ func TestColorPriorityHierarchy(t *testing.T) {
 		{
 			name:        "ColorAlways overrides NO_COLOR",
 			mode:        ColorAlways,
-			envVars:     map[string]string{"NO_COLOR": "1", "CI": "true"},
+			envVars:     map[string]string{envNoColor: "1", "CI": envValueTrue},
 			expected:    true,
 			description: "ColorAlways should force colors even with NO_COLOR and CI set",
 		},
@@ -1076,14 +1076,14 @@ func TestColorPriorityHierarchy(t *testing.T) {
 		{
 			name:        "NO_COLOR overrides CI detection",
 			mode:        ColorAuto,
-			envVars:     map[string]string{"NO_COLOR": "1"},
+			envVars:     map[string]string{envNoColor: "1"},
 			expected:    false,
 			description: "NO_COLOR should take precedence over CI auto-detection",
 		},
 		{
 			name:        "GO_PRE_COMMIT_COLOR_OUTPUT overrides CI detection",
 			mode:        ColorAuto,
-			envVars:     map[string]string{"GO_PRE_COMMIT_COLOR_OUTPUT": "false", "CI": "false"},
+			envVars:     map[string]string{envColorOutput: "false", "CI": "false"},
 			expected:    false,
 			description: "GO_PRE_COMMIT_COLOR_OUTPUT=false should override other settings",
 		},
@@ -1097,14 +1097,14 @@ func TestColorPriorityHierarchy(t *testing.T) {
 		{
 			name:        "CI detection overrides potential TTY",
 			mode:        ColorAuto,
-			envVars:     map[string]string{"CI": "true"},
+			envVars:     map[string]string{"CI": envValueTrue},
 			expected:    false,
 			description: "CI environment should disable colors regardless of TTY",
 		},
 		{
 			name:        "Multiple disable flags - NO_COLOR wins",
 			mode:        ColorAuto,
-			envVars:     map[string]string{"NO_COLOR": "1", "GO_PRE_COMMIT_COLOR_OUTPUT": "true", "TERM": "xterm"},
+			envVars:     map[string]string{envNoColor: "1", envColorOutput: envValueTrue, "TERM": "xterm"},
 			expected:    false,
 			description: "NO_COLOR should win over conflicting settings",
 		},
@@ -1113,7 +1113,7 @@ func TestColorPriorityHierarchy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Save and clean environment
-			allEnvVars := []string{"NO_COLOR", "GO_PRE_COMMIT_COLOR_OUTPUT", "TERM", "CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID"}
+			allEnvVars := []string{envNoColor, envColorOutput, "TERM", "CI", envGitHubActions, "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID"}
 			originalEnv := make(map[string]string)
 			for _, key := range allEnvVars {
 				originalEnv[key] = os.Getenv(key)
@@ -1184,7 +1184,7 @@ func TestTermEnvironmentHandling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Save and clean environment
-			allEnvVars := []string{"NO_COLOR", "GO_PRE_COMMIT_COLOR_OUTPUT", "TERM", "CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID"}
+			allEnvVars := []string{envNoColor, envColorOutput, "TERM", "CI", envGitHubActions, "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID"}
 			originalEnv := make(map[string]string)
 			for _, key := range allEnvVars {
 				originalEnv[key] = os.Getenv(key)
@@ -1222,7 +1222,7 @@ func TestTermEnvironmentHandling(t *testing.T) {
 func TestColorEdgeCasesAndErrorScenarios(t *testing.T) {
 	t.Run("EmptyEnvironmentVariables", func(t *testing.T) {
 		// Save and clean environment
-		allEnvVars := []string{"NO_COLOR", "GO_PRE_COMMIT_COLOR_OUTPUT", "TERM", "CI"}
+		allEnvVars := []string{envNoColor, envColorOutput, "TERM", "CI"}
 		originalEnv := make(map[string]string)
 		for _, key := range allEnvVars {
 			originalEnv[key] = os.Getenv(key)
@@ -1230,8 +1230,8 @@ func TestColorEdgeCasesAndErrorScenarios(t *testing.T) {
 		}
 
 		// Test with empty environment variables
-		_ = os.Setenv("NO_COLOR", "")
-		_ = os.Setenv("GO_PRE_COMMIT_COLOR_OUTPUT", "")
+		_ = os.Setenv(envNoColor, "")
+		_ = os.Setenv(envColorOutput, "")
 		_ = os.Setenv("TERM", "")
 		_ = os.Setenv("CI", "")
 
@@ -1250,7 +1250,7 @@ func TestColorEdgeCasesAndErrorScenarios(t *testing.T) {
 	})
 
 	t.Run("InvalidEnvironmentValues", func(t *testing.T) {
-		allEnvVars := []string{"NO_COLOR", "GO_PRE_COMMIT_COLOR_OUTPUT", "CI"}
+		allEnvVars := []string{envNoColor, envColorOutput, "CI"}
 		originalEnv := make(map[string]string)
 		for _, key := range allEnvVars {
 			originalEnv[key] = os.Getenv(key)
@@ -1262,9 +1262,9 @@ func TestColorEdgeCasesAndErrorScenarios(t *testing.T) {
 			envVar string
 			value  string
 		}{
-			{"GO_PRE_COMMIT_COLOR_OUTPUT", "invalid"},
-			{"GO_PRE_COMMIT_COLOR_OUTPUT", "True"}, // Case sensitive
-			{"GO_PRE_COMMIT_COLOR_OUTPUT", "0"},
+			{envColorOutput, "invalid"},
+			{envColorOutput, "True"}, // Case sensitive
+			{envColorOutput, "0"},
 			{"CI", "false"}, // Should not be detected as CI
 			{"CI", "0"},     // Should not be detected as CI
 		}
@@ -1349,7 +1349,7 @@ func TestTTYDetectionBehavior(t *testing.T) {
 
 	t.Run("ColorAutoWithCleanEnvironment", func(t *testing.T) {
 		// Save and clean environment
-		allEnvVars := []string{"NO_COLOR", "GO_PRE_COMMIT_COLOR_OUTPUT", "TERM", "CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID"}
+		allEnvVars := []string{envNoColor, envColorOutput, "TERM", "CI", envGitHubActions, "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID"}
 		originalEnv := make(map[string]string)
 		for _, key := range allEnvVars {
 			originalEnv[key] = os.Getenv(key)
@@ -1381,7 +1381,7 @@ func TestTTYDetectionBehavior(t *testing.T) {
 		mode := ColorAuto
 
 		// Clean environment for consistent testing
-		allEnvVars := []string{"NO_COLOR", "GO_PRE_COMMIT_COLOR_OUTPUT", "TERM", "CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID"}
+		allEnvVars := []string{envNoColor, envColorOutput, "TERM", "CI", envGitHubActions, "GITLAB_CI", "JENKINS_URL", "CIRCLECI", "TRAVIS", "BUILDKITE", "DRONE", "TEAMCITY_VERSION", "TF_BUILD", "APPVEYOR", "CODEBUILD_BUILD_ID"}
 		originalEnv := make(map[string]string)
 		for _, key := range allEnvVars {
 			originalEnv[key] = os.Getenv(key)

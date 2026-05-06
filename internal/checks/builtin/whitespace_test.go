@@ -83,7 +83,7 @@ func TestWhitespaceCheckMetadata(t *testing.T) {
 	assert.Equal(t, 1*time.Second, checkMeta.EstimatedDuration)
 
 	// Check file patterns
-	expectedPatterns := []string{"*.go", "*.md", "*.txt", "*.yml", "*.yaml", "*.json", "Makefile"}
+	expectedPatterns := []string{"*.go", "*.md", "*.txt", "*.yml", "*.yaml", "*.json", filePatternMakefile}
 	assert.ElementsMatch(t, expectedPatterns, checkMeta.FilePatterns)
 }
 
@@ -98,10 +98,10 @@ func TestWhitespaceCheckRunTrailingSpaces(t *testing.T) {
 	}{
 		{
 			name:          "no trailing whitespace",
-			fileContent:   "hello world\n",
+			fileContent:   testFileContentHelloWorld,
 			expectedFixed: false,
 			expectedError: false,
-			expectedFinal: "hello world\n",
+			expectedFinal: testFileContentHelloWorld,
 		},
 		{
 			name:          "trailing spaces single line",
@@ -109,7 +109,7 @@ func TestWhitespaceCheckRunTrailingSpaces(t *testing.T) {
 			expectedFixed: true,
 			expectedError: true,
 			errorType:     prerrors.ErrWhitespaceIssues,
-			expectedFinal: "hello world\n",
+			expectedFinal: testFileContentHelloWorld,
 		},
 		{
 			name:          "trailing tabs single line",
@@ -117,7 +117,7 @@ func TestWhitespaceCheckRunTrailingSpaces(t *testing.T) {
 			expectedFixed: true,
 			expectedError: true,
 			errorType:     prerrors.ErrWhitespaceIssues,
-			expectedFinal: "hello world\n",
+			expectedFinal: testFileContentHelloWorld,
 		},
 		{
 			name:          "trailing mixed spaces and tabs",
@@ -125,7 +125,7 @@ func TestWhitespaceCheckRunTrailingSpaces(t *testing.T) {
 			expectedFixed: true,
 			expectedError: true,
 			errorType:     prerrors.ErrWhitespaceIssues,
-			expectedFinal: "hello world\n",
+			expectedFinal: testFileContentHelloWorld,
 		},
 		{
 			name:          "multiline with trailing whitespace",
@@ -558,22 +558,22 @@ func TestWhitespaceCheckFilterFiles(t *testing.T) {
 		{
 			name: "text files only",
 			inputFiles: []string{
-				"main.go",
+				testFileMainGo,
 				"README.md",
 				"config.yaml",
 				"data.json",
 				"notes.txt",
-				"Makefile",
+				filePatternMakefile,
 				"script.sh",
 				"style.css",
 			},
 			expectedFiles: []string{
-				"main.go",
+				testFileMainGo,
 				"README.md",
 				"config.yaml",
 				"data.json",
 				"notes.txt",
-				"Makefile",
+				filePatternMakefile,
 				"script.sh",
 				"style.css",
 			},
@@ -581,7 +581,7 @@ func TestWhitespaceCheckFilterFiles(t *testing.T) {
 		{
 			name: "mixed text and binary files",
 			inputFiles: []string{
-				"main.go",
+				testFileMainGo,
 				"image.png",
 				"document.pdf",
 				"README.md",
@@ -591,7 +591,7 @@ func TestWhitespaceCheckFilterFiles(t *testing.T) {
 				"archive.zip",
 			},
 			expectedFiles: []string{
-				"main.go",
+				testFileMainGo,
 				"README.md",
 				"config.yml",
 			},
@@ -614,7 +614,7 @@ func TestWhitespaceCheckFilterFiles(t *testing.T) {
 				"LICENSE",
 				"README",
 				"randomfile",
-				"Makefile",
+				filePatternMakefile,
 				"Jenkinsfile",
 				".gitignore",
 				".editorconfig",
@@ -623,7 +623,7 @@ func TestWhitespaceCheckFilterFiles(t *testing.T) {
 				"Dockerfile",
 				"LICENSE",
 				"README",
-				"Makefile",
+				filePatternMakefile,
 				"Jenkinsfile",
 				".gitignore",
 				".editorconfig",
@@ -649,7 +649,7 @@ func TestWhitespaceCheckFilterFiles(t *testing.T) {
 		{
 			name: "programming language files",
 			inputFiles: []string{
-				"main.go",
+				testFileMainGo,
 				"script.py",
 				"component.js",
 				"style.css",
@@ -660,7 +660,7 @@ func TestWhitespaceCheckFilterFiles(t *testing.T) {
 				"header.h",
 			},
 			expectedFiles: []string{
-				"main.go",
+				testFileMainGo,
 				"script.py",
 				"component.js",
 				"style.css",
@@ -692,24 +692,24 @@ func TestWhitespaceCheckProcessFileDirect(t *testing.T) {
 	}{
 		{
 			name:             "file with no trailing whitespace",
-			fileContent:      "hello world\n",
+			fileContent:      testFileContentHelloWorld,
 			expectedModified: false,
 			expectedError:    false,
-			expectedContent:  "hello world\n",
+			expectedContent:  testFileContentHelloWorld,
 		},
 		{
 			name:             "file with trailing spaces",
 			fileContent:      "hello world   \n",
 			expectedModified: true,
 			expectedError:    false,
-			expectedContent:  "hello world\n",
+			expectedContent:  testFileContentHelloWorld,
 		},
 		{
 			name:             "file with trailing tabs",
 			fileContent:      "hello world\t\t\n",
 			expectedModified: true,
 			expectedError:    false,
-			expectedContent:  "hello world\n",
+			expectedContent:  testFileContentHelloWorld,
 		},
 		{
 			name:             "empty file",
@@ -852,7 +852,7 @@ func TestWhitespaceCheckSpecialCharacters(t *testing.T) {
 			name:             "file ending with CRLF and trailing spaces",
 			fileContent:      "hello world   \r\n",
 			expectedModified: true,
-			expectedContent:  "hello world\n",
+			expectedContent:  testFileContentHelloWorld,
 			description:      "Should normalize CRLF and remove trailing spaces",
 		},
 		{
@@ -1040,7 +1040,7 @@ func TestWhitespaceCheckIsTextFileFunction(t *testing.T) {
 		expected bool
 	}{
 		// Programming languages
-		{"Go file", "main.go", true},
+		{"Go file", testFileMainGo, true},
 		{"Python file", "script.py", true},
 		{"JavaScript file", "app.js", true},
 		{"TypeScript file", "component.ts", true},
@@ -1069,7 +1069,7 @@ func TestWhitespaceCheckIsTextFileFunction(t *testing.T) {
 		{"Ini file", "settings.ini", true},
 
 		// Files without extensions
-		{"Makefile", "Makefile", true},
+		{filePatternMakefile, filePatternMakefile, true},
 		{"Dockerfile", "Dockerfile", true},
 		{"Jenkinsfile", "Jenkinsfile", true},
 		{"License file", "LICENSE", true},

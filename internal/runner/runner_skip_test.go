@@ -48,7 +48,7 @@ func (s *SkipFunctionalityTestSuite) SetupSuite() {
 // SetupTest saves and clears environment variables before each test
 func (s *SkipFunctionalityTestSuite) SetupTest() {
 	s.originalEnv = make(map[string]string)
-	envVars := []string{"SKIP", "GO_PRE_COMMIT_SKIP"}
+	envVars := []string{envSkip, "GO_PRE_COMMIT_SKIP"}
 
 	for _, key := range envVars {
 		s.originalEnv[key] = os.Getenv(key)
@@ -81,33 +81,33 @@ func (s *SkipFunctionalityTestSuite) TestParseSkipValue() {
 		},
 		{
 			name:     "Single Check",
-			input:    "fumpt",
-			expected: []string{"fumpt"},
+			input:    checkNameFumpt,
+			expected: []string{checkNameFumpt},
 		},
 		{
 			name:     "Multiple Checks",
 			input:    "fumpt,lint,whitespace",
-			expected: []string{"fumpt", "lint", "whitespace"},
+			expected: []string{checkNameFumpt, checkNameLint, checkNameWhitespace},
 		},
 		{
 			name:     "Special Value All",
 			input:    "all",
-			expected: []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
+			expected: []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection},
 		},
 		{
 			name:     "Special Value ALL (case insensitive)",
 			input:    "ALL",
-			expected: []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
+			expected: []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection},
 		},
 		{
 			name:     "With Spaces",
 			input:    "fumpt, lint, whitespace",
-			expected: []string{"fumpt", "lint", "whitespace"},
+			expected: []string{checkNameFumpt, checkNameLint, checkNameWhitespace},
 		},
 		{
 			name:     "With Empty Entries",
 			input:    "fumpt,,lint,",
-			expected: []string{"fumpt", "lint"},
+			expected: []string{checkNameFumpt, checkNameLint},
 		},
 		{
 			name:     "Only Whitespace",
@@ -117,7 +117,7 @@ func (s *SkipFunctionalityTestSuite) TestParseSkipValue() {
 		{
 			name:     "Mixed Whitespace and Commas",
 			input:    " , fumpt , , lint , ",
-			expected: []string{"fumpt", "lint"},
+			expected: []string{checkNameFumpt, checkNameLint},
 		},
 	}
 
@@ -146,9 +146,9 @@ func (s *SkipFunctionalityTestSuite) TestProcessSkipEnvironment() {
 		{
 			name: "SKIP Environment Variable",
 			envVars: map[string]string{
-				"SKIP": "fumpt,lint",
+				envSkip: "fumpt,lint",
 			},
-			expected:    []string{"fumpt", "lint"},
+			expected:    []string{checkNameFumpt, checkNameLint},
 			description: "Should parse SKIP environment variable",
 		},
 		{
@@ -156,34 +156,34 @@ func (s *SkipFunctionalityTestSuite) TestProcessSkipEnvironment() {
 			envVars: map[string]string{
 				"GO_PRE_COMMIT_SKIP": "whitespace,eof",
 			},
-			expected:    []string{"whitespace", "eof"},
+			expected:    []string{checkNameWhitespace, checkNameEOF},
 			description: "Should parse GO_PRE_COMMIT_SKIP environment variable",
 		},
 		{
 			name: "Both Variables Set - SKIP Takes Precedence",
 			envVars: map[string]string{
-				"SKIP":               "fumpt",
-				"GO_PRE_COMMIT_SKIP": "lint",
+				envSkip:              checkNameFumpt,
+				"GO_PRE_COMMIT_SKIP": checkNameLint,
 			},
-			expected:    []string{"fumpt"},
+			expected:    []string{checkNameFumpt},
 			description: "Should use SKIP when both are set (precedence order)",
 		},
 		{
 			name: "Empty SKIP Variable Falls Back",
 			envVars: map[string]string{
-				"SKIP":               "",
-				"GO_PRE_COMMIT_SKIP": "mod-tidy",
+				envSkip:              "",
+				"GO_PRE_COMMIT_SKIP": checkNameModTidy,
 			},
-			expected:    []string{"mod-tidy"},
+			expected:    []string{checkNameModTidy},
 			description: "Should fall back to GO_PRE_COMMIT_SKIP when SKIP is empty",
 		},
 		{
 			name: "Whitespace Only SKIP Falls Back",
 			envVars: map[string]string{
-				"SKIP":               "   ",
-				"GO_PRE_COMMIT_SKIP": "fmt",
+				envSkip:              "   ",
+				"GO_PRE_COMMIT_SKIP": checkNameFmt,
 			},
-			expected:    []string{"fmt"},
+			expected:    []string{checkNameFmt},
 			description: "Should fall back when SKIP contains only whitespace",
 		},
 	}
@@ -191,7 +191,7 @@ func (s *SkipFunctionalityTestSuite) TestProcessSkipEnvironment() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			// Clean up environment variables first
-			_ = os.Unsetenv("SKIP")
+			_ = os.Unsetenv(envSkip)
 			_ = os.Unsetenv("GO_PRE_COMMIT_SKIP")
 
 			// Set environment variables
@@ -203,7 +203,7 @@ func (s *SkipFunctionalityTestSuite) TestProcessSkipEnvironment() {
 			s.Equal(tc.expected, result, tc.description)
 
 			// Clean up after test
-			_ = os.Unsetenv("SKIP")
+			_ = os.Unsetenv(envSkip)
 			_ = os.Unsetenv("GO_PRE_COMMIT_SKIP")
 		})
 	}
@@ -227,45 +227,45 @@ func (s *SkipFunctionalityTestSuite) TestCombineSkipSources() {
 		},
 		{
 			name:        "Only CLI Skips",
-			cliSkips:    []string{"fumpt", "lint"},
+			cliSkips:    []string{checkNameFumpt, checkNameLint},
 			envVars:     map[string]string{},
-			expected:    []string{"fumpt", "lint"},
+			expected:    []string{checkNameFumpt, checkNameLint},
 			description: "Should return CLI skips when no environment variables are set",
 		},
 		{
 			name:     "Only Environment Skips",
 			cliSkips: nil,
 			envVars: map[string]string{
-				"SKIP": "whitespace,eof",
+				envSkip: "whitespace,eof",
 			},
-			expected:    []string{"whitespace", "eof"},
+			expected:    []string{checkNameWhitespace, checkNameEOF},
 			description: "Should return environment skips when no CLI skips are provided",
 		},
 		{
 			name:     "CLI and Environment Combined",
-			cliSkips: []string{"fumpt"},
+			cliSkips: []string{checkNameFumpt},
 			envVars: map[string]string{
-				"SKIP": "lint,mod-tidy",
+				envSkip: "lint,mod-tidy",
 			},
-			expected:    []string{"fumpt", "lint", "mod-tidy"},
+			expected:    []string{checkNameFumpt, checkNameLint, checkNameModTidy},
 			description: "Should combine CLI and environment skips",
 		},
 		{
 			name:     "Duplicate Skips Deduplicated",
-			cliSkips: []string{"fumpt", "lint"},
+			cliSkips: []string{checkNameFumpt, checkNameLint},
 			envVars: map[string]string{
-				"SKIP": "lint,whitespace",
+				envSkip: "lint,whitespace",
 			},
-			expected:    []string{"fumpt", "lint", "whitespace"},
+			expected:    []string{checkNameFumpt, checkNameLint, checkNameWhitespace},
 			description: "Should deduplicate skips from different sources",
 		},
 		{
 			name:     "Invalid Skips Filtered Out",
-			cliSkips: []string{"fumpt", "invalid-check"},
+			cliSkips: []string{checkNameFumpt, "invalid-check"},
 			envVars: map[string]string{
-				"SKIP": "lint,another-invalid",
+				envSkip: "lint,another-invalid",
 			},
-			expected:    []string{"fumpt", "lint"},
+			expected:    []string{checkNameFumpt, checkNameLint},
 			description: "Should filter out invalid check names",
 		},
 	}
@@ -299,32 +299,32 @@ func (s *SkipFunctionalityTestSuite) TestDeduplicateAndValidateSkips() {
 		},
 		{
 			name:        "Valid Checks",
-			input:       []string{"fmt", "fumpt", "lint"},
-			expected:    []string{"fmt", "fumpt", "lint"},
+			input:       []string{checkNameFmt, checkNameFumpt, checkNameLint},
+			expected:    []string{checkNameFmt, checkNameFumpt, checkNameLint},
 			description: "Should return all valid checks",
 		},
 		{
 			name:        "Duplicate Checks",
-			input:       []string{"fumpt", "lint", "fumpt", "lint"},
-			expected:    []string{"fumpt", "lint"},
+			input:       []string{checkNameFumpt, checkNameLint, checkNameFumpt, checkNameLint},
+			expected:    []string{checkNameFumpt, checkNameLint},
 			description: "Should remove duplicate checks",
 		},
 		{
 			name:        "Invalid Checks Filtered",
-			input:       []string{"fumpt", "invalid-check", "lint", "another-invalid"},
-			expected:    []string{"fumpt", "lint"},
+			input:       []string{checkNameFumpt, "invalid-check", checkNameLint, "another-invalid"},
+			expected:    []string{checkNameFumpt, checkNameLint},
 			description: "Should filter out invalid check names",
 		},
 		{
 			name:        "Mixed Valid and Empty Strings",
-			input:       []string{"fumpt", "", "lint", "   ", "whitespace"},
-			expected:    []string{"fumpt", "lint", "whitespace"},
+			input:       []string{checkNameFumpt, "", checkNameLint, "   ", checkNameWhitespace},
+			expected:    []string{checkNameFumpt, checkNameLint, checkNameWhitespace},
 			description: "Should filter out empty and whitespace-only strings",
 		},
 		{
 			name:        "All Valid Checks",
-			input:       []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
-			expected:    []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
+			input:       []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection},
+			expected:    []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection},
 			description: "Should accept all valid check names",
 		},
 	}
@@ -362,8 +362,8 @@ func (s *SkipFunctionalityTestSuite) TestSkipIntegrationWithRunner() {
 		},
 		{
 			name:        "CLI Override Environment",
-			envSkips:    "fumpt",
-			cliSkips:    []string{"lint", "mod-tidy"},
+			envSkips:    checkNameFumpt,
+			cliSkips:    []string{checkNameLint, checkNameModTidy},
 			expectedErr: "", // Should combine skips
 			description: "Should combine CLI and environment skips",
 		},
@@ -373,7 +373,7 @@ func (s *SkipFunctionalityTestSuite) TestSkipIntegrationWithRunner() {
 		s.Run(tc.name, func() {
 			// Set up environment
 			if tc.envSkips != "" {
-				_ = os.Setenv("SKIP", tc.envSkips)
+				_ = os.Setenv(envSkip, tc.envSkips)
 			}
 
 			// Create runner options
@@ -412,30 +412,30 @@ func (s *SkipFunctionalityTestSuite) TestSkipEnvironmentVariablePrecedence() {
 	}{
 		{
 			name:        "SKIP takes precedence over GO_PRE_COMMIT_SKIP",
-			skipValue:   "fumpt",
-			goSkipValue: "lint",
-			expected:    []string{"fumpt"},
+			skipValue:   checkNameFumpt,
+			goSkipValue: checkNameLint,
+			expected:    []string{checkNameFumpt},
 			description: "SKIP should take precedence when both are set",
 		},
 		{
 			name:        "Empty SKIP falls back to GO_PRE_COMMIT_SKIP",
 			skipValue:   "",
-			goSkipValue: "mod-tidy",
-			expected:    []string{"mod-tidy"},
+			goSkipValue: checkNameModTidy,
+			expected:    []string{checkNameModTidy},
 			description: "Should use GO_PRE_COMMIT_SKIP when SKIP is empty",
 		},
 		{
 			name:        "Whitespace SKIP falls back to GO_PRE_COMMIT_SKIP",
 			skipValue:   "   ",
-			goSkipValue: "whitespace",
-			expected:    []string{"whitespace"},
+			goSkipValue: checkNameWhitespace,
+			expected:    []string{checkNameWhitespace},
 			description: "Should use GO_PRE_COMMIT_SKIP when SKIP is only whitespace",
 		},
 		{
 			name:        "Only GO_PRE_COMMIT_SKIP set",
 			skipValue:   "", // Not set
 			goSkipValue: "eof,fmt",
-			expected:    []string{"eof", "fmt"},
+			expected:    []string{checkNameEOF, checkNameFmt},
 			description: "Should use GO_PRE_COMMIT_SKIP when SKIP is not set",
 		},
 	}
@@ -443,9 +443,9 @@ func (s *SkipFunctionalityTestSuite) TestSkipEnvironmentVariablePrecedence() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			if tc.skipValue != "" {
-				_ = os.Setenv("SKIP", tc.skipValue)
+				_ = os.Setenv(envSkip, tc.skipValue)
 			} else {
-				_ = os.Unsetenv("SKIP")
+				_ = os.Unsetenv(envSkip)
 			}
 
 			if tc.goSkipValue != "" {
@@ -477,19 +477,19 @@ func (s *SkipFunctionalityTestSuite) TestSkipEdgeCases() {
 		{
 			name:        "Trailing and Leading Commas",
 			skipValue:   ",fumpt,lint,",
-			expected:    []string{"fumpt", "lint"},
+			expected:    []string{checkNameFumpt, checkNameLint},
 			description: "Should handle trailing and leading commas",
 		},
 		{
 			name:        "Multiple Consecutive Commas",
 			skipValue:   "fumpt,,,lint,,whitespace",
-			expected:    []string{"fumpt", "lint", "whitespace"},
+			expected:    []string{checkNameFumpt, checkNameLint, checkNameWhitespace},
 			description: "Should handle multiple consecutive commas",
 		},
 		{
 			name:        "Mixed Case All",
 			skipValue:   "All",
-			expected:    []string{"fmt", "fumpt", "gitleaks", "goimports", "lint", "mod-tidy", "whitespace", "eof", "ai_detection"},
+			expected:    []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection},
 			description: "Should handle mixed case 'all' keyword",
 		},
 		{

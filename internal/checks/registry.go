@@ -160,7 +160,7 @@ func (r *Registry) ValidateCheckDependencies(_ context.Context) []error {
 
 		// Use reflection to check for Dependencies field
 		v := reflect.ValueOf(metadata)
-		if v.Kind() == reflect.Ptr {
+		if v.Kind() == reflect.Pointer {
 			v = v.Elem()
 		}
 		if v.Kind() != reflect.Struct {
@@ -241,7 +241,7 @@ func (r *Registry) convertMetadata(checkMetadata interface{}) CheckMetadata {
 // convertMetadataReflection uses reflection to convert metadata types
 func (r *Registry) convertMetadataReflection(checkMetadata interface{}) CheckMetadata {
 	val := reflect.ValueOf(checkMetadata)
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
 

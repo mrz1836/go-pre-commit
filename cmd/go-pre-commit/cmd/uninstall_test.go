@@ -17,13 +17,13 @@ func TestUninstallCmd_ParseFlags(t *testing.T) {
 	uninstallCmd := builder.BuildUninstallCmd()
 
 	// Parse the flags
-	err := uninstallCmd.ParseFlags([]string{"--hook-type", "pre-push"})
+	err := uninstallCmd.ParseFlags([]string{"--hook-type", hookTypePrePush})
 	require.NoError(t, err)
 
 	// Validate flags were parsed correctly
 	hookTypes, err := uninstallCmd.Flags().GetStringSlice("hook-type")
 	require.NoError(t, err)
-	assert.Equal(t, []string{"pre-push"}, hookTypes)
+	assert.Equal(t, []string{hookTypePrePush}, hookTypes)
 }
 
 func TestUninstallCmd_CommandStructure(t *testing.T) {
@@ -58,7 +58,7 @@ func TestUninstallCmd_runUninstallWithHooks(t *testing.T) {
 			setupHooks: func(t *testing.T, repoPath string) {
 				// Create a pre-commit hook installed by our system
 				hooksDir := filepath.Join(repoPath, ".git", "hooks")
-				hookPath := filepath.Join(hooksDir, "pre-commit")
+				hookPath := filepath.Join(hooksDir, hookTypePreCommit)
 				hookContent := `#!/bin/bash
 # Go Pre-commit Hook
 # This hook is managed by Go pre-commit system
@@ -67,7 +67,7 @@ echo "Pre-commit hook running"
 				err := os.WriteFile(hookPath, []byte(hookContent), 0o755) // #nosec G306 - Test hook file with executable permissions
 				require.NoError(t, err)
 			},
-			hookTypes: []string{"pre-commit"},
+			hookTypes: []string{hookTypePreCommit},
 			wantErr:   false,
 		},
 		{
@@ -85,14 +85,14 @@ echo "Pre-commit hook running"
 # This hook is managed by Go pre-commit system
 echo "Pre-commit hook running"
 `
-				err := os.WriteFile(filepath.Join(hooksDir, "pre-commit"), []byte(hookContent), 0o755) // #nosec G306 - Test hook file with executable permissions
+				err := os.WriteFile(filepath.Join(hooksDir, hookTypePreCommit), []byte(hookContent), 0o755) // #nosec G306 - Test hook file with executable permissions
 				require.NoError(t, err)
 
 				// Pre-push hook
-				err = os.WriteFile(filepath.Join(hooksDir, "pre-push"), []byte(hookContent), 0o755) // #nosec G306 - Test hook file with executable permissions
+				err = os.WriteFile(filepath.Join(hooksDir, hookTypePrePush), []byte(hookContent), 0o755) // #nosec G306 - Test hook file with executable permissions
 				require.NoError(t, err)
 			},
-			hookTypes: []string{"pre-commit", "pre-push"},
+			hookTypes: []string{hookTypePreCommit, hookTypePrePush},
 			wantErr:   false,
 		},
 		{
@@ -100,7 +100,7 @@ echo "Pre-commit hook running"
 			setupRepo: func(t *testing.T) string {
 				return setupTempGitRepoForUninstall(t)
 			},
-			hookTypes: []string{"pre-commit"},
+			hookTypes: []string{hookTypePreCommit},
 			wantErr:   false, // Should not error, just report not found
 		},
 		{
@@ -111,14 +111,14 @@ echo "Pre-commit hook running"
 			setupHooks: func(t *testing.T, repoPath string) {
 				// Create a conflicting pre-commit hook (not created by our system)
 				hooksDir := filepath.Join(repoPath, ".git", "hooks")
-				hookPath := filepath.Join(hooksDir, "pre-commit")
+				hookPath := filepath.Join(hooksDir, hookTypePreCommit)
 				hookContent := `#!/bin/bash
 echo "Some other pre-commit hook"
 `
 				err := os.WriteFile(hookPath, []byte(hookContent), 0o755) // #nosec G306 - Test hook file with executable permissions
 				require.NoError(t, err)
 			},
-			hookTypes: []string{"pre-commit"},
+			hookTypes: []string{hookTypePreCommit},
 			wantErr:   false, // Should not error, just report not managed by us
 		},
 		{

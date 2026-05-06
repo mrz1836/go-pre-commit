@@ -19,8 +19,8 @@ func TestFormatBannerWithNilResult(t *testing.T) {
 
 func TestFormatBannerWithNoUpdateAvailable(t *testing.T) {
 	result := &CheckResult{
-		CurrentVersion:  "v1.0.0",
-		LatestVersion:   "v1.0.0",
+		CurrentVersion:  testVersionCurrent,
+		LatestVersion:   testVersionCurrent,
 		UpdateAvailable: false,
 	}
 
@@ -32,36 +32,36 @@ func TestFormatBannerWithNoUpdateAvailable(t *testing.T) {
 
 func TestFormatBannerWithUpdateAvailable(t *testing.T) {
 	result := &CheckResult{
-		CurrentVersion:  "v1.0.0",
+		CurrentVersion:  testVersionCurrent,
 		LatestVersion:   "v1.2.0",
 		UpdateAvailable: true,
 	}
 
 	banner := FormatBanner(result)
-	assert.Contains(t, banner, "v1.0.0", "Banner should contain current version")
+	assert.Contains(t, banner, testVersionCurrent, "Banner should contain current version")
 	assert.Contains(t, banner, "v1.2.0", "Banner should contain latest version")
 	assert.Contains(t, banner, upgradeCmd, "Banner should contain upgrade command")
 }
 
 func TestFormatBannerASCIIStyle(t *testing.T) {
 	// Test ASCII banner directly
-	banner := formatBannerASCII("v1.0.0", "v1.1.0")
+	banner := formatBannerASCII(testVersionCurrent, testVersionLatest)
 
 	assert.Contains(t, banner, "+--", "ASCII banner should contain box characters")
-	assert.Contains(t, banner, "v1.0.0", "Banner should contain current version")
-	assert.Contains(t, banner, "v1.1.0", "Banner should contain latest version")
+	assert.Contains(t, banner, testVersionCurrent, "Banner should contain current version")
+	assert.Contains(t, banner, testVersionLatest, "Banner should contain latest version")
 	assert.Contains(t, banner, upgradeCmd, "Banner should contain upgrade command")
 	assert.Contains(t, banner, "GO-PRE-COMMIT", "Banner should contain product name")
 }
 
 func TestFormatBannerFancyStyle(t *testing.T) {
 	// Test fancy banner directly
-	banner := formatBannerFancy("v1.0.0", "v1.1.0")
+	banner := formatBannerFancy(testVersionCurrent, testVersionLatest)
 
 	assert.Contains(t, banner, "╭", "Fancy banner should contain Unicode box characters")
 	assert.Contains(t, banner, "╰", "Fancy banner should contain Unicode box characters")
-	assert.Contains(t, banner, "v1.0.0", "Banner should contain current version")
-	assert.Contains(t, banner, "v1.1.0", "Banner should contain latest version")
+	assert.Contains(t, banner, testVersionCurrent, "Banner should contain current version")
+	assert.Contains(t, banner, testVersionLatest, "Banner should contain latest version")
 	assert.Contains(t, banner, upgradeCmd, "Banner should contain upgrade command")
 	assert.Contains(t, banner, "GO-PRE-COMMIT", "Banner should contain product name")
 }
@@ -87,8 +87,8 @@ func TestShowBannerWithNilResult(t *testing.T) {
 
 func TestShowBannerWithNoUpdate(t *testing.T) {
 	result := &CheckResult{
-		CurrentVersion:  "v1.0.0",
-		LatestVersion:   "v1.0.0",
+		CurrentVersion:  testVersionCurrent,
+		LatestVersion:   testVersionCurrent,
 		UpdateAvailable: false,
 	}
 
@@ -111,7 +111,7 @@ func TestShowBannerWithNoUpdate(t *testing.T) {
 
 func TestShowBannerWithError(t *testing.T) {
 	result := &CheckResult{
-		CurrentVersion:  "v1.0.0",
+		CurrentVersion:  testVersionCurrent,
 		UpdateAvailable: true,
 		Error:           assert.AnError,
 	}
@@ -135,8 +135,8 @@ func TestShowBannerWithError(t *testing.T) {
 
 func TestShowBannerWithUpdate(t *testing.T) {
 	result := &CheckResult{
-		CurrentVersion:  "v1.0.0",
-		LatestVersion:   "v1.1.0",
+		CurrentVersion:  testVersionCurrent,
+		LatestVersion:   testVersionLatest,
 		UpdateAvailable: true,
 	}
 
@@ -158,8 +158,8 @@ func TestShowBannerWithUpdate(t *testing.T) {
 
 	output := buf.String()
 	assert.NotEmpty(t, output, "ShowBanner should produce output when update available")
-	assert.Contains(t, output, "v1.0.0")
-	assert.Contains(t, output, "v1.1.0")
+	assert.Contains(t, output, testVersionCurrent)
+	assert.Contains(t, output, testVersionLatest)
 }
 
 func TestUseColor(t *testing.T) {
@@ -264,7 +264,7 @@ func TestPadVersion(t *testing.T) {
 	}{
 		{
 			name:     "short version padded",
-			version:  "v1.0.0",
+			version:  testVersionCurrent,
 			width:    12,
 			expected: "v1.0.0      ",
 		},
@@ -306,7 +306,7 @@ func TestPadVersionUnicode(t *testing.T) {
 	}{
 		{
 			name:        "ASCII version",
-			version:     "v1.0.0",
+			version:     testVersionCurrent,
 			width:       12,
 			expectedLen: 12,
 		},
@@ -380,7 +380,7 @@ func TestBannerConstants(t *testing.T) {
 }
 
 func TestBannerLineWidthConsistency(t *testing.T) {
-	banner := formatBannerASCII("v1.0.0", "v99.99.99")
+	banner := formatBannerASCII(testVersionCurrent, "v99.99.99")
 	lines := strings.Split(banner, "\n")
 
 	// Find the width of box lines
@@ -409,13 +409,13 @@ func TestFormatBannerVariousVersionCombinations(t *testing.T) {
 	}{
 		{
 			name:    "standard versions",
-			current: "v1.0.0",
-			latest:  "v1.1.0",
+			current: testVersionCurrent,
+			latest:  testVersionLatest,
 		},
 		{
 			name:    "dev to release",
 			current: "dev",
-			latest:  "v1.0.0",
+			latest:  testVersionCurrent,
 		},
 		{
 			name:    "long versions",
@@ -449,8 +449,8 @@ func TestFormatBannerVariousVersionCombinations(t *testing.T) {
 
 func TestShowBannerWithColor(t *testing.T) {
 	result := &CheckResult{
-		CurrentVersion:  "v1.0.0",
-		LatestVersion:   "v1.1.0",
+		CurrentVersion:  testVersionCurrent,
+		LatestVersion:   testVersionLatest,
 		UpdateAvailable: true,
 	}
 
@@ -483,19 +483,19 @@ func TestIsTerminal(t *testing.T) {
 }
 
 func TestFormatBannerEmptyVersions(t *testing.T) {
-	banner := formatBannerASCII("", "v1.0.0")
+	banner := formatBannerASCII("", testVersionCurrent)
 	assert.NotEmpty(t, banner)
 	assert.Contains(t, banner, "Current:")
 	assert.Contains(t, banner, "Latest:")
 
-	banner2 := formatBannerASCII("v1.0.0", "")
+	banner2 := formatBannerASCII(testVersionCurrent, "")
 	assert.NotEmpty(t, banner2)
 	assert.Contains(t, banner2, "Current:")
 	assert.Contains(t, banner2, "Latest:")
 }
 
 func TestFormatBannerFancyLineWidthConsistency(t *testing.T) {
-	banner := formatBannerFancy("v1.0.0", "v2.0.0")
+	banner := formatBannerFancy(testVersionCurrent, "v2.0.0")
 	lines := strings.Split(banner, "\n")
 
 	// All content lines should have consistent width (counting runes)
@@ -511,8 +511,8 @@ func TestFormatBannerFancyLineWidthConsistency(t *testing.T) {
 func TestCheckResultForDisplay(t *testing.T) {
 	// Test that CheckResult can be used for banner display
 	result := &CheckResult{
-		CurrentVersion:  "v1.0.0",
-		LatestVersion:   "v1.1.0",
+		CurrentVersion:  testVersionCurrent,
+		LatestVersion:   testVersionLatest,
 		UpdateAvailable: true,
 		CheckedAt:       time.Now(),
 		FromCache:       false,
@@ -542,7 +542,7 @@ func TestCheckResultForDisplay(t *testing.T) {
 
 func TestBannerBoxWidth(t *testing.T) {
 	// ASCII banner box should be 70 chars wide (between | and |)
-	banner := formatBannerASCII("v1.0.0", "v1.1.0")
+	banner := formatBannerASCII(testVersionCurrent, testVersionLatest)
 	lines := strings.Split(banner, "\n")
 
 	for _, line := range lines {
@@ -557,7 +557,7 @@ func TestFormatBannerWithRealResult(t *testing.T) {
 	// Simulate a real check result
 	result := &CheckResult{
 		CurrentVersion:  "v0.9.0",
-		LatestVersion:   "v1.0.0",
+		LatestVersion:   testVersionCurrent,
 		UpdateAvailable: true,
 		CheckedAt:       time.Now(),
 		FromCache:       false,
@@ -565,15 +565,15 @@ func TestFormatBannerWithRealResult(t *testing.T) {
 
 	banner := FormatBanner(result)
 	assert.Contains(t, banner, "v0.9.0")
-	assert.Contains(t, banner, "v1.0.0")
+	assert.Contains(t, banner, testVersionCurrent)
 	assert.Contains(t, banner, "GO-PRE-COMMIT")
 	assert.Contains(t, banner, upgradeCmd)
 }
 
 func TestShowBannerWritesToStderr(t *testing.T) {
 	result := &CheckResult{
-		CurrentVersion:  "v1.0.0",
-		LatestVersion:   "v1.1.0",
+		CurrentVersion:  testVersionCurrent,
+		LatestVersion:   testVersionLatest,
 		UpdateAvailable: true,
 	}
 
@@ -599,8 +599,8 @@ func TestShowBannerWritesToStderr(t *testing.T) {
 
 func TestBannerColorFormatting(t *testing.T) {
 	result := &CheckResult{
-		CurrentVersion:  "v1.0.0",
-		LatestVersion:   "v1.1.0",
+		CurrentVersion:  testVersionCurrent,
+		LatestVersion:   testVersionLatest,
 		UpdateAvailable: true,
 	}
 

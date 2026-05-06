@@ -108,7 +108,7 @@ func TestMain_InvalidFormat(t *testing.T) {
 	log.SetOutput(w)
 
 	// Set args with invalid format
-	os.Args = []string{"production-validation", "-format", "invalid"}
+	os.Args = []string{binaryName, "-format", "invalid"}
 
 	// Capture log.Fatal
 	fatalCalled := false
@@ -152,7 +152,7 @@ func TestMain_OutputFileCreation(t *testing.T) {
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 
 	// Set args to output JSON to file
-	os.Args = []string{"production-validation", "-format", "json", "-output", outputPath}
+	os.Args = []string{binaryName, "-format", "json", "-output", outputPath}
 
 	// Mock the validator to return a simple report
 	testDeps := getDependencies()
@@ -228,7 +228,7 @@ func TestMain_ErrorHandling(t *testing.T) {
 					return &validation.ProductionReadinessReport{}, nil
 				}
 				// Set output to invalid path
-				os.Args = []string{"production-validation", "-output", "/nonexistent/path/file.txt"}
+				os.Args = []string{binaryName, "-output", "/nonexistent/path/file.txt"}
 				return testDeps
 			},
 			expectedError: "Failed to create output directory",
@@ -249,7 +249,7 @@ func TestMain_ErrorHandling(t *testing.T) {
 			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 
 			// Reset args
-			os.Args = []string{"production-validation"}
+			os.Args = []string{binaryName}
 
 			// Setup mock
 			testDeps := tt.setupMock()
@@ -307,7 +307,7 @@ func TestMain_ExitCodes(t *testing.T) {
 			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 
 			// Set args
-			os.Args = []string{"production-validation"}
+			os.Args = []string{binaryName}
 
 			// Mock validator and report
 			testDeps := getDependencies()
@@ -360,21 +360,21 @@ func TestMain_FlagParsing(t *testing.T) {
 	}{
 		{
 			name:          "default values",
-			args:          []string{"production-validation"},
+			args:          []string{binaryName},
 			expectFormat:  "text",
 			expectOutput:  "",
 			expectVerbose: false,
 		},
 		{
 			name:          "all flags set",
-			args:          []string{"production-validation", "-format", "json", "-output", "report.json", "-verbose"},
+			args:          []string{binaryName, "-format", "json", "-output", "report.json", "-verbose"},
 			expectFormat:  "json",
 			expectOutput:  "report.json",
 			expectVerbose: true,
 		},
 		{
 			name:          "short form verbose",
-			args:          []string{"production-validation", "-verbose=true"},
+			args:          []string{binaryName, "-verbose=true"},
 			expectFormat:  "text",
 			expectOutput:  "",
 			expectVerbose: true,
@@ -459,7 +459,7 @@ func BenchmarkMain(b *testing.B) {
 	}
 
 	// Set args
-	os.Args = []string{"production-validation"}
+	os.Args = []string{binaryName}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -584,7 +584,7 @@ func TestMainWithDeps_ErrorCoverage(t *testing.T) {
 
 			// Create new flag set
 			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-			os.Args = []string{"production-validation", "-format", "json"}
+			os.Args = []string{binaryName, "-format", "json"}
 
 			testDeps := tt.setupMock()
 
@@ -611,7 +611,7 @@ func TestMainWithDeps_StdoutWriteError(t *testing.T) {
 
 	// Create new flag set
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	os.Args = []string{"production-validation"}
+	os.Args = []string{binaryName}
 
 	// Mock dependencies
 	testDeps := getDependencies()
@@ -643,7 +643,7 @@ func TestMainWithDeps_CleanupCoverage(t *testing.T) {
 
 	// Create new flag set
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	os.Args = []string{"production-validation", "-verbose"}
+	os.Args = []string{binaryName, "-verbose"}
 
 	// Track if cleanup was called
 	cleanupCalled := false
@@ -695,7 +695,7 @@ func TestMainWithDeps_VerboseLogging(t *testing.T) {
 	outputPath := filepath.Join(tempDir, "verbose-report.txt")
 
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	os.Args = []string{"production-validation", "-verbose", "-output", outputPath}
+	os.Args = []string{binaryName, "-verbose", "-output", outputPath}
 
 	testDeps := getDependencies()
 	testDeps.newProductionReadinessValidator = func() (*validation.ProductionReadinessValidator, error) {
@@ -749,7 +749,7 @@ func TestMainWithDeps_DirectoryCreationFailure(t *testing.T) {
 
 	// Try to write to root directory which should fail on most systems
 	invalidPath := "/invalid-root-path/nonexistent/deep/path/report.txt"
-	os.Args = []string{"production-validation", "-output", invalidPath}
+	os.Args = []string{binaryName, "-output", invalidPath}
 
 	testDeps := getDependencies()
 	testDeps.newProductionReadinessValidator = func() (*validation.ProductionReadinessValidator, error) {
@@ -803,7 +803,7 @@ func TestMainWithDeps_WriteFileFailure(t *testing.T) {
 	err = os.Chmod(outputPath, 0o400) // #nosec G302 - Test file, intentionally read-only
 	require.NoError(t, err)
 
-	os.Args = []string{"production-validation", "-output", outputPath}
+	os.Args = []string{binaryName, "-output", outputPath}
 
 	testDeps := getDependencies()
 	testDeps.newProductionReadinessValidator = func() (*validation.ProductionReadinessValidator, error) {

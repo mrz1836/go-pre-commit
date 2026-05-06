@@ -71,7 +71,7 @@ func TestInstallTool_TimeoutConfiguration(t *testing.T) {
 		Name:       "nonexistent-tool-12345",
 		Binary:     "nonexistent-tool-12345",
 		ImportPath: "github.com/nonexistent/nonexistent-tool-12345",
-		Version:    "latest",
+		Version:    toolVersionLatest,
 	}
 
 	ctx := context.Background()
@@ -109,7 +109,7 @@ func TestInstallTool_ContextAlreadyCanceled(t *testing.T) {
 		Name:       "test-tool",
 		Binary:     "test-tool",
 		ImportPath: "github.com/test/test-tool",
-		Version:    "latest",
+		Version:    toolVersionLatest,
 	}
 
 	err := InstallTool(ctx, fakeTool)
@@ -132,7 +132,7 @@ func TestInstallGolangciLint_TimeoutHandling(t *testing.T) {
 	defer cancel()
 
 	start := time.Now()
-	err := installGolangciLint(ctx, "latest")
+	err := installGolangciLint(ctx, toolVersionLatest)
 	elapsed := time.Since(start)
 
 	require.Error(t, err)
@@ -141,7 +141,7 @@ func TestInstallGolangciLint_TimeoutHandling(t *testing.T) {
 	var timeoutErr *prerrors.TimeoutError
 	if errors.As(err, &timeoutErr) {
 		assert.Equal(t, "Tool installation", timeoutErr.Operation)
-		assert.Equal(t, "golangci-lint", timeoutErr.Context)
+		assert.Equal(t, toolGolangciLint, timeoutErr.Context)
 		assert.Contains(t, timeoutErr.ConfigVar, "GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT")
 	}
 
@@ -165,7 +165,7 @@ func TestInstallTool_ProgressTracking(t *testing.T) {
 		Name:       "quick-fail-tool",
 		Binary:     "quick-fail-tool",
 		ImportPath: "github.com/nonexistent/quick-fail-tool",
-		Version:    "latest",
+		Version:    toolVersionLatest,
 	}
 
 	ctx := context.Background()
@@ -255,7 +255,7 @@ func TestInstallTool_RealScenario(t *testing.T) {
 		Name:       "hello",
 		Binary:     "hello",
 		ImportPath: "golang.org/x/example/hello",
-		Version:    "latest",
+		Version:    toolVersionLatest,
 	}
 
 	ctx := context.Background()

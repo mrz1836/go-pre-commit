@@ -33,7 +33,7 @@ This command will:
 		},
 	}
 
-	cmd.Flags().StringSlice("hook-type", []string{"pre-commit"}, "Hook types to uninstall")
+	cmd.Flags().StringSlice("hook-type", []string{hookTypePreCommit}, "Hook types to uninstall")
 	return cmd
 }
 

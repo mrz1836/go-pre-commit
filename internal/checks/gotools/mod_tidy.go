@@ -73,7 +73,7 @@ func (c *ModTidyCheck) Metadata() interface{} {
 	return CheckMetadata{
 		Name:              "mod-tidy",
 		Description:       "Ensure go.mod and go.sum are up to date and tidy",
-		FilePatterns:      []string{"*.go", "go.mod", "go.sum"},
+		FilePatterns:      []string{"*.go", fileGoMod, "go.sum"},
 		EstimatedDuration: 5 * time.Second,
 		Dependencies:      []string{"mod-tidy"}, // tool or build target
 		DefaultTimeout:    c.timeout,
@@ -100,7 +100,7 @@ func (c *ModTidyCheck) FilterFiles(files []string) []string {
 
 	for _, file := range files {
 		// Check for go.mod/go.sum changes
-		if file == "go.mod" || file == "go.sum" || strings.HasSuffix(file, "/go.mod") || strings.HasSuffix(file, "/go.sum") {
+		if file == fileGoMod || file == "go.sum" || strings.HasSuffix(file, "/"+fileGoMod) || strings.HasSuffix(file, "/go.sum") {
 			hasGoMod = true
 			filtered = append(filtered, file)
 		}
@@ -147,7 +147,7 @@ func (c *ModTidyCheck) runDirectModTidy(ctx context.Context, files []string) err
 		moduleRoot := findGoModuleRoot(filepath.Join(repoRoot, dir), repoRoot)
 		if moduleRoot == "" {
 			// Try to check if the file is go.mod or go.sum itself
-			if strings.HasSuffix(file, "go.mod") || strings.HasSuffix(file, "go.sum") {
+			if strings.HasSuffix(file, fileGoMod) || strings.HasSuffix(file, "go.sum") {
 				moduleRoot = filepath.Join(repoRoot, dir)
 			}
 		}
@@ -418,7 +418,7 @@ func (c *ModTidyCheck) checkUncommittedChanges(ctx context.Context, moduleDir, r
 	defer cancel()
 
 	// Get relative paths to go.mod and go.sum from the module directory
-	goModPath := filepath.Join(moduleDir, "go.mod")
+	goModPath := filepath.Join(moduleDir, fileGoMod)
 	goSumPath := filepath.Join(moduleDir, "go.sum")
 
 	// Check for new untracked files (like go.sum created for the first time)

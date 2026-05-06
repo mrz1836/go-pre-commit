@@ -15,6 +15,14 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/runner"
 )
 
+// Common test file names used in validation scenarios
+const (
+	testFileMain    = "main.go"
+	testFileService = "service.go"
+	testFileReadme  = "README.md"
+	testFileConfig  = "config.yaml"
+)
+
 // Error variables
 var (
 	ErrRunnerCreationFailed = errors.New("failed to create runner with provided configuration")
@@ -434,21 +442,21 @@ func (v *ProductionReadinessValidator) validateSkipFunctionality() SkipFunctiona
 
 func (v *ProductionReadinessValidator) createTestFiles() []string {
 	files := []string{
-		"main.go", "service.go", "handler.go", "model.go",
-		"utils.go", "config.go", "README.md", "CHANGELOG.md",
-		"config.yaml", "docker-compose.yml",
+		testFileMain, testFileService, "handler.go", "model.go",
+		"utils.go", "config.go", testFileReadme, "CHANGELOG.md",
+		testFileConfig, "docker-compose.yml",
 	}
 
 	fileContents := map[string]string{
-		"main.go":            `package main\n\nfunc main() {}\n`,
-		"service.go":         `package main\n\ntype Service struct{}\n`,
+		testFileMain:         `package main\n\nfunc main() {}\n`,
+		testFileService:      `package main\n\ntype Service struct{}\n`,
 		"handler.go":         `package main\n\nfunc handle() {}\n`,
 		"model.go":           `package main\n\ntype Model struct{}\n`,
 		"utils.go":           `package main\n\nfunc util() {}\n`,
 		"config.go":          `package main\n\nvar config = "test"\n`,
-		"README.md":          `# Test Project\n\nDescription\n`,
+		testFileReadme:       `# Test Project\n\nDescription\n`,
 		"CHANGELOG.md":       `# Changelog\n\n## v1.0.0\n- Initial release\n`,
-		"config.yaml":        `app:\n  name: test\n`,
+		testFileConfig:       `app:\n  name: test\n`,
 		"docker-compose.yml": `version: '3'\nservices:\n  app:\n    image: test\n`,
 	}
 

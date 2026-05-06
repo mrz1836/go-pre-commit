@@ -69,7 +69,7 @@ GO_PRE_COMMIT_GOIMPORTS_VERSION=latest
 	s.Require().NoError(s.initGitRepo())
 
 	// Create test files
-	s.testFiles = []string{"main.go", "service.go", "README.md", "config.yaml", "script.sh"}
+	s.testFiles = []string{testFileMain, testFileService, testFileReadme, testFileConfig, "script.sh"}
 	s.Require().NoError(s.createTestFiles())
 }
 
@@ -150,7 +150,7 @@ func (s *SkipFunctionalityTestSuite) initGitRepo() error {
 // createTestFiles creates sample files for testing
 func (s *SkipFunctionalityTestSuite) createTestFiles() error {
 	files := map[string]string{
-		"main.go": `package main
+		testFileMain: `package main
 
 import "fmt"
 
@@ -158,7 +158,7 @@ func main() {
 	fmt.Println("Hello, World!")
 }
 `,
-		"service.go": `package main
+		testFileService: `package main
 
 type Service struct {
 	name string
@@ -168,11 +168,11 @@ func NewService(name string) *Service {
 	return &Service{name: name}
 }
 `,
-		"README.md": `# Test Project
+		testFileReadme: `# Test Project
 
 This is a test project for validation.
 `,
-		"config.yaml": `
+		testFileConfig: `
 app:
   name: test-app
   version: 1.0.0
@@ -456,7 +456,7 @@ func (s *SkipFunctionalityTestSuite) TestSkipInCIEnvironment() {
 			name: "GitHub Actions with SKIP",
 			ciEnvVars: map[string]string{
 				"CI":             "true",
-				"GITHUB_ACTIONS": "true",
+				"GITHUB_ACTIONS": testEnvValueTrue,
 			},
 			skipValue:   "lint,fumpt",
 			description: "SKIP should work in GitHub Actions environment",
@@ -465,7 +465,7 @@ func (s *SkipFunctionalityTestSuite) TestSkipInCIEnvironment() {
 			name: "GitLab CI with SKIP",
 			ciEnvVars: map[string]string{
 				"CI":        "true",
-				"GITLAB_CI": "true",
+				"GITLAB_CI": testEnvValueTrue,
 			},
 			skipValue:   "whitespace",
 			description: "SKIP should work in GitLab CI environment",
@@ -473,7 +473,7 @@ func (s *SkipFunctionalityTestSuite) TestSkipInCIEnvironment() {
 		{
 			name: "Generic CI with SKIP",
 			ciEnvVars: map[string]string{
-				"CI": "true",
+				"CI": testEnvValueTrue,
 			},
 			skipValue:   "eof",
 			description: "SKIP should work in generic CI environment",

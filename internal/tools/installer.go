@@ -18,6 +18,11 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/progress"
 )
 
+const (
+	toolGolangciLint  = "golangci-lint"
+	toolVersionLatest = "latest"
+)
+
 // Error variables for tool installation
 var (
 	// ErrUnknownTool is returned when a tool is not recognized
@@ -57,11 +62,11 @@ type Tool struct {
 var (
 	toolsMu sync.RWMutex
 	tools   = map[string]*Tool{
-		"golangci-lint": {
-			Name:       "golangci-lint",
+		toolGolangciLint: {
+			Name:       toolGolangciLint,
 			ImportPath: "github.com/golangci/golangci-lint/cmd/golangci-lint",
 			Version:    "", // Will be loaded from env
-			Binary:     "golangci-lint",
+			Binary:     toolGolangciLint,
 		},
 		"gofumpt": {
 			Name:       "gofumpt",
@@ -72,7 +77,7 @@ var (
 		"goimports": {
 			Name:       "goimports",
 			ImportPath: "golang.org/x/tools/cmd/goimports",
-			Version:    "latest",
+			Version:    toolVersionLatest,
 			Binary:     "goimports",
 		},
 		"gitleaks": {
@@ -96,7 +101,7 @@ func LoadVersionsFromEnv() {
 
 	// Load versions from environment
 	if v := os.Getenv("GO_PRE_COMMIT_GOLANGCI_LINT_VERSION"); v != "" {
-		if t, ok := tools["golangci-lint"]; ok {
+		if t, ok := tools[toolGolangciLint]; ok {
 			t.Version = v
 		}
 	}
@@ -120,7 +125,7 @@ func LoadVersionsFromEnv() {
 	}
 
 	// Set defaults if not specified
-	if t, ok := tools["golangci-lint"]; ok && t.Version == "" {
+	if t, ok := tools[toolGolangciLint]; ok && t.Version == "" {
 		t.Version = "v2.4.0"
 	}
 	if t, ok := tools["gofumpt"]; ok && t.Version == "" {
@@ -315,7 +320,7 @@ func InstallTool(ctx context.Context, tool *Tool) error {
 
 	// Build install command
 	installPath := tool.ImportPath
-	if tool.Version != "" && tool.Version != "latest" {
+	if tool.Version != "" && tool.Version != toolVersionLatest {
 		installPath = fmt.Sprintf("%s@%s", tool.ImportPath, tool.Version)
 	}
 
@@ -335,13 +340,16 @@ func InstallTool(ctx context.Context, tool *Tool) error {
 	defer tracker.Stop()
 
 	// Special handling for golangci-lint which has a custom installer
-	if tool.Name == "golangci-lint" {
+	if tool.Name == toolGolangciLint {
 		return installGolangciLint(installCtx, tool.Version)
 	}
 
 	// Special handling for gitleaks which requires binary download
 	if tool.Name == "gitleaks" {
-		return installGitleaks(installCtx, tool.Version)
+		if err := installGitleaks(installCtx, tool.Version); err != nil {
+			return fmt.Errorf("%w for %s: %w", ErrInstallFailed, tool.Name, err)
+		}
+		return nil
 	}
 
 	// Standard go install for other tools with retry logic
@@ -398,15 +406,15 @@ func installGolangciLint(ctx context.Context, version string) error {
 
 	// Check if this was a timeout at the start
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return prerrors.NewToolInstallTimeoutError("golangci-lint", timeout, 0)
+		return prerrors.NewToolInstallTimeoutError(toolGolangciLint, timeout, 0)
 	}
 
 	// Start progress tracking for golangci-lint installation
 	tracker := progress.New(progress.Options{
 		Operation:    "Tool installation",
-		Context:      "golangci-lint",
+		Context:      toolGolangciLint,
 		Timeout:      timeout,
-		ProgressFunc: progress.InstallProgressFunc("golangci-lint"),
+		ProgressFunc: progress.InstallProgressFunc(toolGolangciLint),
 	})
 	tracker.Start(ctx)
 	defer tracker.Stop()
@@ -431,7 +439,7 @@ func installGolangciLint(ctx context.Context, version string) error {
 	if err != nil {
 		// Check for timeout on primary installation
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return prerrors.NewToolInstallTimeoutError("golangci-lint", timeout, elapsed)
+			return prerrors.NewToolInstallTimeoutError(toolGolangciLint, timeout, elapsed)
 		}
 
 		// If primary installation failed with network error after retries, try fallback
@@ -464,7 +472,7 @@ func installGolangciLint(ctx context.Context, version string) error {
 		if fallbackErr != nil {
 			// Check for timeout on fallback
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-				return prerrors.NewToolInstallTimeoutError("golangci-lint", timeout, totalElapsed)
+				return prerrors.NewToolInstallTimeoutError(toolGolangciLint, timeout, totalElapsed)
 			}
 
 			// Both methods failed

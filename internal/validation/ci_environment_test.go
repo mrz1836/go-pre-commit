@@ -132,7 +132,7 @@ func (s *CIEnvironmentTestSuite) initGitRepo() error {
 // createTestFiles creates sample files for testing
 func (s *CIEnvironmentTestSuite) createTestFiles() error {
 	files := map[string]string{
-		"main.go": `package main
+		testFileMain: `package main
 
 import "fmt"
 
@@ -140,7 +140,7 @@ func main() {
 	fmt.Println("Hello, World!")
 }
 `,
-		"service.go": `package main
+		testFileService: `package main
 
 type Service struct {
 	name string
@@ -150,7 +150,7 @@ func NewService(name string) *Service {
 	return &Service{name: name}
 }
 `,
-		"README.md": `# Test Project
+		testFileReadme: `# Test Project
 
 This is a test project for validation.
 `,
@@ -179,8 +179,8 @@ func (s *CIEnvironmentTestSuite) TestCIEnvironmentParity() {
 		{
 			name: "GitHub Actions Environment",
 			ciEnvVars: map[string]string{
-				"CI":                "true",
-				"GITHUB_ACTIONS":    "true",
+				"CI":                testEnvValueTrue,
+				"GITHUB_ACTIONS":    testEnvValueTrue,
 				"GITHUB_WORKFLOW":   "CI",
 				"GITHUB_RUN_ID":     "12345",
 				"GITHUB_RUN_NUMBER": "1",
@@ -200,8 +200,8 @@ func (s *CIEnvironmentTestSuite) TestCIEnvironmentParity() {
 		{
 			name: "GitLab CI Environment",
 			ciEnvVars: map[string]string{
-				"CI":                        "true",
-				"GITLAB_CI":                 "true",
+				"CI":                        testEnvValueTrue,
+				"GITLAB_CI":                 testEnvValueTrue,
 				"CI_JOB_ID":                 "12345",
 				"CI_JOB_NAME":               "test",
 				"CI_JOB_STAGE":              "test",
@@ -217,7 +217,7 @@ func (s *CIEnvironmentTestSuite) TestCIEnvironmentParity() {
 		{
 			name: "Jenkins Environment",
 			ciEnvVars: map[string]string{
-				"CI":           "true",
+				"CI":           testEnvValueTrue,
 				"JENKINS_URL":  "http://jenkins.example.com/",
 				"BUILD_ID":     "123",
 				"BUILD_NUMBER": "123",
@@ -230,7 +230,7 @@ func (s *CIEnvironmentTestSuite) TestCIEnvironmentParity() {
 		{
 			name: "Generic CI Environment",
 			ciEnvVars: map[string]string{
-				"CI":       "true",
+				"CI":       testEnvValueTrue,
 				"BUILD_ID": "generic-123",
 				"NO_COLOR": "1",
 				"TERM":     "dumb",
@@ -257,7 +257,7 @@ func (s *CIEnvironmentTestSuite) TestCIEnvironmentParity() {
 func (s *CIEnvironmentTestSuite) TestCISpecificBehavior() {
 	s.Run("Color Output Disabled in CI", func() {
 		ciEnvVars := map[string]string{
-			"CI":       "true",
+			"CI":       testEnvValueTrue,
 			"NO_COLOR": "1",
 		}
 
@@ -270,7 +270,7 @@ func (s *CIEnvironmentTestSuite) TestCISpecificBehavior() {
 
 	s.Run("Progress Output in CI", func() {
 		ciEnvVars := map[string]string{
-			"CI":   "true",
+			"CI":   testEnvValueTrue,
 			"TERM": "dumb",
 		}
 
@@ -283,16 +283,16 @@ func (s *CIEnvironmentTestSuite) TestCISpecificBehavior() {
 
 	s.Run("Timeout Handling in CI", func() {
 		ciEnvVars := map[string]string{
-			"CI":                            "true",
-			"GO_PRE_COMMIT_TIMEOUT_SECONDS": "5", // Very short timeout
+			"CI":                  testEnvValueTrue,
+			testEnvTimeoutSeconds: "5", // Very short timeout
 		}
 
 		// Override env file temporarily
 		s.createTempEnvFile(map[string]string{
-			"ENABLE_GO_PRE_COMMIT":            "true",
-			"GO_PRE_COMMIT_TIMEOUT_SECONDS":   "5",
-			"GO_PRE_COMMIT_ENABLE_WHITESPACE": "true",
-			"GO_PRE_COMMIT_ENABLE_EOF":        "true",
+			testEnvEnablePreCommit:  testEnvValueTrue,
+			testEnvTimeoutSeconds:   "5",
+			testEnvEnableWhitespace: testEnvValueTrue,
+			testEnvEnableEOF:        testEnvValueTrue,
 		})
 
 		results := s.runInEnvironment(ciEnvVars, "ci-timeout")
@@ -313,9 +313,9 @@ func (s *CIEnvironmentTestSuite) TestCIEnvironmentVariablePrecedence() {
 		{
 			name: "CI Environment Overrides",
 			envVars: map[string]string{
-				"CI":                             "true",
-				"GO_PRE_COMMIT_LOG_LEVEL":        "debug",
-				"GO_PRE_COMMIT_PARALLEL_WORKERS": "1",
+				"CI":                   testEnvValueTrue,
+				testEnvLogLevel:        "debug",
+				testEnvParallelWorkers: "1",
 			},
 			expected: "debug",
 		},
@@ -333,11 +333,11 @@ func (s *CIEnvironmentTestSuite) TestCIEnvironmentVariablePrecedence() {
 		s.Run(tc.name, func() {
 			// Create temporary env file with base config
 			s.createTempEnvFile(map[string]string{
-				"ENABLE_GO_PRE_COMMIT":            "true",
-				"GO_PRE_COMMIT_LOG_LEVEL":         "info",
-				"GO_PRE_COMMIT_PARALLEL_WORKERS":  "2",
-				"GO_PRE_COMMIT_ENABLE_WHITESPACE": "true",
-				"GO_PRE_COMMIT_ENABLE_EOF":        "true",
+				testEnvEnablePreCommit:  testEnvValueTrue,
+				testEnvLogLevel:         "info",
+				testEnvParallelWorkers:  "2",
+				testEnvEnableWhitespace: testEnvValueTrue,
+				testEnvEnableEOF:        testEnvValueTrue,
 			})
 
 			results := s.runInEnvironment(tc.envVars, "precedence-test")
@@ -379,7 +379,7 @@ func (s *CIEnvironmentTestSuite) runInEnvironment(envVars map[string]string, env
 	r := runner.New(cfg, s.tempDir)
 
 	// Get test files
-	files := []string{"main.go", "service.go", "README.md"}
+	files := []string{testFileMain, testFileService, testFileReadme}
 
 	// Execute
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -458,19 +458,19 @@ func (s *CIEnvironmentTestSuite) createTempEnvFile(vars map[string]string) {
 func (s *CIEnvironmentTestSuite) TestCINetworkConnectivity() {
 	s.Run("Offline CI Environment", func() {
 		ciEnvVars := map[string]string{
-			"CI":            "true",
-			"NO_NETWORK":    "true",
-			"OFFLINE_BUILD": "true",
+			"CI":            testEnvValueTrue,
+			"NO_NETWORK":    testEnvValueTrue,
+			"OFFLINE_BUILD": testEnvValueTrue,
 		}
 
 		// Create minimal config that doesn't require network
 		s.createTempEnvFile(map[string]string{
-			"ENABLE_GO_PRE_COMMIT":            "true",
-			"GO_PRE_COMMIT_ENABLE_WHITESPACE": "true",
-			"GO_PRE_COMMIT_ENABLE_EOF":        "true",
-			"GO_PRE_COMMIT_ENABLE_FUMPT":      "false", // Disable checks that might need network
-			"GO_PRE_COMMIT_ENABLE_LINT":       "false",
-			"GO_PRE_COMMIT_ENABLE_MOD_TIDY":   "false",
+			testEnvEnablePreCommit:          testEnvValueTrue,
+			testEnvEnableWhitespace:         testEnvValueTrue,
+			testEnvEnableEOF:                testEnvValueTrue,
+			"GO_PRE_COMMIT_ENABLE_FUMPT":    "false", // Disable checks that might need network
+			"GO_PRE_COMMIT_ENABLE_LINT":     "false",
+			"GO_PRE_COMMIT_ENABLE_MOD_TIDY": "false",
 		})
 
 		results := s.runInEnvironment(ciEnvVars, "offline-ci")
@@ -485,17 +485,17 @@ func (s *CIEnvironmentTestSuite) TestCINetworkConnectivity() {
 func (s *CIEnvironmentTestSuite) TestCIResourceLimits() {
 	s.Run("Limited Resources", func() {
 		ciEnvVars := map[string]string{
-			"CI":                             "true",
-			"GO_PRE_COMMIT_PARALLEL_WORKERS": "1", // Force single-threaded
-			"GO_PRE_COMMIT_TIMEOUT_SECONDS":  "60",
+			"CI":                   testEnvValueTrue,
+			testEnvParallelWorkers: "1", // Force single-threaded
+			testEnvTimeoutSeconds:  "60",
 		}
 
 		s.createTempEnvFile(map[string]string{
-			"ENABLE_GO_PRE_COMMIT":            "true",
-			"GO_PRE_COMMIT_PARALLEL_WORKERS":  "1",
-			"GO_PRE_COMMIT_TIMEOUT_SECONDS":   "60",
-			"GO_PRE_COMMIT_ENABLE_WHITESPACE": "true",
-			"GO_PRE_COMMIT_ENABLE_EOF":        "true",
+			testEnvEnablePreCommit:  testEnvValueTrue,
+			testEnvParallelWorkers:  "1",
+			testEnvTimeoutSeconds:   "60",
+			testEnvEnableWhitespace: testEnvValueTrue,
+			testEnvEnableEOF:        testEnvValueTrue,
 		})
 
 		results := s.runInEnvironment(ciEnvVars, "limited-resources")

@@ -43,16 +43,16 @@ func TestFumptCheck_FilterFiles(t *testing.T) {
 	check := &FumptCheck{}
 
 	files := []string{
-		"main.go",
-		"test.go",
+		testFileMainGo,
+		testFileTestGo,
 		"doc.md",
-		"Makefile",
+		testFileMakefile,
 		"test.txt",
 		"pkg/foo.go",
 	}
 
 	filtered := check.FilterFiles(files)
-	expected := []string{"main.go", "test.go", "pkg/foo.go"}
+	expected := []string{testFileMainGo, testFileTestGo, "pkg/foo.go"}
 	assert.Equal(t, expected, filtered)
 }
 
@@ -84,7 +84,7 @@ func TestFumptCheck_Run_NoTool(t *testing.T) {
 
 	check := NewFumptCheck()
 
-	err = check.Run(ctx, []string{"test.go"})
+	err = check.Run(ctx, []string{testFileTestGo})
 	require.Error(t, err)
 	// When gofumpt is not installed, it should return a ToolNotFoundError
 	// The error message should indicate that gofumpt is not found
@@ -108,16 +108,16 @@ func TestLintCheck_FilterFiles(t *testing.T) {
 	check := &LintCheck{}
 
 	files := []string{
-		"main.go",
-		"test.go",
+		testFileMainGo,
+		testFileTestGo,
 		"doc.md",
-		"Makefile",
+		testFileMakefile,
 		"test.txt",
 		"pkg/foo.go",
 	}
 
 	filtered := check.FilterFiles(files)
-	expected := []string{"main.go", "test.go", "pkg/foo.go"}
+	expected := []string{testFileMainGo, testFileTestGo, "pkg/foo.go"}
 	assert.Equal(t, expected, filtered)
 }
 
@@ -138,7 +138,7 @@ func TestLintCheck_Run_NoTool(t *testing.T) {
 	check := NewLintCheck()
 	ctx := context.Background()
 
-	err = check.Run(ctx, []string{"test.go"})
+	err = check.Run(ctx, []string{testFileTestGo})
 	require.Error(t, err)
 	// Lint check will either fail to find repository root (if golangci-lint exists)
 	// or fail to find golangci-lint tool (in CI environments)
@@ -166,16 +166,16 @@ func TestModTidyCheck_FilterFiles(t *testing.T) {
 	check := &ModTidyCheck{}
 
 	files := []string{
-		"main.go",
-		"go.mod",
+		testFileMainGo,
+		fileGoMod,
 		"go.sum",
 		"doc.md",
-		"Makefile",
+		testFileMakefile,
 	}
 
 	// Only returns go.mod and go.sum
 	filtered := check.FilterFiles(files)
-	expected := []string{"go.mod", "go.sum"}
+	expected := []string{fileGoMod, "go.sum"}
 	assert.Equal(t, expected, filtered)
 }
 
@@ -196,7 +196,7 @@ func TestModTidyCheck_Run_NoGoMod(t *testing.T) {
 	check := NewModTidyCheck()
 	ctx := context.Background()
 
-	err = check.Run(ctx, []string{"test.go"})
+	err = check.Run(ctx, []string{testFileTestGo})
 	require.Error(t, err)
 	// ModTidy check will fail to find repository root first
 	assert.Contains(t, err.Error(), "failed to find repository root")
@@ -279,11 +279,11 @@ func main() {
 fmt.Println("hello")
 }
 `
-	err := os.WriteFile("main.go", []byte(goFile), 0o600)
+	err := os.WriteFile(testFileMainGo, []byte(goFile), 0o600)
 	s.Require().NoError(err)
 
 	check := NewFumptCheck()
-	err = check.Run(context.Background(), []string{"main.go"})
+	err = check.Run(context.Background(), []string{testFileMainGo})
 
 	// Should succeed when gofumpt is available
 	s.NoError(err)
@@ -297,10 +297,10 @@ func (s *FumptCheckTestSuite) TestRunWithTimeout() {
 	makefileContent := `fumpt:
 	@sleep 10
 `
-	err := os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+	err := os.WriteFile(testFileMakefile, []byte(makefileContent), 0o600)
 	s.Require().NoError(err)
 
-	err = check.Run(context.Background(), []string{"test.go"})
+	err = check.Run(context.Background(), []string{testFileTestGo})
 	s.Error(err)
 }
 
@@ -372,7 +372,7 @@ func (s *LintCheckTestSuite) TestRunDirectLint() {
 
 	// Create a basic Go module
 	goMod := testGoModContent
-	err := os.WriteFile("go.mod", []byte(goMod), 0o600)
+	err := os.WriteFile(fileGoMod, []byte(goMod), 0o600)
 	s.Require().NoError(err)
 
 	// Create a Go file
@@ -384,11 +384,11 @@ func main() {
 	fmt.Println("hello")
 }
 `
-	err = os.WriteFile("main.go", []byte(goFile), 0o600)
+	err = os.WriteFile(testFileMainGo, []byte(goFile), 0o600)
 	s.Require().NoError(err)
 
 	check := NewLintCheck()
-	err = check.Run(context.Background(), []string{"main.go"})
+	err = check.Run(context.Background(), []string{testFileMainGo})
 
 	// Should succeed when golangci-lint is available
 	s.NoError(err)
@@ -457,17 +457,17 @@ func (s *ModTidyCheckTestSuite) TestFilterFilesWithGoFiles() {
 	check := &ModTidyCheck{}
 
 	files := []string{
-		"main.go",
-		"go.mod",
+		testFileMainGo,
+		fileGoMod,
 		"go.sum",
 		"doc.md",
-		"Makefile",
+		testFileMakefile,
 		"internal/pkg.go",
 	}
 
 	// With go.mod/go.sum present, should return only those
 	filtered := check.FilterFiles(files)
-	expected := []string{"go.mod", "go.sum"}
+	expected := []string{fileGoMod, "go.sum"}
 	s.Equal(expected, filtered)
 }
 
@@ -475,15 +475,15 @@ func (s *ModTidyCheckTestSuite) TestFilterFilesOnlyGoFiles() {
 	check := &ModTidyCheck{}
 
 	files := []string{
-		"main.go",
+		testFileMainGo,
 		"doc.md",
-		"Makefile",
+		testFileMakefile,
 		"internal/pkg.go",
 	}
 
 	// With only .go files, should return the actual .go files to allow proper module detection
 	filtered := check.FilterFiles(files)
-	expected := []string{"main.go", "internal/pkg.go"}
+	expected := []string{testFileMainGo, "internal/pkg.go"}
 	s.Equal(expected, filtered)
 }
 
@@ -492,7 +492,7 @@ func (s *ModTidyCheckTestSuite) TestFilterFilesNoGoFiles() {
 
 	files := []string{
 		"doc.md",
-		"Makefile",
+		testFileMakefile,
 		"README.txt",
 	}
 
@@ -509,7 +509,7 @@ func (s *ModTidyCheckTestSuite) TestRunDirectModTidy() {
 
 	// Create a basic Go module
 	goMod := testGoModContent
-	err := os.WriteFile("go.mod", []byte(goMod), 0o600)
+	err := os.WriteFile(fileGoMod, []byte(goMod), 0o600)
 	s.Require().NoError(err)
 
 	// Create a Go file
@@ -521,7 +521,7 @@ func main() {
 	fmt.Println("hello")
 }
 `
-	err = os.WriteFile("main.go", []byte(goFile), 0o600)
+	err = os.WriteFile(testFileMainGo, []byte(goFile), 0o600)
 	s.Require().NoError(err)
 
 	// Add and commit the files to git
@@ -529,7 +529,7 @@ func main() {
 	s.Require().NoError(exec.CommandContext(context.Background(), "git", "commit", "-m", "Add initial files").Run())
 
 	check := NewModTidyCheck()
-	err = check.Run(context.Background(), []string{"go.mod"})
+	err = check.Run(context.Background(), []string{fileGoMod})
 
 	// Should succeed when go is available
 	s.NoError(err)
@@ -543,7 +543,7 @@ func (s *ModTidyCheckTestSuite) TestCheckUncommittedChanges() {
 
 	// Create a basic Go module
 	goMod := testGoModContent
-	err := os.WriteFile("go.mod", []byte(goMod), 0o600)
+	err := os.WriteFile(fileGoMod, []byte(goMod), 0o600)
 	s.Require().NoError(err)
 
 	// Create a Go file that uses an external dependency
@@ -559,7 +559,7 @@ func main() {
 	assert.True(nil, true)
 }
 `
-	err = os.WriteFile("main.go", []byte(goFile), 0o600)
+	err = os.WriteFile(testFileMainGo, []byte(goFile), 0o600)
 	s.Require().NoError(err)
 
 	// Add and commit the files
@@ -568,7 +568,7 @@ func main() {
 
 	// Now run mod tidy which should modify go.mod and go.sum
 	check := NewModTidyCheck()
-	err = check.Run(context.Background(), []string{"go.mod"})
+	err = check.Run(context.Background(), []string{fileGoMod})
 
 	// Should return error indicating uncommitted changes
 	s.Error(err)
@@ -601,7 +601,7 @@ func TestFumptCheckEdgeCases(t *testing.T) {
 
 	t.Run("non-go files", func(t *testing.T) {
 		check := NewFumptCheck()
-		files := []string{"README.md", "Makefile", "config.yml"}
+		files := []string{"README.md", testFileMakefile, "config.yml"}
 		filtered := check.FilterFiles(files)
 		assert.Empty(t, filtered)
 	})
@@ -611,7 +611,7 @@ func TestFumptCheckEdgeCases(t *testing.T) {
 		cancel() // Cancel immediately
 
 		check := NewFumptCheck()
-		err := check.Run(ctx, []string{"test.go"})
+		err := check.Run(ctx, []string{testFileTestGo})
 		assert.Error(t, err)
 	})
 }
@@ -645,7 +645,7 @@ func TestLintCheckEdgeCases(t *testing.T) {
 		cancel() // Cancel immediately
 
 		check := NewLintCheck()
-		err := check.Run(ctx, []string{"test.go"})
+		err := check.Run(ctx, []string{testFileTestGo})
 		assert.Error(t, err)
 	})
 }
@@ -679,7 +679,7 @@ func TestModTidyCheckEdgeCases(t *testing.T) {
 		cancel() // Cancel immediately
 
 		check := NewModTidyCheck()
-		err := check.Run(ctx, []string{"go.mod"})
+		err := check.Run(ctx, []string{fileGoMod})
 		assert.Error(t, err)
 	})
 }
@@ -730,7 +730,7 @@ func TestFumptCheckBuildErrorScenarios(t *testing.T) {
 
 			check := NewFumptCheck()
 
-			err = check.Run(ctx, []string{"test.go"})
+			err = check.Run(ctx, []string{testFileTestGo})
 			if tt.expectedError != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)
@@ -813,7 +813,7 @@ func TestFumptCheckDirectErrorScenarios(t *testing.T) {
 				}
 			}
 
-			files := []string{"test.go"}
+			files := []string{testFileTestGo}
 			if tt.name == "timeout in direct gofumpt" {
 				files = []string{"large.go"}
 			}
@@ -870,13 +870,13 @@ func main() {
 	fmt.Println("test")
 }
 `
-			err = os.WriteFile("test.go", []byte(goFile), 0o600)
+			err = os.WriteFile(testFileTestGo, []byte(goFile), 0o600)
 			require.NoError(t, err)
 
 			check := NewLintCheck()
 
 			// When direct tool execution fails, we should get an error
-			err = check.Run(ctx, []string{"test.go"})
+			err = check.Run(ctx, []string{testFileTestGo})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)
 		})
@@ -908,12 +908,12 @@ func TestLintCheckDirectErrorScenarios(t *testing.T) {
 
 				// Create valid go.mod for the test
 				goMod := testGoModContent
-				err = os.WriteFile("go.mod", []byte(goMod), 0o600)
+				err = os.WriteFile(fileGoMod, []byte(goMod), 0o600)
 				require.NoError(t, err)
 
 				// Create a simple go file
 				goFile := "package main\n\nfunc main() {}\n"
-				err = os.WriteFile("main.go", []byte(goFile), 0o600)
+				err = os.WriteFile(testFileMainGo, []byte(goFile), 0o600)
 				require.NoError(t, err)
 			},
 			expectedError: "config", // This may or may not trigger depending on golangci-lint version
@@ -952,7 +952,7 @@ func TestLintCheckDirectErrorScenarios(t *testing.T) {
 				check = NewLintCheck()
 			}
 
-			err = check.Run(ctx, []string{"main.go"})
+			err = check.Run(ctx, []string{testFileMainGo})
 			if tt.expectedError != "" {
 				require.Error(t, err)
 				// For config errors, the behavior may vary, so just check that an error occurred
@@ -999,7 +999,7 @@ func TestModTidyCheckBuildErrorScenarios(t *testing.T) {
 
 			// Create go.mod if specified
 			if tt.goModContent != "" {
-				err = os.WriteFile("go.mod", []byte(tt.goModContent), 0o600)
+				err = os.WriteFile(fileGoMod, []byte(tt.goModContent), 0o600)
 				require.NoError(t, err)
 			}
 
@@ -1016,7 +1016,7 @@ func TestModTidyCheckBuildErrorScenarios(t *testing.T) {
 				check = NewModTidyCheck()
 			}
 
-			err = check.Run(ctx, []string{"go.mod"})
+			err = check.Run(ctx, []string{fileGoMod})
 			if tt.expectedError != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)
@@ -1048,7 +1048,7 @@ func TestModTidyCheckDirectErrorScenarios(t *testing.T) {
 			setupFunc: func(t *testing.T, _ string) {
 				// Create go.mod that would require network access
 				goMod := "module test\n\ngo 1.21\n\nrequire github.com/some/nonexistent/module v1.0.0\n"
-				err := os.WriteFile("go.mod", []byte(goMod), 0o600)
+				err := os.WriteFile(fileGoMod, []byte(goMod), 0o600)
 				require.NoError(t, err)
 			},
 			expectedError: "command 'go mod tidy", // Actual error format from NewToolExecutionError
@@ -1081,7 +1081,7 @@ func TestModTidyCheckDirectErrorScenarios(t *testing.T) {
 				check = NewModTidyCheck()
 			}
 
-			err = check.Run(ctx, []string{"go.mod"})
+			err = check.Run(ctx, []string{fileGoMod})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)
 		})
@@ -1113,7 +1113,7 @@ echo "go mod tidy completed"
 
 				// Create basic go.mod
 				goMod := "module test\n\ngo 1.20\n" // Older Go version
-				err = os.WriteFile("go.mod", []byte(goMod), 0o600)
+				err = os.WriteFile(fileGoMod, []byte(goMod), 0o600)
 				require.NoError(t, err)
 			},
 			expectedError: "not supported", // Should fall back to old method
@@ -1143,7 +1143,7 @@ echo "go mod tidy completed"
 
 			// We need to test checkModTidyDiff directly, but it's not exported
 			// So we test it through the public interface that calls it
-			err = check.Run(ctx, []string{"go.mod"})
+			err = check.Run(ctx, []string{fileGoMod})
 
 			if tt.shouldPass {
 				assert.NoError(t, err)
@@ -1316,7 +1316,7 @@ func TestRepositoryRootFailures(t *testing.T) {
 			switch tt.checkType {
 			case "fumpt":
 				check := NewFumptCheck()
-				err = check.Run(ctx, []string{"test.go"})
+				err = check.Run(ctx, []string{testFileTestGo})
 				require.Error(t, err)
 				// In environments where gofumpt is not available, we get "gofumpt not found"
 				// In environments where gofumpt is available, we get "repository root" error
@@ -1327,7 +1327,7 @@ func TestRepositoryRootFailures(t *testing.T) {
 					"Expected error to contain either 'repository root' or 'gofumpt not found', got: %s", errMsg)
 			case "lint":
 				check := NewLintCheck()
-				err = check.Run(ctx, []string{"test.go"})
+				err = check.Run(ctx, []string{testFileTestGo})
 				require.Error(t, err)
 				// In environments where golangci-lint is not available, we get "golangci-lint not found"
 				// In environments where golangci-lint is available, we get "repository root" error
@@ -1338,7 +1338,7 @@ func TestRepositoryRootFailures(t *testing.T) {
 					"Expected error to contain either 'repository root' or 'golangci-lint not found', got: %s", errMsg)
 			case "mod-tidy":
 				check := NewModTidyCheck()
-				err = check.Run(ctx, []string{"go.mod"})
+				err = check.Run(ctx, []string{fileGoMod})
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), "repository root")
 			}
@@ -1379,11 +1379,11 @@ func TestLintCheckWithColoredOutput(t *testing.T) {
 	@echo -e "More output that should be filtered"
 	@exit 1
 `
-	err = os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+	err = os.WriteFile(testFileMakefile, []byte(makefileContent), 0o600)
 	require.NoError(t, err)
 
 	check := NewLintCheck()
-	err = check.Run(ctx, []string{"test.go"})
+	err = check.Run(ctx, []string{testFileTestGo})
 
 	// Should error but with formatted output
 	require.Error(t, err)
@@ -1419,44 +1419,44 @@ func TestCheckUncommittedChanges(t *testing.T) {
 	t.Run("mod-tidy with clean repository", func(t *testing.T) {
 		// Create and commit go.mod - test normal successful case
 		goMod := testGoModContent
-		err := os.WriteFile("go.mod", []byte(goMod), 0o600)
+		err := os.WriteFile(fileGoMod, []byte(goMod), 0o600)
 		require.NoError(t, err)
 
-		require.NoError(t, exec.CommandContext(ctx, "git", "add", "go.mod").Run())
+		require.NoError(t, exec.CommandContext(ctx, "git", "add", fileGoMod).Run())
 		require.NoError(t, exec.CommandContext(ctx, "git", "commit", "-m", "Add go.mod").Run())
 
 		// Create simple Makefile that doesn't modify files
 		makefileContent := `mod-tidy:
 	@echo "Running go mod tidy..."
 	@echo "No changes needed"`
-		err = os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+		err = os.WriteFile(testFileMakefile, []byte(makefileContent), 0o600)
 		require.NoError(t, err)
 
 		check := NewModTidyCheck()
-		err = check.Run(ctx, []string{"go.mod"})
+		err = check.Run(ctx, []string{fileGoMod})
 		assert.NoError(t, err)
 	})
 
 	t.Run("mod-tidy detects uncommitted changes", func(t *testing.T) {
 		t.Skip("TODO: Fix this test - complex interaction with go mod tidy -diff")
 		// Reset if needed
-		if _, err := os.Stat("go.mod"); err == nil {
+		if _, err := os.Stat(fileGoMod); err == nil {
 			require.NoError(t, exec.CommandContext(ctx, "git", "reset", "--hard", "HEAD").Run())
 		}
 
 		// Create simple go.mod
 		goMod := testGoModContent
-		err := os.WriteFile("go.mod", []byte(goMod), 0o600)
+		err := os.WriteFile(fileGoMod, []byte(goMod), 0o600)
 		require.NoError(t, err)
 
-		require.NoError(t, exec.CommandContext(ctx, "git", "add", "go.mod").Run())
+		require.NoError(t, exec.CommandContext(ctx, "git", "add", fileGoMod).Run())
 		require.NoError(t, exec.CommandContext(ctx, "git", "commit", "-m", "Add go.mod").Run())
 
 		// Create Makefile that modifies go.mod (simulates go mod tidy adding dependencies)
 		makefileContent := `mod-tidy:
 	@echo "Running go mod tidy..."
 	@printf 'module test\n\ngo 1.21\n\nrequire github.com/example/fake v1.0.0\n' > go.mod`
-		err = os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+		err = os.WriteFile(testFileMakefile, []byte(makefileContent), 0o600)
 		require.NoError(t, err)
 
 		// Check if make target exists
@@ -1485,16 +1485,16 @@ func TestCheckUncommittedChanges(t *testing.T) {
 
 		// Now manually create a change to go.mod to simulate what the make target would do
 		modifiedGoMod := "module test\n\ngo 1.21\n\nrequire github.com/example/fake v1.0.0\n"
-		err = os.WriteFile("go.mod", []byte(modifiedGoMod), 0o600)
+		err = os.WriteFile(fileGoMod, []byte(modifiedGoMod), 0o600)
 		require.NoError(t, err)
 
 		// Now run the ModTidyCheck - it should detect the changes
-		err = check.Run(ctx, []string{"go.mod"})
+		err = check.Run(ctx, []string{fileGoMod})
 		if err != nil {
 			t.Logf("Got error: %v", err)
 		} else {
 			// Check git status manually to debug
-			statusCmd := exec.CommandContext(ctx, "git", "status", "--porcelain", "go.mod", "go.sum")
+			statusCmd := exec.CommandContext(ctx, "git", "status", "--porcelain", fileGoMod, "go.sum")
 			var statusOutput bytes.Buffer
 			statusCmd.Stdout = &statusOutput
 			statusCmd.Stderr = &statusOutput
@@ -1502,7 +1502,7 @@ func TestCheckUncommittedChanges(t *testing.T) {
 				t.Logf("Git status output: '%s'", statusOutput.String())
 			}
 			// Also check current content of go.mod
-			if content, readErr := os.ReadFile("go.mod"); readErr == nil {
+			if content, readErr := os.ReadFile(fileGoMod); readErr == nil {
 				t.Logf("Current go.mod content: '%s'", string(content))
 			}
 		}
@@ -1536,12 +1536,12 @@ lint:
 
 mod-tidy:
 	@echo "mod-tidy success"`
-	err = os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+	err = os.WriteFile(testFileMakefile, []byte(makefileContent), 0o600)
 	require.NoError(t, err)
 
 	// Create go.mod for mod-tidy
 	goMod := testGoModContent
-	err = os.WriteFile("go.mod", []byte(goMod), 0o600)
+	err = os.WriteFile(fileGoMod, []byte(goMod), 0o600)
 	require.NoError(t, err)
 
 	// Run all checks concurrently
@@ -1554,7 +1554,7 @@ mod-tidy:
 	go func() {
 		defer wg.Done()
 		check := NewFumptCheck()
-		err := check.Run(ctx, []string{"test.go"})
+		err := check.Run(ctx, []string{testFileTestGo})
 		errors <- err
 	}()
 
@@ -1562,7 +1562,7 @@ mod-tidy:
 	go func() {
 		defer wg.Done()
 		check := NewLintCheck()
-		err := check.Run(ctx, []string{"test.go"})
+		err := check.Run(ctx, []string{testFileTestGo})
 		errors <- err
 	}()
 
@@ -1570,7 +1570,7 @@ mod-tidy:
 	go func() {
 		defer wg.Done()
 		check := NewModTidyCheck()
-		err := check.Run(ctx, []string{"go.mod"})
+		err := check.Run(ctx, []string{fileGoMod})
 		errors <- err
 	}()
 
@@ -1616,14 +1616,14 @@ func TestCheckUncommittedChangesErrorPaths(t *testing.T) {
 	t.Run("uncommitted changes detected", func(t *testing.T) {
 		// Create and commit go.mod
 		goMod := testGoModContent
-		err := os.WriteFile("go.mod", []byte(goMod), 0o600)
+		err := os.WriteFile(fileGoMod, []byte(goMod), 0o600)
 		require.NoError(t, err)
-		require.NoError(t, exec.CommandContext(ctx, "git", "add", "go.mod").Run())
+		require.NoError(t, exec.CommandContext(ctx, "git", "add", fileGoMod).Run())
 		require.NoError(t, exec.CommandContext(ctx, "git", "commit", "-m", "Add go.mod").Run())
 
 		// Modify go.mod to simulate mod tidy changes
 		modifiedGoMod := "module test\n\ngo 1.21\n\nrequire github.com/example/test v1.0.0\n"
-		err = os.WriteFile("go.mod", []byte(modifiedGoMod), 0o600)
+		err = os.WriteFile(fileGoMod, []byte(modifiedGoMod), 0o600)
 		require.NoError(t, err)
 
 		// Create a ModTidy check and try to trigger checkUncommittedChanges
@@ -1634,11 +1634,11 @@ func TestCheckUncommittedChangesErrorPaths(t *testing.T) {
 		// but we can trigger it through a make target that doesn't modify files
 		makefileContent := `mod-tidy:
 	@echo "Simulated mod tidy - no actual changes"`
-		err = os.WriteFile("Makefile", []byte(makefileContent), 0o600)
+		err = os.WriteFile(testFileMakefile, []byte(makefileContent), 0o600)
 		require.NoError(t, err)
 
 		// This should detect the uncommitted changes we created
-		err = check.Run(ctx, []string{"go.mod"})
+		err = check.Run(ctx, []string{fileGoMod})
 		if err != nil {
 			t.Logf("Got expected error: %v", err)
 			// The error might be about uncommitted changes or something else
@@ -1674,7 +1674,7 @@ func TestSpecificErrorPaths(t *testing.T) {
 		cancel()
 
 		check := NewFumptCheck()
-		err = check.Run(canceledCtx, []string{"test.go"})
+		err = check.Run(canceledCtx, []string{testFileTestGo})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "context")
 	})
@@ -1704,7 +1704,7 @@ func TestSpecificErrorPaths(t *testing.T) {
 		cancel()
 
 		check := NewLintCheck()
-		err = check.Run(canceledCtx, []string{"test.go"})
+		err = check.Run(canceledCtx, []string{testFileTestGo})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "context")
 	})
@@ -1729,7 +1729,7 @@ func TestSpecificErrorPaths(t *testing.T) {
 		cancel()
 
 		check := NewModTidyCheck()
-		err = check.Run(canceledCtx, []string{"go.mod"})
+		err = check.Run(canceledCtx, []string{fileGoMod})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "context")
 	})
@@ -1753,7 +1753,7 @@ func TestModTidyCheckErrorAggregation(t *testing.T) {
 
 	// Create root module
 	rootGoMod := "module root\n\ngo 1.21\n"
-	err = os.WriteFile("go.mod", []byte(rootGoMod), 0o600)
+	err = os.WriteFile(fileGoMod, []byte(rootGoMod), 0o600)
 	require.NoError(t, err)
 
 	// Create submodule with untidy dependencies (simulating the sqlite3 issue)
@@ -1800,7 +1800,7 @@ func Test() {
 	// Create check and run on multiple modules, expecting error with detailed output
 	check := NewModTidyCheck()
 	files := []string{
-		"go.mod",
+		fileGoMod,
 		"examples/test/go.mod",
 	}
 
@@ -1843,7 +1843,7 @@ func TestModTidyCheckMultiModule(t *testing.T) {
 	// Create a multi-module repository structure
 	// Root module
 	rootGoMod := "module root\n\ngo 1.21\n"
-	err = os.WriteFile("go.mod", []byte(rootGoMod), 0o600)
+	err = os.WriteFile(fileGoMod, []byte(rootGoMod), 0o600)
 	require.NoError(t, err)
 
 	// Sub-module 1
@@ -1875,14 +1875,14 @@ func TestModTidyCheckMultiModule(t *testing.T) {
 
 	t.Run("single module", func(t *testing.T) {
 		// Test running mod-tidy on just one module
-		err := check.Run(ctx, []string{"go.mod"})
+		err := check.Run(ctx, []string{fileGoMod})
 		assert.NoError(t, err)
 	})
 
 	t.Run("multiple modules", func(t *testing.T) {
 		// Test running mod-tidy on files from multiple modules
 		files := []string{
-			"go.mod",
+			fileGoMod,
 			"module1/go.mod",
 			"module2/go.mod",
 		}
@@ -1899,7 +1899,7 @@ func TestModTidyCheckMultiModule(t *testing.T) {
 	t.Run("mixed files from different modules", func(t *testing.T) {
 		// Test with go.sum files and go.mod files from different modules
 		files := []string{
-			"go.mod",
+			fileGoMod,
 			"module1/go.mod",
 			"module2/go.mod",
 			"nested/submodule/go.mod",

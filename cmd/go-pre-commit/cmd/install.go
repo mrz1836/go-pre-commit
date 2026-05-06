@@ -59,7 +59,7 @@ This command will:
 
 	// Add flags
 	cmd.Flags().BoolP("force", "f", false, "Force installation, overwriting existing hooks")
-	cmd.Flags().StringSlice("hook-type", []string{"pre-commit"}, "Hook types to install")
+	cmd.Flags().StringSlice("hook-type", []string{hookTypePreCommit}, "Hook types to install")
 
 	return cmd
 }

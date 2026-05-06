@@ -100,7 +100,7 @@ func TestGetBoolEnv(t *testing.T) {
 		defaultValue bool
 		expected     bool
 	}{
-		{"true value", "true", false, true},
+		{"true value", envValueTrue, false, true},
 		{"false value", "false", true, false},
 		{"empty value", "", true, true},
 		{"invalid value", "invalid", false, false},
@@ -147,8 +147,8 @@ func TestGetStringEnv(t *testing.T) {
 		defaultValue string
 		expected     string
 	}{
-		{"value set", "test", "default", "test"},
-		{"empty value", "", "default", "default"},
+		{"value set", "test", defaultStrValue, "test"},
+		{"empty value", "", defaultStrValue, defaultStrValue},
 	}
 
 	for _, tt := range tests {
@@ -564,7 +564,7 @@ func (s *ConfigTestSuite) TestLoadModularModeSkipsLocalInCI() {
 		"99-local.env": "GO_PRE_COMMIT_LOG_LEVEL=debug\n",
 	})
 
-	s.Require().NoError(os.Setenv("CI", "true"))
+	s.Require().NoError(os.Setenv("CI", envValueTrue))
 
 	cfg, err := Load()
 	s.Require().NoError(err)
@@ -657,11 +657,11 @@ func TestGetStringEnvEdgeCases(t *testing.T) {
 		defaultValue string
 		expected     string
 	}{
-		{"whitespace value", "  spaces  ", "default", "  spaces  "},
-		{"special characters", "!@#$%^&*()", "default", "!@#$%^&*()"},
-		{"unicode", "テスト", "default", "テスト"},
-		{"newlines", "line1\nline2", "default", "line1\nline2"},
-		{"empty string", "", "default", "default"},
+		{"whitespace value", "  spaces  ", defaultStrValue, "  spaces  "},
+		{"special characters", "!@#$%^&*()", defaultStrValue, "!@#$%^&*()"},
+		{"unicode", "テスト", defaultStrValue, "テスト"},
+		{"newlines", "line1\nline2", defaultStrValue, "line1\nline2"},
+		{"empty string", "", defaultStrValue, defaultStrValue},
 	}
 
 	for _, tt := range tests {

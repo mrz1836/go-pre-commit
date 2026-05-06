@@ -36,11 +36,11 @@ func (s *InstallerTestSuite) SetupTest() {
 	// Reset tools to default state
 	toolsMu.Lock()
 	tools = map[string]*Tool{
-		"golangci-lint": {
-			Name:       "golangci-lint",
+		toolGolangciLint: {
+			Name:       toolGolangciLint,
 			ImportPath: "github.com/golangci/golangci-lint/cmd/golangci-lint",
 			Version:    "",
-			Binary:     "golangci-lint",
+			Binary:     toolGolangciLint,
 		},
 		"gofumpt": {
 			Name:       "gofumpt",
@@ -51,7 +51,7 @@ func (s *InstallerTestSuite) SetupTest() {
 		"goimports": {
 			Name:       "goimports",
 			ImportPath: "golang.org/x/tools/cmd/goimports",
-			Version:    "latest",
+			Version:    toolVersionLatest,
 			Binary:     "goimports",
 		},
 	}
@@ -82,7 +82,7 @@ func (s *InstallerTestSuite) TestLoadVersionsFromEnv() {
 	LoadVersionsFromEnv()
 
 	toolsMu.RLock()
-	s.Equal("v1.50.0", tools["golangci-lint"].Version)
+	s.Equal("v1.50.0", tools[toolGolangciLint].Version)
 	s.Equal("v0.4.0", tools["gofumpt"].Version)
 	s.Equal("v0.1.0", tools["goimports"].Version)
 	toolsMu.RUnlock()
@@ -93,7 +93,7 @@ func (s *InstallerTestSuite) TestLoadVersionsDefaults() {
 	LoadVersionsFromEnv()
 
 	toolsMu.RLock()
-	s.Equal("v2.4.0", tools["golangci-lint"].Version)
+	s.Equal("v2.4.0", tools[toolGolangciLint].Version)
 	s.Equal("v0.8.0", tools["gofumpt"].Version)
 	s.Equal("latest", tools["goimports"].Version)
 	toolsMu.RUnlock()
@@ -255,10 +255,10 @@ func (s *InstallerTestSuite) TestInstallGolangciLintSpecialHandling() {
 	defer cancel()
 
 	tool := &Tool{
-		Name:       "golangci-lint",
+		Name:       toolGolangciLint,
 		ImportPath: "github.com/golangci/golangci-lint/cmd/golangci-lint",
 		Version:    "v1.50.0",
-		Binary:     "golangci-lint",
+		Binary:     toolGolangciLint,
 	}
 
 	// Clear PATH to force installation failure
@@ -297,7 +297,7 @@ func (s *InstallerTestSuite) TestToolVersionParsing() {
 	tool := &Tool{
 		Name:       "test-tool",
 		ImportPath: "example.com/test-tool",
-		Version:    "latest",
+		Version:    toolVersionLatest,
 		Binary:     "test-tool",
 	}
 

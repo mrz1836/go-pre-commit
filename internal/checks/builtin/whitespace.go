@@ -72,7 +72,7 @@ func (c *WhitespaceCheck) Metadata() interface{} {
 	return CheckMetadata{
 		Name:              "whitespace",
 		Description:       "Remove trailing whitespace from text files",
-		FilePatterns:      []string{"*.go", "*.md", "*.txt", "*.yml", "*.yaml", "*.json", "Makefile"},
+		FilePatterns:      []string{"*.go", "*.md", "*.txt", "*.yml", "*.yaml", "*.json", filePatternMakefile},
 		EstimatedDuration: 1 * time.Second,
 		Dependencies:      []string{}, // No external dependencies
 		DefaultTimeout:    c.timeout,
@@ -302,21 +302,21 @@ func isTextFile(filename string) bool {
 	// Check for files without extensions that are commonly text
 	base := filepath.Base(filename)
 	textFiles := map[string]bool{
-		"Makefile":      true,
-		"Dockerfile":    true,
-		"Jenkinsfile":   true,
-		"Vagrantfile":   true,
-		".gitignore":    true,
-		".dockerignore": true,
-		".editorconfig": true,
-		"LICENSE":       true,
-		"README":        true,
-		"CHANGELOG":     true,
-		"AUTHORS":       true,
-		"CONTRIBUTORS":  true,
-		"MAINTAINERS":   true,
-		"TODO":          true,
-		"NOTES":         true,
+		filePatternMakefile: true,
+		"Dockerfile":        true,
+		"Jenkinsfile":       true,
+		"Vagrantfile":       true,
+		".gitignore":        true,
+		".dockerignore":     true,
+		".editorconfig":     true,
+		"LICENSE":           true,
+		"README":            true,
+		"CHANGELOG":         true,
+		"AUTHORS":           true,
+		"CONTRIBUTORS":      true,
+		"MAINTAINERS":       true,
+		"TODO":              true,
+		"NOTES":             true,
 	}
 
 	return textFiles[base]

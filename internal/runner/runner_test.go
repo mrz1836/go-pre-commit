@@ -74,7 +74,7 @@ func TestRunner_Run_BasicFlow(t *testing.T) {
 
 	opts := Options{
 		Files:      []string{testFile},
-		OnlyChecks: []string{"whitespace", "eof"},
+		OnlyChecks: []string{checkNameWhitespace, checkNameEOF},
 	}
 
 	results, err := r.Run(context.Background(), opts)
@@ -100,7 +100,7 @@ func TestRunner_Run_OnlyChecks(t *testing.T) {
 
 	opts := Options{
 		Files:      []string{"test.go"},
-		OnlyChecks: []string{"whitespace"}, // Only run whitespace
+		OnlyChecks: []string{checkNameWhitespace}, // Only run whitespace
 	}
 
 	results, err := r.Run(context.Background(), opts)
@@ -109,7 +109,7 @@ func TestRunner_Run_OnlyChecks(t *testing.T) {
 
 	// Should only have 1 check result
 	assert.Len(t, results.CheckResults, 1)
-	assert.Equal(t, "whitespace", results.CheckResults[0].Name)
+	assert.Equal(t, checkNameWhitespace, results.CheckResults[0].Name)
 }
 
 func TestRunner_Run_SkipChecks(t *testing.T) {
@@ -128,7 +128,7 @@ func TestRunner_Run_SkipChecks(t *testing.T) {
 
 	opts := Options{
 		Files:      []string{"test.go"},
-		SkipChecks: []string{"whitespace"}, // Skip whitespace
+		SkipChecks: []string{checkNameWhitespace}, // Skip whitespace
 	}
 
 	results, err := r.Run(context.Background(), opts)
@@ -137,15 +137,15 @@ func TestRunner_Run_SkipChecks(t *testing.T) {
 
 	// Should not have whitespace check in results
 	for _, result := range results.CheckResults {
-		assert.NotEqual(t, "whitespace", result.Name)
+		assert.NotEqual(t, checkNameWhitespace, result.Name)
 	}
 }
 
 func TestOptions(t *testing.T) {
 	opts := Options{
 		Files:      []string{"a.go", "b.go"},
-		OnlyChecks: []string{"lint"},
-		SkipChecks: []string{"fumpt"},
+		OnlyChecks: []string{checkNameLint},
+		SkipChecks: []string{checkNameFumpt},
 		Parallel:   4,
 		FailFast:   true,
 	}
@@ -479,7 +479,7 @@ func (s *RunnerTestSuite) TestDetermineChecks() {
 		},
 		{
 			name:        "only specific checks",
-			onlyChecks:  []string{"whitespace"},
+			onlyChecks:  []string{checkNameWhitespace},
 			skipChecks:  nil,
 			expectedMin: 1,
 			expectedMax: 1,
@@ -487,14 +487,14 @@ func (s *RunnerTestSuite) TestDetermineChecks() {
 		{
 			name:        "skip specific checks",
 			onlyChecks:  nil,
-			skipChecks:  []string{"fumpt"},
+			skipChecks:  []string{checkNameFumpt},
 			expectedMin: 1,
 			expectedMax: 10,
 		},
 		{
 			name:        "skip all enabled checks",
 			onlyChecks:  nil,
-			skipChecks:  []string{"whitespace", "eof", "fumpt"},
+			skipChecks:  []string{checkNameWhitespace, checkNameEOF, checkNameFumpt},
 			expectedMin: 0,
 			expectedMax: 0,
 		},
@@ -776,7 +776,7 @@ func TestMatchesExcludePattern(t *testing.T) {
 		{
 			name:     "directory pattern matches file in directory",
 			filePath: "vendor/pkg/file.go",
-			pattern:  "vendor/",
+			pattern:  testPatternVendor,
 			expected: true,
 		},
 		{
@@ -787,20 +787,20 @@ func TestMatchesExcludePattern(t *testing.T) {
 		},
 		{
 			name:     "directory pattern does not match unrelated path",
-			filePath: "src/main.go",
-			pattern:  "vendor/",
+			filePath: testFileSrcMainGo,
+			pattern:  testPatternVendor,
 			expected: false,
 		},
 		{
 			name:     "directory pattern matches when path starts with pattern",
 			filePath: "vendor/github.com/pkg/errors/errors.go",
-			pattern:  "vendor/",
+			pattern:  testPatternVendor,
 			expected: true,
 		},
 		{
 			name:     "directory pattern matches embedded directory",
 			filePath: "some/path/vendor/pkg/file.go",
-			pattern:  "vendor/",
+			pattern:  testPatternVendor,
 			expected: true,
 		},
 		// Exact/substring patterns (not ending with /)
@@ -812,7 +812,7 @@ func TestMatchesExcludePattern(t *testing.T) {
 		},
 		{
 			name:     "substring pattern does not match",
-			filePath: "src/main.go",
+			filePath: testFileSrcMainGo,
 			pattern:  "testdata",
 			expected: false,
 		},
@@ -825,7 +825,7 @@ func TestMatchesExcludePattern(t *testing.T) {
 		// Edge cases
 		{
 			name:     "empty pattern matches nothing",
-			filePath: "src/main.go",
+			filePath: testFileSrcMainGo,
 			pattern:  "",
 			expected: false,
 		},
@@ -862,7 +862,7 @@ func TestApplyExcludePatterns(t *testing.T) {
 
 		r := New(cfg, "/test")
 
-		files := []string{"src/main.go", "vendor/pkg/file.go", "test.go"}
+		files := []string{testFileSrcMainGo, "vendor/pkg/file.go", "test.go"}
 		result := r.applyExcludePatterns(files)
 
 		assert.Equal(t, files, result, "should return all files when no patterns configured")
@@ -876,7 +876,7 @@ func TestApplyExcludePatterns(t *testing.T) {
 
 		r := New(cfg, "/test")
 
-		files := []string{"src/main.go", "vendor/pkg/file.go"}
+		files := []string{testFileSrcMainGo, "vendor/pkg/file.go"}
 		result := r.applyExcludePatterns(files)
 
 		assert.Equal(t, files, result, "should return all files with empty patterns slice")
@@ -886,19 +886,19 @@ func TestApplyExcludePatterns(t *testing.T) {
 		cfg := &config.Config{
 			Enabled: true,
 		}
-		cfg.Git.ExcludePatterns = []string{"vendor/"}
+		cfg.Git.ExcludePatterns = []string{testPatternVendor}
 
 		r := New(cfg, "/test")
 
 		files := []string{
-			"src/main.go",
+			testFileSrcMainGo,
 			"vendor/pkg/file.go",
 			"vendor/other/lib.go",
 			"test/test.go",
 		}
 		result := r.applyExcludePatterns(files)
 
-		expected := []string{"src/main.go", "test/test.go"}
+		expected := []string{testFileSrcMainGo, "test/test.go"}
 		assert.Equal(t, expected, result)
 	})
 
@@ -906,12 +906,12 @@ func TestApplyExcludePatterns(t *testing.T) {
 		cfg := &config.Config{
 			Enabled: true,
 		}
-		cfg.Git.ExcludePatterns = []string{"vendor/", "node_modules/", ".git/"}
+		cfg.Git.ExcludePatterns = []string{testPatternVendor, "node_modules/", ".git/"}
 
 		r := New(cfg, "/test")
 
 		files := []string{
-			"src/main.go",
+			testFileSrcMainGo,
 			"vendor/pkg/file.go",
 			"node_modules/pkg/index.js",
 			".git/config",
@@ -919,7 +919,7 @@ func TestApplyExcludePatterns(t *testing.T) {
 		}
 		result := r.applyExcludePatterns(files)
 
-		expected := []string{"src/main.go", "test/test.go"}
+		expected := []string{testFileSrcMainGo, "test/test.go"}
 		assert.Equal(t, expected, result)
 	})
 
@@ -928,7 +928,7 @@ func TestApplyExcludePatterns(t *testing.T) {
 			Enabled: true,
 		}
 		cfg.Git.ExcludePatterns = []string{
-			"vendor/",
+			testPatternVendor,
 			"node_modules/",
 			".git/",
 			".github/ci-tester/fixtures/",
@@ -937,7 +937,7 @@ func TestApplyExcludePatterns(t *testing.T) {
 		r := New(cfg, "/test")
 
 		files := []string{
-			"src/main.go",
+			testFileSrcMainGo,
 			".github/ci-tester/fixtures/lint-fail/main.go",
 			".github/ci-tester/fixtures/test-fail/main.go",
 			".github/workflows/ci.yml",
@@ -945,7 +945,7 @@ func TestApplyExcludePatterns(t *testing.T) {
 		}
 		result := r.applyExcludePatterns(files)
 
-		expected := []string{"src/main.go", ".github/workflows/ci.yml", "test/test.go"}
+		expected := []string{testFileSrcMainGo, ".github/workflows/ci.yml", "test/test.go"}
 		assert.Equal(t, expected, result)
 	})
 
@@ -953,7 +953,7 @@ func TestApplyExcludePatterns(t *testing.T) {
 		cfg := &config.Config{
 			Enabled: true,
 		}
-		cfg.Git.ExcludePatterns = []string{"vendor/"}
+		cfg.Git.ExcludePatterns = []string{testPatternVendor}
 
 		r := New(cfg, "/test")
 
@@ -970,12 +970,12 @@ func TestApplyExcludePatterns(t *testing.T) {
 		cfg := &config.Config{
 			Enabled: true,
 		}
-		cfg.Git.ExcludePatterns = []string{"vendor/", "node_modules/"}
+		cfg.Git.ExcludePatterns = []string{testPatternVendor, "node_modules/"}
 
 		r := New(cfg, "/test")
 
 		files := []string{
-			"src/main.go",
+			testFileSrcMainGo,
 			"pkg/lib.go",
 			"test/test.go",
 		}
@@ -988,7 +988,7 @@ func TestApplyExcludePatterns(t *testing.T) {
 		cfg := &config.Config{
 			Enabled: true,
 		}
-		cfg.Git.ExcludePatterns = []string{"vendor/"}
+		cfg.Git.ExcludePatterns = []string{testPatternVendor}
 
 		r := New(cfg, "/test")
 

@@ -33,13 +33,13 @@ func (s *ConfigValidationTestSuite) SetupSuite() {
 	// Store original environment variables that might affect tests
 	s.originalEnv = make(map[string]string)
 	envVarsToSave := []string{
-		"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+		testEnvEnablePreCommit, testEnvLogLevel,
 		"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
-		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
-		"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", testEnvEnableWhitespace,
+		testEnvEnableEOF, testEnvTimeoutSeconds,
 		"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
 		"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
-		"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+		testEnvParallelWorkers, "GO_PRE_COMMIT_FAIL_FAST",
 		"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
 		"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
 		"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
@@ -133,13 +133,13 @@ func (s *ConfigValidationTestSuite) findGitRoot() (string, error) {
 func (s *ConfigValidationTestSuite) TearDownTest() {
 	// Clean up any environment variables set during the test
 	envVarsToClean := []string{
-		"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+		testEnvEnablePreCommit, testEnvLogLevel,
 		"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
-		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
-		"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", testEnvEnableWhitespace,
+		testEnvEnableEOF, testEnvTimeoutSeconds,
 		"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
 		"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
-		"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+		testEnvParallelWorkers, "GO_PRE_COMMIT_FAIL_FAST",
 		"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
 		"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
 		"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
@@ -229,13 +229,13 @@ VALID_KEY=valid_value
 		s.Run(tc.name, func() {
 			// Clean environment variables before each subtest
 			envVarsToClean := []string{
-				"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+				testEnvEnablePreCommit, testEnvLogLevel,
 				"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
-				"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
-				"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+				"GO_PRE_COMMIT_ENABLE_MOD_TIDY", testEnvEnableWhitespace,
+				testEnvEnableEOF, testEnvTimeoutSeconds,
 				"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
 				"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
-				"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+				testEnvParallelWorkers, "GO_PRE_COMMIT_FAIL_FAST",
 				"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
 				"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
 				"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
@@ -297,9 +297,9 @@ GO_PRE_COMMIT_ENABLE_LINT=false
 		{
 			name: "Environment Variables Override File",
 			envOverrides: map[string]string{
-				"GO_PRE_COMMIT_LOG_LEVEL":        "debug",
-				"GO_PRE_COMMIT_PARALLEL_WORKERS": "4",
-				"GO_PRE_COMMIT_ENABLE_FUMPT":     "false",
+				testEnvLogLevel:              "debug",
+				testEnvParallelWorkers:       "4",
+				"GO_PRE_COMMIT_ENABLE_FUMPT": "false",
 			},
 			expectedLog:     "debug",
 			expectedWorkers: 4,
@@ -309,7 +309,7 @@ GO_PRE_COMMIT_ENABLE_LINT=false
 		{
 			name: "Partial Override",
 			envOverrides: map[string]string{
-				"GO_PRE_COMMIT_LOG_LEVEL": "warn",
+				testEnvLogLevel: "warn",
 			},
 			expectedLog:     "warn",
 			expectedWorkers: 2,    // From file
@@ -354,13 +354,13 @@ GO_PRE_COMMIT_ENABLE_LINT=false
 func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 	// Clean environment variables to ensure defaults are tested
 	envVarsToClean := []string{
-		"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+		testEnvEnablePreCommit, testEnvLogLevel,
 		"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
-		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
-		"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", testEnvEnableWhitespace,
+		testEnvEnableEOF, testEnvTimeoutSeconds,
 		"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
 		"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
-		"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+		testEnvParallelWorkers, "GO_PRE_COMMIT_FAIL_FAST",
 		"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
 		"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
 		"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
@@ -552,13 +552,13 @@ GO_PRE_COMMIT_PARALLEL_WORKERS=-1
 		s.Run(tc.name, func() {
 			// Clean environment variables before each subtest
 			envVarsToClean := []string{
-				"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+				testEnvEnablePreCommit, testEnvLogLevel,
 				"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
-				"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
-				"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+				"GO_PRE_COMMIT_ENABLE_MOD_TIDY", testEnvEnableWhitespace,
+				testEnvEnableEOF, testEnvTimeoutSeconds,
 				"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
 				"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
-				"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+				testEnvParallelWorkers, "GO_PRE_COMMIT_FAIL_FAST",
 				"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
 				"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
 				"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
@@ -662,13 +662,13 @@ GO_PRE_COMMIT_LINT_TIMEOUT=90
 func (s *ConfigValidationTestSuite) TestConfigurationDirectoryDetection() {
 	// Clean environment variables to ensure test isolation
 	envVarsToClean := []string{
-		"ENABLE_GO_PRE_COMMIT", "GO_PRE_COMMIT_LOG_LEVEL",
+		testEnvEnablePreCommit, testEnvLogLevel,
 		"GO_PRE_COMMIT_ENABLE_FUMPT", "GO_PRE_COMMIT_ENABLE_LINT",
-		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", "GO_PRE_COMMIT_ENABLE_WHITESPACE",
-		"GO_PRE_COMMIT_ENABLE_EOF", "GO_PRE_COMMIT_TIMEOUT_SECONDS",
+		"GO_PRE_COMMIT_ENABLE_MOD_TIDY", testEnvEnableWhitespace,
+		testEnvEnableEOF, testEnvTimeoutSeconds,
 		"GO_PRE_COMMIT_MAX_FILE_SIZE_MB", "GO_PRE_COMMIT_MAX_FILES_OPEN",
 		"GO_PRE_COMMIT_FUMPT_VERSION", "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
-		"GO_PRE_COMMIT_PARALLEL_WORKERS", "GO_PRE_COMMIT_FAIL_FAST",
+		testEnvParallelWorkers, "GO_PRE_COMMIT_FAIL_FAST",
 		"GO_PRE_COMMIT_FUMPT_TIMEOUT", "GO_PRE_COMMIT_LINT_TIMEOUT",
 		"GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", "GO_PRE_COMMIT_WHITESPACE_TIMEOUT",
 		"GO_PRE_COMMIT_EOF_TIMEOUT", "GO_PRE_COMMIT_HOOKS_PATH",
@@ -731,8 +731,8 @@ func (s *ConfigValidationTestSuite) TestConfigurationHelp() {
 	help := config.GetConfigHelp()
 
 	// Validate that help contains key information
-	s.Contains(help, "ENABLE_GO_PRE_COMMIT", "Help should document main enable flag")
-	s.Contains(help, "GO_PRE_COMMIT_LOG_LEVEL", "Help should document log level")
+	s.Contains(help, testEnvEnablePreCommit, "Help should document main enable flag")
+	s.Contains(help, testEnvLogLevel, "Help should document log level")
 	s.Contains(help, "Example .github/.env.base", "Help should include example")
 	s.Contains(help, "Core Settings", "Help should have sections")
 	s.Contains(help, "Check Configuration", "Help should document checks")

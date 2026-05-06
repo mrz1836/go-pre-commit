@@ -166,11 +166,11 @@ func (cb *CommandBuilder) runChecksWithConfig(runConfig RunConfig, _ *cobra.Comm
 	} else {
 		// Use --color flag or auto-detect
 		switch cb.app.config.ColorMode {
-		case "always":
+		case colorModeAlways:
 			formatter = output.NewWithColorMode(output.ColorAlways)
-		case "never":
+		case colorModeNever:
 			formatter = output.NewWithColorMode(output.ColorNever)
-		case "auto":
+		case colorModeAuto:
 			formatter = output.NewWithColorMode(output.ColorAuto)
 		default:
 			// Default to auto mode with config override

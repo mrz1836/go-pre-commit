@@ -38,20 +38,20 @@ func TestInstallCmd_ParseFlags(t *testing.T) {
 		},
 		{
 			name: "hook-type flag single",
-			args: []string{"--hook-type", "pre-push"},
+			args: []string{"--hook-type", hookTypePrePush},
 			validate: func(t *testing.T, cmd *cobra.Command) {
 				hookTypes, err := cmd.Flags().GetStringSlice("hook-type")
 				require.NoError(t, err)
-				assert.Equal(t, []string{"pre-push"}, hookTypes)
+				assert.Equal(t, []string{hookTypePrePush}, hookTypes)
 			},
 		},
 		{
 			name: "hook-type flag multiple",
-			args: []string{"--hook-type", "pre-commit", "--hook-type", "pre-push"},
+			args: []string{"--hook-type", hookTypePreCommit, "--hook-type", hookTypePrePush},
 			validate: func(t *testing.T, cmd *cobra.Command) {
 				hookTypes, err := cmd.Flags().GetStringSlice("hook-type")
 				require.NoError(t, err)
-				assert.Equal(t, []string{"pre-commit", "pre-push"}, hookTypes)
+				assert.Equal(t, []string{hookTypePreCommit, hookTypePrePush}, hookTypes)
 			},
 		},
 		{
@@ -60,7 +60,7 @@ func TestInstallCmd_ParseFlags(t *testing.T) {
 			validate: func(t *testing.T, cmd *cobra.Command) {
 				hookTypes, err := cmd.Flags().GetStringSlice("hook-type")
 				require.NoError(t, err)
-				assert.Equal(t, []string{"pre-commit"}, hookTypes)
+				assert.Equal(t, []string{hookTypePreCommit}, hookTypes)
 			},
 		},
 	}
@@ -116,7 +116,7 @@ func TestInstallCmd_runInstallWithConfig(t *testing.T) {
 			},
 			config: InstallConfig{
 				Force:     false,
-				HookTypes: []string{"pre-commit"},
+				HookTypes: []string{hookTypePreCommit},
 			},
 			wantErr: false,
 		},
@@ -126,14 +126,14 @@ func TestInstallCmd_runInstallWithConfig(t *testing.T) {
 				repoPath := setupTempGitRepo(t, true, true)
 				// Create existing hook to test force overwrite
 				hooksDir := filepath.Join(repoPath, ".git", "hooks")
-				hookPath := filepath.Join(hooksDir, "pre-commit")
+				hookPath := filepath.Join(hooksDir, hookTypePreCommit)
 				err := os.WriteFile(hookPath, []byte("#!/bin/bash\necho 'existing hook'"), 0o755) // #nosec G306 - Test file with appropriate executable permissions
 				require.NoError(t, err)
 				return repoPath
 			},
 			config: InstallConfig{
 				Force:     true,
-				HookTypes: []string{"pre-commit"},
+				HookTypes: []string{hookTypePreCommit},
 			},
 			wantErr: false,
 		},
@@ -144,7 +144,7 @@ func TestInstallCmd_runInstallWithConfig(t *testing.T) {
 			},
 			config: InstallConfig{
 				Force:     false,
-				HookTypes: []string{"pre-commit", "pre-push"},
+				HookTypes: []string{hookTypePreCommit, hookTypePrePush},
 			},
 			wantErr: false,
 		},
@@ -155,7 +155,7 @@ func TestInstallCmd_runInstallWithConfig(t *testing.T) {
 			},
 			config: InstallConfig{
 				Force:     false,
-				HookTypes: []string{"pre-commit"},
+				HookTypes: []string{hookTypePreCommit},
 			},
 			wantErr: false, // Should not error, just print warning and return early
 		},
@@ -176,7 +176,7 @@ func TestInstallCmd_runInstallWithConfig(t *testing.T) {
 			},
 			config: InstallConfig{
 				Force:     false,
-				HookTypes: []string{"pre-commit"},
+				HookTypes: []string{hookTypePreCommit},
 			},
 			wantErr:     true,
 			errContains: "failed to find git repository",
@@ -188,7 +188,7 @@ func TestInstallCmd_runInstallWithConfig(t *testing.T) {
 			},
 			config: InstallConfig{
 				Force:     false,
-				HookTypes: []string{"pre-commit"},
+				HookTypes: []string{hookTypePreCommit},
 			},
 			wantErr:     true,
 			errContains: "failed to load configuration",
@@ -362,7 +362,7 @@ func TestInstallCmd_DisabledSystemBehavior(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify no hooks were created
-	hookPath := filepath.Join(repoPath, ".git", "hooks", "pre-commit")
+	hookPath := filepath.Join(repoPath, ".git", "hooks", hookTypePreCommit)
 	_, err = os.Stat(hookPath)
 	assert.True(t, os.IsNotExist(err), "Hook file should not exist when disabled: %s", hookPath)
 }

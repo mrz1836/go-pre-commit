@@ -13,6 +13,11 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 )
 
+const (
+	fileTypeShell   = "shell"
+	fileTypeUnknown = "unknown"
+)
+
 // FileClassifier provides intelligent file classification and filtering
 type FileClassifier struct {
 	config *config.Config
@@ -195,10 +200,10 @@ func (fc *FileClassifier) detectLanguage(filePath string) string {
 		".kt":    "kotlin",
 		".scala": "scala",
 		".cs":    "csharp",
-		".sh":    "shell",
-		".bash":  "shell",
-		".zsh":   "shell",
-		".fish":  "shell",
+		".sh":    fileTypeShell,
+		".bash":  fileTypeShell,
+		".zsh":   fileTypeShell,
+		".fish":  fileTypeShell,
 		".ps1":   "powershell",
 		".sql":   "sql",
 		".md":    "markdown",
@@ -241,7 +246,7 @@ func (fc *FileClassifier) detectLanguage(filePath string) string {
 		return lang
 	}
 
-	return "unknown"
+	return fileTypeUnknown
 }
 
 // isGeneratedFile checks if a file is generated code

@@ -533,7 +533,7 @@ func extractTagsFromLegacyConstraint(line string) []string {
 
 // isGoModule checks if a directory contains a go.mod file, indicating it's a Go module
 func isGoModule(dir string) bool {
-	goModPath := filepath.Join(dir, "go.mod")
+	goModPath := filepath.Join(dir, fileGoMod)
 	_, err := os.Stat(goModPath)
 	return err == nil
 }

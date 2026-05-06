@@ -16,7 +16,7 @@ func TestFumptCheck_Run_ContextCancelled_Extra(t *testing.T) {
 	cancel()
 
 	check := NewFumptCheck()
-	err := check.Run(ctx, []string{"test.go"})
+	err := check.Run(ctx, []string{testFileTestGo})
 	require.Error(t, err)
 }
 
@@ -25,7 +25,7 @@ func TestLintCheck_Run_ContextCancelled_Extra(t *testing.T) {
 	cancel()
 
 	check := NewLintCheck()
-	err := check.Run(ctx, []string{"test.go"})
+	err := check.Run(ctx, []string{testFileTestGo})
 	require.Error(t, err)
 }
 
@@ -34,7 +34,7 @@ func TestModTidyCheck_Run_ContextCancelled_Extra(t *testing.T) {
 	cancel()
 
 	check := NewModTidyCheck()
-	err := check.Run(ctx, []string{"go.mod"})
+	err := check.Run(ctx, []string{fileGoMod})
 	require.Error(t, err)
 }
 

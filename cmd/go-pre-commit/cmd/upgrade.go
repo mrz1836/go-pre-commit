@@ -88,7 +88,7 @@ func (cb *CommandBuilder) runUpgradeWithConfig(config UpgradeConfig) error {
 	currentVersion := cb.app.version
 
 	// Handle development version or commit hash
-	if currentVersion == "dev" || currentVersion == "" || isLikelyCommitHash(currentVersion) {
+	if currentVersion == versionDev || currentVersion == "" || isLikelyCommitHash(currentVersion) {
 		if !config.Force && !config.CheckOnly {
 			printWarning("Current version appears to be a development build (%s)", currentVersion)
 			printInfo("Use --force to upgrade anyway")
@@ -196,7 +196,7 @@ func (cb *CommandBuilder) reinstallHooks() error {
 	installer := git.NewInstaller(repoRoot, "")
 
 	// Check which hooks are installed and reinstall them
-	hookTypes := []string{"pre-commit", "pre-push", "commit-msg", "post-commit"}
+	hookTypes := []string{hookTypePreCommit, hookTypePrePush, "commit-msg", "post-commit"}
 	reinstalled := 0
 
 	for _, hookType := range hookTypes {
@@ -228,7 +228,7 @@ func (cb *CommandBuilder) checkHookCompatibility() {
 	installer := git.NewInstaller(repoRoot, "")
 
 	// Check if any hooks are installed
-	hookTypes := []string{"pre-commit", "pre-push", "commit-msg", "post-commit"}
+	hookTypes := []string{hookTypePreCommit, hookTypePrePush, "commit-msg", "post-commit"}
 	hasHooks := false
 
 	for _, hookType := range hookTypes {
@@ -245,8 +245,8 @@ func (cb *CommandBuilder) checkHookCompatibility() {
 }
 
 func formatVersion(v string) string {
-	if v == "dev" || v == "" {
-		return "dev"
+	if v == versionDev || v == "" {
+		return versionDev
 	}
 	if !strings.HasPrefix(v, "v") {
 		return "v" + v

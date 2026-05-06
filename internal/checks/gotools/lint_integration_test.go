@@ -309,7 +309,7 @@ go 1.21
 
 require github.com/magefile/mage v1.15.0
 `
-	require.NoError(t, os.WriteFile("go.mod", []byte(goModContent), 0o600))
+	require.NoError(t, os.WriteFile(fileGoMod, []byte(goModContent), 0o600))
 
 	// Create go.sum (empty for this test)
 	require.NoError(t, os.WriteFile("go.sum", []byte(""), 0o600))

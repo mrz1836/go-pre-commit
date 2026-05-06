@@ -64,7 +64,7 @@ func TestUpgradeCommand_CheckOnly(t *testing.T) {
 
 func TestUpgradeCommand_DevVersion(t *testing.T) {
 	// Test with dev version
-	app := NewCLIApp("dev", "abc123", "2024-01-01")
+	app := NewCLIApp(versionDev, "abc123", "2024-01-01")
 	builder := NewCommandBuilder(app)
 
 	config := UpgradeConfig{
@@ -88,13 +88,13 @@ func TestFormatVersion(t *testing.T) {
 	}{
 		{
 			name:     "dev version",
-			input:    "dev",
-			expected: "dev",
+			input:    versionDev,
+			expected: versionDev,
 		},
 		{
 			name:     "empty version",
 			input:    "",
-			expected: "dev",
+			expected: versionDev,
 		},
 		{
 			name:     "version without v",
@@ -199,7 +199,7 @@ func TestRunUpgradeWithConfig_Comprehensive(t *testing.T) {
 	}{
 		{
 			name:           "Force Upgrade Dev Version",
-			currentVersion: "dev",
+			currentVersion: versionDev,
 			config: UpgradeConfig{
 				Force:     true,
 				CheckOnly: false,
@@ -270,6 +270,11 @@ func TestRunUpgradeWithConfig_Comprehensive(t *testing.T) {
 				t.Skipf("Skipping test: GitHub API rate limit exceeded (set GITHUB_TOKEN for authenticated requests)")
 			}
 
+			// Special case: Skip test if TLS/network unavailable
+			if err != nil && (strings.Contains(err.Error(), "tls:") || strings.Contains(err.Error(), "x509:")) {
+				t.Skipf("Skipping test: TLS/network unavailable: %v", err)
+			}
+
 			if tc.expectedError {
 				require.Error(t, err, "Expected error for case: %s", tc.description)
 				if tc.errorContains != "" {
@@ -308,7 +313,7 @@ func TestUpgradeConfigValidation(t *testing.T) {
 				CheckOnly: true,
 				Reinstall: true,
 			},
-			version: "dev",
+			version: versionDev,
 		},
 		{
 			name: "Only Force",
@@ -372,7 +377,7 @@ func TestIsLikelyCommitHash(t *testing.T) {
 		},
 		{
 			name:     "Dev Version",
-			input:    "dev",
+			input:    versionDev,
 			expected: false,
 		},
 		{

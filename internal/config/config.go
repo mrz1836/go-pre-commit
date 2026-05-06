@@ -12,6 +12,11 @@ import (
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 )
 
+const (
+	envValueTrue    = "true"
+	defaultStrValue = "default"
+)
+
 // Config holds the configuration for the pre-commit system
 type Config struct {
 	// Core settings
@@ -561,7 +566,7 @@ func hasEnvFiles(dirPath string) bool {
 
 // isCI returns true if CI environment variable equals "true"
 func isCI() bool {
-	return os.Getenv("CI") == "true"
+	return os.Getenv("CI") == envValueTrue
 }
 
 // Helper functions for environment variable parsing

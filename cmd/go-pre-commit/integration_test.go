@@ -46,7 +46,7 @@ func TestBuildAndRunWithVCSInfo(t *testing.T) {
 		{
 			name:      "build with default settings and check version",
 			buildArgs: []string{},
-			runArgs:   []string{"--no-color", "--version"},
+			runArgs:   []string{flagNoColor, "--version"},
 			checkFunc: func(t *testing.T, output string, exitCode int) {
 				assert.Equal(t, 0, exitCode)
 				assert.Contains(t, output, "version")
@@ -55,7 +55,7 @@ func TestBuildAndRunWithVCSInfo(t *testing.T) {
 		{
 			name:      "build with default settings and check help",
 			buildArgs: []string{},
-			runArgs:   []string{"--no-color", "--help"},
+			runArgs:   []string{flagNoColor, "--help"},
 			checkFunc: func(t *testing.T, output string, exitCode int) {
 				assert.Equal(t, 0, exitCode)
 				assert.Contains(t, output, "Pre-commit")
@@ -64,7 +64,7 @@ func TestBuildAndRunWithVCSInfo(t *testing.T) {
 		{
 			name:      "build with default settings and check status",
 			buildArgs: []string{},
-			runArgs:   []string{"--no-color", "status"},
+			runArgs:   []string{flagNoColor, "status"},
 			checkFunc: func(t *testing.T, output string, exitCode int) {
 				assert.Equal(t, 0, exitCode)
 				// Status command should work
@@ -191,7 +191,7 @@ func TestBinaryWithDifferentLdflagsScenarios(t *testing.T) {
 			require.NoError(t, err)
 
 			// Run with version flag
-			runCmd := exec.CommandContext(ctx, testBinary, "--no-color", "--version") //nolint:gosec // Safe: our binary
+			runCmd := exec.CommandContext(ctx, testBinary, flagNoColor, "--version") //nolint:gosec // Safe: our binary
 			output, err := runCmd.Output()
 			require.NoError(t, err)
 
@@ -243,27 +243,27 @@ func TestBinaryExitCodes(t *testing.T) {
 	}{
 		{
 			name:             "help should exit 0",
-			args:             []string{"--no-color", "--help"},
+			args:             []string{flagNoColor, "--help"},
 			expectedExitCode: 0,
 		},
 		{
 			name:             "version should exit 0",
-			args:             []string{"--no-color", "--version"},
+			args:             []string{flagNoColor, "--version"},
 			expectedExitCode: 0,
 		},
 		{
 			name:             "status should exit 0",
-			args:             []string{"--no-color", "status"},
+			args:             []string{flagNoColor, "status"},
 			expectedExitCode: 0,
 		},
 		{
 			name:             "invalid command should exit 1",
-			args:             []string{"--no-color", "this-command-does-not-exist"},
+			args:             []string{flagNoColor, "this-command-does-not-exist"},
 			expectedExitCode: 1,
 		},
 		{
 			name:             "show checks should exit 0",
-			args:             []string{"--no-color", "run", "--show-checks"},
+			args:             []string{flagNoColor, "run", "--show-checks"},
 			expectedExitCode: 0,
 		},
 	}

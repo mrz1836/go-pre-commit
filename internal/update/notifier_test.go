@@ -13,7 +13,7 @@ import (
 func TestStartBackgroundCheckDisabled(t *testing.T) {
 	t.Setenv("GO_PRE_COMMIT_DISABLE_UPDATE_CHECK", "1")
 
-	resultChan := StartBackgroundCheck(context.Background(), "v1.0.0")
+	resultChan := StartBackgroundCheck(context.Background(), testVersionCurrent)
 
 	// Channel should close without sending a result
 	result, ok := <-resultChan
@@ -56,21 +56,21 @@ func TestStartBackgroundCheckWithValidCache(t *testing.T) {
 	// Pre-populate cache with valid entry
 	cacheEntry := &CacheEntry{
 		CheckedAt:      time.Now(),
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.1.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionLatest,
 	}
 	err := WriteCache(cacheEntry)
 	require.NoError(t, err)
 
-	resultChan := StartBackgroundCheck(context.Background(), "v1.0.0")
+	resultChan := StartBackgroundCheck(context.Background(), testVersionCurrent)
 
 	// Should receive cached result
 	select {
 	case result := <-resultChan:
 		require.NotNil(t, result)
 		assert.True(t, result.FromCache, "Result should be from cache")
-		assert.Equal(t, "v1.0.0", result.CurrentVersion)
-		assert.Equal(t, "v1.1.0", result.LatestVersion)
+		assert.Equal(t, testVersionCurrent, result.CurrentVersion)
+		assert.Equal(t, testVersionLatest, result.LatestVersion)
 		assert.True(t, result.UpdateAvailable)
 	case <-time.After(2 * time.Second):
 		t.Fatal("Timeout waiting for result")
@@ -93,8 +93,8 @@ func TestStartBackgroundCheckWithExpiredCache(t *testing.T) {
 	// Pre-populate cache with expired entry
 	cacheEntry := &CacheEntry{
 		CheckedAt:      time.Now().Add(-25 * time.Hour),
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.0.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionCurrent,
 	}
 	err := WriteCache(cacheEntry)
 	require.NoError(t, err)
@@ -102,7 +102,7 @@ func TestStartBackgroundCheckWithExpiredCache(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	resultChan := StartBackgroundCheck(ctx, "v1.0.0")
+	resultChan := StartBackgroundCheck(ctx, testVersionCurrent)
 
 	// Should receive result (from API call or error)
 	select {
@@ -123,17 +123,17 @@ func TestCheckForUpdateWithValidCache(t *testing.T) {
 	// Pre-populate cache with valid entry
 	cacheEntry := &CacheEntry{
 		CheckedAt:      time.Now(),
-		CurrentVersion: "v1.0.0",
+		CurrentVersion: testVersionCurrent,
 		LatestVersion:  "v1.2.0",
 	}
 	err := WriteCache(cacheEntry)
 	require.NoError(t, err)
 
-	result := checkForUpdate(context.Background(), "v1.0.0")
+	result := checkForUpdate(context.Background(), testVersionCurrent)
 	require.NotNil(t, result)
 
 	assert.True(t, result.FromCache)
-	assert.Equal(t, "v1.0.0", result.CurrentVersion)
+	assert.Equal(t, testVersionCurrent, result.CurrentVersion)
 	assert.Equal(t, "v1.2.0", result.LatestVersion)
 	assert.True(t, result.UpdateAvailable)
 	assert.NoError(t, result.Error)
@@ -150,8 +150,8 @@ func TestCheckForUpdateWithExpiredCacheAndNoToken(t *testing.T) {
 	// Pre-populate cache with expired entry
 	cacheEntry := &CacheEntry{
 		CheckedAt:      time.Now().Add(-25 * time.Hour),
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.0.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionCurrent,
 	}
 	err := WriteCache(cacheEntry)
 	require.NoError(t, err)
@@ -159,7 +159,7 @@ func TestCheckForUpdateWithExpiredCacheAndNoToken(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	result := checkForUpdate(ctx, "v1.0.0")
+	result := checkForUpdate(ctx, testVersionCurrent)
 
 	// Should return a result (possibly with error due to rate limiting)
 	require.NotNil(t, result)
@@ -255,16 +255,16 @@ func TestGetGitHubToken(t *testing.T) {
 func TestCheckResultStructure(t *testing.T) {
 	now := time.Now()
 	result := &CheckResult{
-		CurrentVersion:  "v1.0.0",
-		LatestVersion:   "v1.1.0",
+		CurrentVersion:  testVersionCurrent,
+		LatestVersion:   testVersionLatest,
 		UpdateAvailable: true,
 		CheckedAt:       now,
 		FromCache:       false,
 		Error:           nil,
 	}
 
-	assert.Equal(t, "v1.0.0", result.CurrentVersion)
-	assert.Equal(t, "v1.1.0", result.LatestVersion)
+	assert.Equal(t, testVersionCurrent, result.CurrentVersion)
+	assert.Equal(t, testVersionLatest, result.LatestVersion)
 	assert.True(t, result.UpdateAvailable)
 	assert.Equal(t, now, result.CheckedAt)
 	assert.False(t, result.FromCache)
@@ -280,8 +280,8 @@ func TestStartBackgroundCheckContextCancellation(t *testing.T) {
 	// Create expired cache to force API call
 	cacheEntry := &CacheEntry{
 		CheckedAt:      time.Now().Add(-25 * time.Hour),
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.0.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionCurrent,
 	}
 	err := WriteCache(cacheEntry)
 	require.NoError(t, err)
@@ -289,7 +289,7 @@ func TestStartBackgroundCheckContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	resultChan := StartBackgroundCheck(ctx, "v1.0.0")
+	resultChan := StartBackgroundCheck(ctx, testVersionCurrent)
 
 	// Should receive result or channel closes
 	select {
@@ -316,7 +316,7 @@ func TestStartBackgroundCheckRecoversFromPanic(t *testing.T) {
 	t.Setenv("CI", "")
 
 	// This should not panic regardless of what happens internally
-	resultChan := StartBackgroundCheck(context.Background(), "v1.0.0")
+	resultChan := StartBackgroundCheck(context.Background(), testVersionCurrent)
 
 	select {
 	case <-resultChan:
@@ -333,14 +333,14 @@ func TestCheckForUpdateSetsCheckedAt(t *testing.T) {
 	// Pre-populate cache with valid entry
 	cacheEntry := &CacheEntry{
 		CheckedAt:      time.Now().Add(-1 * time.Hour),
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.1.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionLatest,
 	}
 	err := WriteCache(cacheEntry)
 	require.NoError(t, err)
 
 	before := time.Now()
-	result := checkForUpdate(context.Background(), "v1.0.0")
+	result := checkForUpdate(context.Background(), testVersionCurrent)
 	after := time.Now()
 
 	require.NotNil(t, result)
@@ -364,8 +364,8 @@ func TestCheckForUpdateTimeout(t *testing.T) {
 	// Create expired cache to force API call
 	cacheEntry := &CacheEntry{
 		CheckedAt:      time.Now().Add(-25 * time.Hour),
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.0.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionCurrent,
 	}
 	err := WriteCache(cacheEntry)
 	require.NoError(t, err)
@@ -377,7 +377,7 @@ func TestCheckForUpdateTimeout(t *testing.T) {
 	// Wait a bit to ensure timeout
 	time.Sleep(10 * time.Millisecond)
 
-	result := checkForUpdate(ctx, "v1.0.0")
+	result := checkForUpdate(ctx, testVersionCurrent)
 
 	// Should return result with timeout error
 	require.NotNil(t, result)
@@ -408,8 +408,8 @@ func TestCheckForUpdateWritesCache(t *testing.T) {
 	// Create expired cache to force API call
 	cacheEntry := &CacheEntry{
 		CheckedAt:      time.Now().Add(-25 * time.Hour),
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.0.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionCurrent,
 	}
 	err := WriteCache(cacheEntry)
 	require.NoError(t, err)
@@ -417,7 +417,7 @@ func TestCheckForUpdateWritesCache(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	result := checkForUpdate(ctx, "v1.0.0")
+	result := checkForUpdate(ctx, testVersionCurrent)
 	require.NotNil(t, result)
 
 	// If successful, cache should be updated
@@ -435,7 +435,7 @@ func TestCheckForUpdateWritesCache(t *testing.T) {
 func TestStartBackgroundCheckChannelBehavior(t *testing.T) {
 	t.Setenv("GO_PRE_COMMIT_DISABLE_UPDATE_CHECK", "1")
 
-	resultChan := StartBackgroundCheck(context.Background(), "v1.0.0")
+	resultChan := StartBackgroundCheck(context.Background(), testVersionCurrent)
 
 	// Verify channel is buffered and closed
 	_, ok := <-resultChan
@@ -459,20 +459,20 @@ func TestCheckForUpdateUpdateAvailableLogic(t *testing.T) {
 	}{
 		{
 			name:            "newer version available",
-			currentVersion:  "v1.0.0",
-			cachedLatest:    "v1.1.0",
+			currentVersion:  testVersionCurrent,
+			cachedLatest:    testVersionLatest,
 			expectAvailable: true,
 		},
 		{
 			name:            "same version",
-			currentVersion:  "v1.0.0",
-			cachedLatest:    "v1.0.0",
+			currentVersion:  testVersionCurrent,
+			cachedLatest:    testVersionCurrent,
 			expectAvailable: false,
 		},
 		{
 			name:            "current version ahead",
 			currentVersion:  "v2.0.0",
-			cachedLatest:    "v1.0.0",
+			cachedLatest:    testVersionCurrent,
 			expectAvailable: false,
 		},
 	}

@@ -73,7 +73,7 @@ func (s *LintGoModuleTestSuite) TestIsGoModule() {
 			setupFunc: func() string {
 				dir := filepath.Join(s.tempDir, "with-gomod")
 				s.Require().NoError(os.MkdirAll(dir, 0o750))
-				s.Require().NoError(os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n"), 0o600))
+				s.Require().NoError(os.WriteFile(filepath.Join(dir, fileGoMod), []byte("module test\n"), 0o600))
 				return dir
 			},
 			expectMatch: true,
@@ -171,7 +171,7 @@ func (s *LintGoModuleTestSuite) TestLintGoModuleInSubdirectory() {
 
 go 1.21
 `
-	s.Require().NoError(os.WriteFile(filepath.Join(moduleDir, "go.mod"), []byte(goModContent), 0o600))
+	s.Require().NoError(os.WriteFile(filepath.Join(moduleDir, fileGoMod), []byte(goModContent), 0o600))
 
 	// Create Go files
 	mainGoContent := `package main
@@ -225,7 +225,7 @@ func (s *LintGoModuleTestSuite) TestLintGoModuleAtRoot() {
 
 go 1.21
 `
-	s.Require().NoError(os.WriteFile("go.mod", []byte(goModContent), 0o600))
+	s.Require().NoError(os.WriteFile(fileGoMod, []byte(goModContent), 0o600))
 
 	// Create Go file at root
 	s.Require().NoError(os.MkdirAll("cmd/app", 0o750))
@@ -259,7 +259,7 @@ func (s *LintGoModuleTestSuite) TestLintNestedGoModules() {
 
 go 1.21
 `
-	s.Require().NoError(os.WriteFile("go.mod", []byte(parentModContent), 0o600))
+	s.Require().NoError(os.WriteFile(fileGoMod, []byte(parentModContent), 0o600))
 
 	// Create nested module
 	s.Require().NoError(os.MkdirAll("nested/submodule", 0o750))
@@ -278,7 +278,7 @@ func main() {
 	fmt.Println("Parent module")
 }
 `
-	s.Require().NoError(os.WriteFile("main.go", []byte(parentGoContent), 0o600))
+	s.Require().NoError(os.WriteFile(testFileMainGo, []byte(parentGoContent), 0o600))
 
 	nestedGoContent := `package main
 
@@ -297,7 +297,7 @@ func main() {
 
 	// Test linting files from both modules
 	files := []string{
-		"main.go",
+		testFileMainGo,
 		"nested/submodule/main.go",
 	}
 

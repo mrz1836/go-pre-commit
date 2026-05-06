@@ -33,7 +33,7 @@ func TestNewCLIApp(t *testing.T) {
 		},
 		{
 			name:      "dev build info",
-			version:   "dev",
+			version:   versionDev,
 			commit:    "unknown",
 			buildDate: "unknown",
 		},
@@ -96,7 +96,7 @@ func TestBuildRootCmdProperties(t *testing.T) {
 	// Test color flag
 	colorFlag := cmd.PersistentFlags().Lookup("color")
 	require.NotNil(t, colorFlag)
-	assert.Equal(t, "auto", colorFlag.DefValue)
+	assert.Equal(t, colorModeAuto, colorFlag.DefValue)
 	assert.Contains(t, colorFlag.Usage, "Control color output")
 }
 
@@ -113,35 +113,35 @@ func TestBuildRootCmdPersistentPreRun(t *testing.T) {
 			args:              []string{},
 			expectedVerbose:   false,
 			expectedNoColor:   false,
-			expectedColorMode: "auto",
+			expectedColorMode: colorModeAuto,
 		},
 		{
 			name:              "verbose flag",
 			args:              []string{"--verbose"},
 			expectedVerbose:   true,
 			expectedNoColor:   false,
-			expectedColorMode: "auto",
+			expectedColorMode: colorModeAuto,
 		},
 		{
 			name:              "no-color flag",
 			args:              []string{"--no-color"},
 			expectedVerbose:   false,
 			expectedNoColor:   true,
-			expectedColorMode: "auto",
+			expectedColorMode: colorModeAuto,
 		},
 		{
 			name:              "both flags",
 			args:              []string{"--verbose", "--no-color"},
 			expectedVerbose:   true,
 			expectedNoColor:   true,
-			expectedColorMode: "auto",
+			expectedColorMode: colorModeAuto,
 		},
 		{
 			name:              "color auto flag",
 			args:              []string{"--color=auto"},
 			expectedVerbose:   false,
 			expectedNoColor:   false,
-			expectedColorMode: "auto",
+			expectedColorMode: colorModeAuto,
 		},
 		{
 			name:              "color always flag",
@@ -335,49 +335,49 @@ func TestInitConfigNoColorHandling(t *testing.T) {
 		{
 			name:        "no color flag set",
 			noColorFlag: true,
-			colorMode:   "auto",
+			colorMode:   colorModeAuto,
 			noColorEnv:  "",
 			expected:    true,
 		},
 		{
 			name:        "NO_COLOR env var set",
 			noColorFlag: false,
-			colorMode:   "auto",
+			colorMode:   colorModeAuto,
 			noColorEnv:  "1",
 			expected:    true,
 		},
 		{
 			name:        "both flag and env set",
 			noColorFlag: true,
-			colorMode:   "auto",
+			colorMode:   colorModeAuto,
 			noColorEnv:  "1",
 			expected:    true,
 		},
 		{
 			name:        "neither flag nor env set",
 			noColorFlag: false,
-			colorMode:   "auto",
+			colorMode:   colorModeAuto,
 			noColorEnv:  "",
 			expected:    false,
 		},
 		{
 			name:        "color mode never",
 			noColorFlag: false,
-			colorMode:   "never",
+			colorMode:   colorModeNever,
 			noColorEnv:  "",
 			expected:    true,
 		},
 		{
 			name:        "color mode always",
 			noColorFlag: false,
-			colorMode:   "always",
+			colorMode:   colorModeAlways,
 			noColorEnv:  "1",
 			expected:    false,
 		},
 		{
 			name:        "no-color flag overrides color mode always",
 			noColorFlag: true,
-			colorMode:   "always",
+			colorMode:   colorModeAlways,
 			noColorEnv:  "",
 			expected:    true,
 		},

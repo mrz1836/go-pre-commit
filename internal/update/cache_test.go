@@ -183,8 +183,8 @@ func TestReadCache(t *testing.T) {
 
 		validEntry := &CacheEntry{
 			CheckedAt:      time.Now(),
-			CurrentVersion: "v1.0.0",
-			LatestVersion:  "v1.1.0",
+			CurrentVersion: testVersionCurrent,
+			LatestVersion:  testVersionLatest,
 		}
 
 		data, err := json.MarshalIndent(validEntry, "", "  ")
@@ -224,7 +224,7 @@ func TestWriteCacheAndReadCacheRoundTrip(t *testing.T) {
 
 	// Write cache entry
 	writeEntry := &CacheEntry{
-		CurrentVersion: "v1.0.0",
+		CurrentVersion: testVersionCurrent,
 		LatestVersion:  "v1.2.0",
 	}
 
@@ -250,8 +250,8 @@ func TestIsCacheValid(t *testing.T) {
 	t.Run("fresh entry is valid", func(t *testing.T) {
 		entry := &CacheEntry{
 			CheckedAt:      time.Now(),
-			CurrentVersion: "v1.0.0",
-			LatestVersion:  "v1.0.0",
+			CurrentVersion: testVersionCurrent,
+			LatestVersion:  testVersionCurrent,
 		}
 
 		valid := IsCacheValid(entry, 24*time.Hour)
@@ -261,8 +261,8 @@ func TestIsCacheValid(t *testing.T) {
 	t.Run("expired entry is not valid", func(t *testing.T) {
 		entry := &CacheEntry{
 			CheckedAt:      time.Now().Add(-25 * time.Hour),
-			CurrentVersion: "v1.0.0",
-			LatestVersion:  "v1.0.0",
+			CurrentVersion: testVersionCurrent,
+			LatestVersion:  testVersionCurrent,
 		}
 
 		valid := IsCacheValid(entry, 24*time.Hour)
@@ -273,8 +273,8 @@ func TestIsCacheValid(t *testing.T) {
 		// Use a timestamp slightly within the boundary to avoid timing precision issues
 		entry := &CacheEntry{
 			CheckedAt:      time.Now().Add(-24*time.Hour + 1*time.Second),
-			CurrentVersion: "v1.0.0",
-			LatestVersion:  "v1.0.0",
+			CurrentVersion: testVersionCurrent,
+			LatestVersion:  testVersionCurrent,
 		}
 
 		// Should still be valid (<=)
@@ -290,8 +290,8 @@ func TestClearCache(t *testing.T) {
 
 		// Create a cache file first
 		entry := &CacheEntry{
-			CurrentVersion: "v1.0.0",
-			LatestVersion:  "v1.0.0",
+			CurrentVersion: testVersionCurrent,
+			LatestVersion:  testVersionCurrent,
 		}
 		require.NoError(t, WriteCache(entry))
 
@@ -330,8 +330,8 @@ func TestWriteCacheCreatesDirectory(t *testing.T) {
 
 	// Write cache should create it
 	entry := &CacheEntry{
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.0.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionCurrent,
 	}
 	err = WriteCache(entry)
 	require.NoError(t, err)
@@ -347,8 +347,8 @@ func TestCacheFilePermissions(t *testing.T) {
 	t.Setenv("HOME", tempDir)
 
 	entry := &CacheEntry{
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.0.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionCurrent,
 	}
 	err := WriteCache(entry)
 	require.NoError(t, err)
@@ -367,8 +367,8 @@ func TestCacheDirPermissions(t *testing.T) {
 	t.Setenv("HOME", tempDir)
 
 	entry := &CacheEntry{
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.0.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionCurrent,
 	}
 	err := WriteCache(entry)
 	require.NoError(t, err)
@@ -389,8 +389,8 @@ func TestWriteCacheAtomicWrite(t *testing.T) {
 	// Write multiple times rapidly
 	for i := 0; i < 10; i++ {
 		entry := &CacheEntry{
-			CurrentVersion: "v1.0.0",
-			LatestVersion:  "v1.1.0",
+			CurrentVersion: testVersionCurrent,
+			LatestVersion:  testVersionLatest,
 		}
 		err := WriteCache(entry)
 		require.NoError(t, err)
@@ -400,7 +400,7 @@ func TestWriteCacheAtomicWrite(t *testing.T) {
 	entry, err := ReadCache()
 	require.NoError(t, err)
 	require.NotNil(t, entry)
-	assert.Equal(t, "v1.0.0", entry.CurrentVersion)
+	assert.Equal(t, testVersionCurrent, entry.CurrentVersion)
 }
 
 func TestCleanupOrphanedTempFiles(t *testing.T) {
@@ -421,8 +421,8 @@ func TestCleanupOrphanedTempFiles(t *testing.T) {
 
 	// Writing cache should clean it up
 	entry := &CacheEntry{
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.0.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionCurrent,
 	}
 	err = WriteCache(entry)
 	require.NoError(t, err)
@@ -435,8 +435,8 @@ func TestCacheEntryJSONMarshaling(t *testing.T) {
 	now := time.Now()
 	entry := &CacheEntry{
 		CheckedAt:      now,
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.1.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionLatest,
 	}
 
 	// Marshal to JSON
@@ -469,15 +469,15 @@ func TestMultipleWritesOverwrite(t *testing.T) {
 
 	// Write first entry
 	entry1 := &CacheEntry{
-		CurrentVersion: "v1.0.0",
-		LatestVersion:  "v1.1.0",
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionLatest,
 	}
 	err := WriteCache(entry1)
 	require.NoError(t, err)
 
 	// Write second entry
 	entry2 := &CacheEntry{
-		CurrentVersion: "v1.1.0",
+		CurrentVersion: testVersionLatest,
 		LatestVersion:  "v1.2.0",
 	}
 	err = WriteCache(entry2)
@@ -487,6 +487,6 @@ func TestMultipleWritesOverwrite(t *testing.T) {
 	read, err := ReadCache()
 	require.NoError(t, err)
 	require.NotNil(t, read)
-	assert.Equal(t, "v1.1.0", read.CurrentVersion)
+	assert.Equal(t, testVersionLatest, read.CurrentVersion)
 	assert.Equal(t, "v1.2.0", read.LatestVersion)
 }

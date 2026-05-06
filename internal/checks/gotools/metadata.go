@@ -2,6 +2,8 @@ package gotools
 
 import "time"
 
+const fileGoMod = "go.mod"
+
 // CheckMetadata contains metadata about a check
 type CheckMetadata struct {
 	Name              string
