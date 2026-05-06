@@ -92,16 +92,8 @@ func (c *LintCheck) Run(ctx context.Context, files []string) error {
 		}
 	}
 
-	// Ensure golangci-lint is installed
-	if err := tools.EnsureInstalled(ctx, "golangci-lint"); err != nil {
-		return prerrors.NewToolExecutionError(
-			"golangci-lint",
-			err.Error(),
-			"Failed to install golangci-lint. You can install it manually with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest",
-		)
-	}
-
-	// Run golangci-lint directly
+	// Run golangci-lint directly (tool installation happens inside runLintOnDirectory
+	// after module checks, so orphaned files are skipped before any install attempt)
 	return c.runDirectLint(ctx, files)
 }
 
@@ -196,10 +188,6 @@ func (c *LintCheck) runLintOnFiles(ctx context.Context, repoRoot string, files [
 
 // runLintOnDirectory runs golangci-lint on a specific directory
 func (c *LintCheck) runLintOnDirectory(ctx context.Context, repoRoot, dir string) error {
-	// Add timeout for golangci-lint command
-	ctx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
 	// Build golangci-lint command arguments
 	args := []string{"run", "--new-from-rev=HEAD~1"}
 
@@ -262,6 +250,19 @@ func (c *LintCheck) runLintOnDirectory(ctx context.Context, repoRoot, dir string
 			}
 		}
 	}
+
+	// Ensure golangci-lint is installed only after confirming we need to run it.
+	// This keeps orphaned-file skips (above) free of any install attempt.
+	if err := tools.EnsureInstalled(ctx, "golangci-lint"); err != nil {
+		return prerrors.NewToolNotFoundError(
+			"golangci-lint",
+			"Install golangci-lint manually: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest",
+		)
+	}
+
+	// Add timeout for golangci-lint command
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
 
 	args = append(args, lintTarget)
 

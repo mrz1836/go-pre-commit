@@ -1346,54 +1346,24 @@ func TestRepositoryRootFailures(t *testing.T) {
 	}
 }
 
-// Additional integration tests to improve coverage of internal functions
+// TestLintCheckWithColoredOutput tests that FormatLintErrors and StripANSIColors
+// correctly handle ANSI-colored golangci-lint output and deduplicate errors.
 func TestLintCheckWithColoredOutput(t *testing.T) {
-	// Skip this test if golangci-lint is available since it would succeed
-	_, hasGolangciLint := exec.LookPath("golangci-lint")
-	if hasGolangciLint == nil {
-		t.Skip("golangci-lint is available - skipping error scenario test")
-	}
+	// Simulate golangci-lint output with ANSI color codes and duplicate errors.
+	coloredOutput := "\033[31minternal/test.go:10:1: missing comment (godox)\033[0m\n" +
+		"Some non-error output\n" +
+		"\033[32mcmd/main.go:5:2: ineffectual assignment (ineffassign)\033[0m\n" +
+		"internal/test.go:10:1: missing comment (godox)\n" +
+		"More output that should be filtered\n"
 
-	// Test that exercises formatLintErrors and stripANSIColors functions
+	result := FormatLintErrors(coloredOutput)
 
-	tmpDir := t.TempDir()
-	oldDir, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldDir) }()
-
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
-
-	// Initialize git repository
-	ctx := context.Background()
-	require.NoError(t, exec.CommandContext(ctx, "git", "init").Run())
-	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.email", testEmail).Run())
-	require.NoError(t, exec.CommandContext(ctx, "git", "config", "user.name", testUserName).Run())
-
-	// Create a Makefile that outputs lint errors with ANSI colors and duplicates
-	makefileContent := `lint:
-	@echo -e "\033[31minternal/test.go:10:1: missing comment (godox)\033[0m"
-	@echo -e "Some non-error output"
-	@echo -e "\033[32mcmd/main.go:5:2: ineffectual assignment (ineffassign)\033[0m"
-	@echo -e "internal/test.go:10:1: missing comment (godox)"
-	@echo -e "More output that should be filtered"
-	@exit 1
-`
-	err = os.WriteFile(testFileMakefile, []byte(makefileContent), 0o600)
-	require.NoError(t, err)
-
-	check := NewLintCheck()
-	err = check.Run(ctx, []string{testFileTestGo})
-
-	// Should error but with formatted output
-	require.Error(t, err)
-	errMsg := err.Error()
-	// Should contain deduplicated, color-stripped errors
-	assert.Contains(t, errMsg, "internal/test.go:10:1: missing comment (godox)")
-	assert.Contains(t, errMsg, "cmd/main.go:5:2: ineffectual assignment (ineffassign)")
-	// Should not contain ANSI codes
-	assert.NotContains(t, errMsg, "\033[31m")
-	assert.NotContains(t, errMsg, "\033[0m")
+	// Errors should appear (deduplicated and color-stripped)
+	assert.Contains(t, result, "internal/test.go:10:1: missing comment (godox)")
+	assert.Contains(t, result, "cmd/main.go:5:2: ineffectual assignment (ineffassign)")
+	// ANSI escape codes must be gone
+	assert.NotContains(t, result, "\033[31m")
+	assert.NotContains(t, result, "\033[0m")
 }
 
 // Tests for checkUncommittedChanges function
