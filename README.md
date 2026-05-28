@@ -160,26 +160,50 @@ git commit -m "Test commit"
 # Core settings
 ENABLE_GO_PRE_COMMIT=true              # Enable/disable the system
 GO_PRE_COMMIT_FAIL_FAST=false          # Stop on first failure
-GO_PRE_COMMIT_TIMEOUT_SECONDS=720      # Overall timeout
-GO_PRE_COMMIT_PARALLEL_WORKERS=2       # Number of parallel workers
+GO_PRE_COMMIT_TIMEOUT_SECONDS=720      # Overall timeout (seconds)
+GO_PRE_COMMIT_PARALLEL_WORKERS=0       # Parallel workers (0 = auto-detect from CPU cores)
+GO_PRE_COMMIT_LOG_LEVEL=info           # Log level: debug, info, warn, error
+GO_PRE_COMMIT_MAX_FILE_SIZE_MB=10      # Skip files larger than this
 
 # Individual checks
 GO_PRE_COMMIT_ENABLE_EOF=true           # Ensure files end with newline
-GO_PRE_COMMIT_ENABLE_FUMPT=true         # Format with fumpt
+GO_PRE_COMMIT_ENABLE_FUMPT=true         # Format with gofumpt
 GO_PRE_COMMIT_ENABLE_GITLEAKS=false     # Scan for secrets and credentials
 GO_PRE_COMMIT_ENABLE_LINT=true          # Run golangci-lint
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=true      # Run go mod tidy
 GO_PRE_COMMIT_ENABLE_WHITESPACE=true    # Fix trailing whitespace
+GO_PRE_COMMIT_GITLEAKS_ALL_FILES=false  # Scan all files, not just staged
 
 # Auto-staging (automatically stage fixed files)
 GO_PRE_COMMIT_EOF_AUTO_STAGE=true
 GO_PRE_COMMIT_FUMPT_AUTO_STAGE=true
 GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true
 
+# Tool versions (tools are auto-installed; pin a version or use "latest")
+GO_PRE_COMMIT_FUMPT_VERSION=latest
+GO_PRE_COMMIT_GOLANGCI_LINT_VERSION=latest
+GO_PRE_COMMIT_GITLEAKS_VERSION=v8.29.0
+
+# Per-check timeouts (seconds)
+GO_PRE_COMMIT_LINT_TIMEOUT=600          # golangci-lint is usually the slowest
+GO_PRE_COMMIT_MOD_TIDY_TIMEOUT=60
+GO_PRE_COMMIT_GITLEAKS_TIMEOUT=60
+GO_PRE_COMMIT_FUMPT_TIMEOUT=30          # whitespace and eof also default to 30
+
+# File filtering
+GO_PRE_COMMIT_EXCLUDE_PATTERNS="vendor/,node_modules/,.git/"
+
+# Plugins (see the Plugin System section below)
+GO_PRE_COMMIT_ENABLE_PLUGINS=false
+GO_PRE_COMMIT_PLUGIN_DIR=.pre-commit-plugins
+GO_PRE_COMMIT_PLUGIN_TIMEOUT=60
+
 # Color output settings (auto-detected by default)
 GO_PRE_COMMIT_COLOR_OUTPUT=true             # Enable/disable color output
 NO_COLOR=                                   # Set to any value to disable colors (follows standard)
 ```
+
+> **Full reference:** the variables above are the most commonly used subset. For the complete, annotated list of every `GO_PRE_COMMIT_*` setting and its default, see [.github/env/10-pre-commit.env](.github/env/10-pre-commit.env) (and [.github/env/README.md](.github/env/README.md) for how the modular files are loaded).
 
 **Configuration System (auto-detected):**
 - **Modular (preferred):** `.github/env/*.env` files loaded in lexicographic order (last wins)
@@ -223,20 +247,44 @@ go-pre-commit install --force
 # Run all checks on staged files
 go-pre-commit run
 
-# Run specific checks
-go-pre-commit run --checks fumpt,lint
+# Run a single check by name (positional)
+go-pre-commit run lint
+
+# Run only specific checks
+go-pre-commit run --only fumpt,lint
+
+# Skip specific checks
+go-pre-commit run --skip lint,mod-tidy
 
 # Run on all files (not just staged)
 go-pre-commit run --all-files
 
-# Skip specific checks
-go-pre-commit run --skip lint,mod-tidy
+# Run against specific files
+go-pre-commit run --files main.go,utils.go
+
+# List available checks and exit
+go-pre-commit run --show-checks
+
+# Control parallelism (0 = auto-detect from CPU cores)
+go-pre-commit run --parallel 4
+
+# Stop on the first failing check
+go-pre-commit run --fail-fast
+
+# Skip checks that can't run instead of failing
+go-pre-commit run --graceful
+
+# Suppress progress output (show only errors and results)
+go-pre-commit run --quiet
 
 # Color output control
 go-pre-commit run --color=never     # Disable color output
 go-pre-commit run --color=always    # Force color output
 go-pre-commit run --color=auto      # Auto-detect (default)
 go-pre-commit run --no-color        # Same as --color=never
+
+# Verbose output (global flag, works with any command)
+go-pre-commit --verbose run
 ```
 
 </details>
@@ -308,7 +356,7 @@ go-pre-commit uninstall --hook-type pre-commit
 | **mod-tidy**     | Ensures go.mod and go.sum are tidy                 | ✅        | Pure Go - no dependencies      |
 | **whitespace**   | Removes trailing whitespace                        | ✅        | Auto-stages changes if enabled |
 
-All checks run in parallel for maximum performance. All checks work out-of-the-box with pure Go! Tools are automatically installed when needed.
+All checks run in parallel for maximum performance. The whitespace, eof, and mod-tidy checks are pure Go with no dependencies; fumpt, lint, and gitleaks shell out to external tools (gofumpt, golangci-lint, gitleaks) that are auto-installed on first use — so everything works out of the box.
 
 </details>
 
@@ -368,7 +416,7 @@ go-pre-commit plugin list
 # Add a plugin
 go-pre-commit plugin add ./my-plugin
 
-# Remove a plugin
+# Remove a plugin (add --force to skip the confirmation prompt)
 go-pre-commit plugin remove my-plugin
 
 # Validate a plugin manifest
@@ -403,6 +451,45 @@ category: linting
 INPUT=$(cat)
 # Process files and output JSON response
 echo '{"success": true, "output": "Check passed"}'
+```
+
+**Full manifest reference** — `name`, `version`, `description`, `executable`, and `file_patterns` are required; everything else is optional:
+
+| Field                                                     | Description                                                    |
+|-----------------------------------------------------------|----------------------------------------------------------------|
+| `name` / `version` / `description`                        | Plugin identity and summary                                    |
+| `executable`                                              | Path to the script or binary to run                            |
+| `file_patterns`                                           | Globs selecting which files to process (e.g. `"*.go"`)         |
+| `author` / `license` / `homepage`                         | Optional metadata                                              |
+| `args`                                                    | Extra arguments passed to the executable                       |
+| `timeout`                                                 | Per-plugin timeout (e.g. `30s`)                                |
+| `category`                                                | Grouping label (e.g. `linting`, `security`)                    |
+| `requires_files`                                          | Skip the plugin when no matching files are staged              |
+| `environment`                                             | Map of environment variables passed to the plugin             |
+| `dependencies`                                            | Tools/binaries the plugin requires                             |
+| `min_go_pre_commit_version` / `max_go_pre_commit_version` | Version constraints                                            |
+| `read_only`                                               | Declare that the plugin will not modify files                  |
+| `allowed_paths`                                           | Restrict the plugin's filesystem access                        |
+| `max_memory_mb` / `max_cpu_percent`                       | Resource limits                                                |
+
+**JSON protocol** — `go-pre-commit` pipes a request to the plugin's stdin and reads a response from stdout:
+
+```jsonc
+// Request (stdin)
+{
+  "command": "check",           // requested action
+  "files": ["main.go"],         // files to process
+  "config": { "key": "value" }  // optional config map
+}
+
+// Response (stdout)
+{
+  "success": true,              // did the check pass?
+  "output": "Check passed",     // human-readable output
+  "error": "",                  // error message when success is false
+  "suggestion": "",             // optional remediation hint
+  "modified": []                // files the plugin changed (for auto-staging)
+}
 ```
 
 ### Available Example Plugins
@@ -446,17 +533,15 @@ cd my-awesome-project
 go mod init github.com/username/my-awesome-project
 ```
 
-### 2. Create the configuration
+### 2. (Optional) Configure go-pre-commit
+
+`go-pre-commit` ships with sensible defaults, so configuration is **optional** — you can skip straight to step 3. To customize, create a modular env file (the preferred approach):
 
 ```bash
-# Create the .github directory
-mkdir -p .github
+# Create the modular env directory and a project override file
+mkdir -p .github/env
 
-# Download the default configuration
-curl -o .github/.env.base https://raw.githubusercontent.com/mrz1836/go-pre-commit/master/.github/.env.base
-
-# Optionally create project-specific overrides
-cat > .github/.env.custom << 'EOF'
+cat > .github/env/90-project.env << 'EOF'
 ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_ENABLE_EOF=true
 GO_PRE_COMMIT_ENABLE_FUMPT=true
@@ -466,6 +551,8 @@ GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
 GO_PRE_COMMIT_ENABLE_WHITESPACE=true
 EOF
 ```
+
+> Prefer the legacy single-file layout? Create `.github/.env.base` (and an optional `.github/.env.custom`) instead — see the [Configuration](#-configuration) section for how the two modes are detected.
 
 ### 3. Install go-pre-commit
 
@@ -621,17 +708,17 @@ magex bench
 
 ### Benchmark Results
 
-| Benchmark                                                                   | Iterations |     ns/op |    B/op | allocs/op | Description                      |
-|-----------------------------------------------------------------------------|------------|----------:|--------:|----------:|----------------------------------|
-| [PreCommitSystem_SmallProject](internal/benchmark_test.go)                  | 89,523     |    13,555 |  15,390 |        73 | Small project (3 files)          |
-| [PreCommitSystem_EndToEnd](internal/benchmark_test.go)                      | 44,742     |    24,436 |  36,070 |       111 | Full system (8 files)            |
-| [PreCommitSystem_LargeProject](internal/benchmark_test.go)                  | 24,704     |    48,146 | 108,986 |       229 | Large project (25+ files)        |
-| [Runner_New](internal/runner/runner_bench_test.go)                          | 4,086,028  |       293 |     592 |        10 | Runner creation                  |
-| [Runner_SingleCheck](internal/runner/runner_bench_test.go)                  | 187,984    |     6,415 |   7,312 |        33 | Single check execution           |
-| [WhitespaceCheck_SmallFile](internal/checks/builtin/builtin_bench_test.go)  | 6,148,348  |       195 |     128 |         2 | Whitespace check (small file)    |
-| [WhitespaceCheck_Parallel](internal/checks/builtin/builtin_bench_test.go)   | 14,334,333 |        85 |     128 |         2 | Parallel whitespace processing   |
-| [Repository_GetAllFiles](internal/git/git_bench_test.go)                    | 315        | 3,776,237 |  69,746 |       210 | Git file enumeration             |
-| [Runner_Performance_SmallCommit](internal/runner/performance_bench_test.go) | 58,266     |    20,899 |  16,990 |       112 | Typical small commit (1-3 files) |
+| Benchmark                                                                               | Iterations |     ns/op |    B/op | allocs/op | Description                      |
+| --------------------------------------------------------------------------------------- | ---------- | --------: | ------: | --------: | -------------------------------- |
+| [BenchmarkPreCommitSystem_SmallProject](internal/benchmark_test.go)                     | 91,188     |    12,737 |  15,542 |        70 | Small project (3 files)          |
+| [BenchmarkPreCommitSystem_EndToEnd](internal/benchmark_test.go)                         | 50,778     |    21,962 |  36,218 |       108 | Full system (8 files)            |
+| [BenchmarkPreCommitSystem_LargeProject](internal/benchmark_test.go)                     | 23,516     |    53,930 | 109,041 |       226 | Large project (25+ files)        |
+| [BenchmarkRunner_New](internal/runner/runner_bench_test.go)                             | 3,575,842  |     337.0 |     624 |        11 | Runner creation                  |
+| [BenchmarkRunner_Run_SingleCheck](internal/runner/runner_bench_test.go)                 | 236,641    |     5,037 |   7,288 |        31 | Single check execution           |
+| [BenchmarkWhitespaceCheck_Run_SmallFile](internal/checks/builtin/builtin_bench_test.go) | 6,065,563  |     184.3 |     128 |         2 | Whitespace check (small file)    |
+| [BenchmarkWhitespaceCheck_Parallel](internal/checks/builtin/builtin_bench_test.go)      | 8,422,394  |     142.6 |     128 |         2 | Parallel whitespace processing   |
+| [BenchmarkRepository_GetAllFiles](internal/git/git_bench_test.go)                       | 154        | 7,638,277 | 109,620 |       353 | Git file enumeration             |
+| [BenchmarkRunner_Performance_SmallCommit](internal/runner/performance_bench_test.go)    | 53,103     |    21,797 |  16,929 |       105 | Typical small commit (1-3 files) |
 
 > These benchmarks demonstrate lightning-fast pre-commit processing with minimal memory overhead.
 > Performance results measured on Apple M1 Max (ARM64) showing microsecond-level execution times for individual checks and sub-second processing for complete commit workflows.
