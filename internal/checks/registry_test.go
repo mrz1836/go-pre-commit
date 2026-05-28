@@ -21,7 +21,7 @@ func (m *mockCheck) Description() string {
 	return m.desc
 }
 
-func (m *mockCheck) Metadata() interface{} {
+func (m *mockCheck) Metadata() any {
 	return CheckMetadata{
 		Name:              m.name,
 		Description:       m.desc,

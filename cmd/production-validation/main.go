@@ -15,7 +15,7 @@ import (
 type dependencies struct {
 	newProductionReadinessValidator func() (*validation.ProductionReadinessValidator, error)
 	generateReport                  func(v *validation.ProductionReadinessValidator) (*validation.ProductionReadinessReport, error)
-	logFatalf                       func(format string, v ...interface{})
+	logFatalf                       func(format string, v ...any)
 	osExit                          func(code int)
 }
 

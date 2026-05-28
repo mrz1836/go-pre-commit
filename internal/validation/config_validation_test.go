@@ -420,7 +420,7 @@ func (s *ConfigValidationTestSuite) TestConfigurationDefaults() {
 	s.Require().NoError(err, "Minimal configuration should load successfully")
 
 	// Validate all defaults (based on actual code defaults in config.go)
-	expectedDefaults := map[string]interface{}{
+	expectedDefaults := map[string]any{
 		"LogLevel":                    "info",
 		"MaxFileSize":                 int64(10 * 1024 * 1024), // 10MB
 		"MaxFilesOpen":                100,

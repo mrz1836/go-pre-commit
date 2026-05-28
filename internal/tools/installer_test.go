@@ -231,8 +231,8 @@ func (s *InstallerTestSuite) TestConcurrentIsInstalled() {
 
 // TestInstallToolMocked tests the install logic without actually installing
 func (s *InstallerTestSuite) TestInstallToolMocked() {
-	// This test would require mocking exec.Command which is complex
-	// For now, we ensure the function exists and can be called
+	// Fake the install runner so no real `go install` / network call is made
+	fakeInstallErr(s.T())
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
@@ -250,7 +250,8 @@ func (s *InstallerTestSuite) TestInstallToolMocked() {
 }
 
 func (s *InstallerTestSuite) TestInstallGolangciLintSpecialHandling() {
-	// Test that golangci-lint gets special handling
+	// Test that golangci-lint gets special handling; fake the runner so no network
+	fakeInstallErr(s.T())
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
@@ -276,7 +277,9 @@ func (s *InstallerTestSuite) TestInstallGolangciLintSpecialHandling() {
 }
 
 func (s *InstallerTestSuite) TestInstallAllToolsErrorAggregation() {
-	// Test that InstallAllTools properly aggregates errors
+	// Test that InstallAllTools properly aggregates errors; fake the runner so no
+	// real installs are attempted.
+	fakeInstallErr(s.T())
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
@@ -293,6 +296,9 @@ func (s *InstallerTestSuite) TestInstallAllToolsErrorAggregation() {
 }
 
 func (s *InstallerTestSuite) TestToolVersionParsing() {
+	// Fake the runner so no real `go install` / network call is made
+	fakeInstallErr(s.T())
+
 	// Test that latest version is handled properly
 	tool := &Tool{
 		Name:       "test-tool",
@@ -310,7 +316,9 @@ func (s *InstallerTestSuite) TestToolVersionParsing() {
 }
 
 func (s *InstallerTestSuite) TestConcurrentToolInstallation() {
-	// Test that concurrent installations don't cause data races
+	// Test that concurrent installations don't cause data races; fake the runner
+	// so the goroutines fail fast without any network access.
+	fakeInstallErr(s.T())
 	done := make(chan bool, 5)
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()

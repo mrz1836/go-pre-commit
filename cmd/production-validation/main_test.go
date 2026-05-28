@@ -113,7 +113,7 @@ func TestMain_InvalidFormat(t *testing.T) {
 	// Capture log.Fatal
 	fatalCalled := false
 	testDeps := getDependencies()
-	testDeps.logFatalf = func(format string, v ...interface{}) {
+	testDeps.logFatalf = func(format string, v ...any) {
 		fatalCalled = true
 		assert.Contains(t, fmt.Sprintf(format, v...), "Unsupported output format")
 		panic("log.Fatal called")
@@ -257,7 +257,7 @@ func TestMain_ErrorHandling(t *testing.T) {
 			// Capture log.Fatal
 			fatalCalled := false
 			var fatalMessage string
-			testDeps.logFatalf = func(format string, v ...interface{}) {
+			testDeps.logFatalf = func(format string, v ...any) {
 				fatalCalled = true
 				fatalMessage = fmt.Sprintf(format, v...)
 				panic("log.Fatal called")
@@ -765,7 +765,7 @@ func TestMainWithDeps_DirectoryCreationFailure(t *testing.T) {
 	// Capture log.Fatal
 	fatalCalled := false
 	var fatalMessage string
-	testDeps.logFatalf = func(format string, v ...interface{}) {
+	testDeps.logFatalf = func(format string, v ...any) {
 		fatalCalled = true
 		fatalMessage = fmt.Sprintf(format, v...)
 		panic("log.Fatal called")
@@ -819,7 +819,7 @@ func TestMainWithDeps_WriteFileFailure(t *testing.T) {
 	// Capture log.Fatal
 	fatalCalled := false
 	var fatalMessage string
-	testDeps.logFatalf = func(format string, v ...interface{}) {
+	testDeps.logFatalf = func(format string, v ...any) {
 		fatalCalled = true
 		fatalMessage = fmt.Sprintf(format, v...)
 		panic("log.Fatal called")

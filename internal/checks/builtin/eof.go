@@ -44,7 +44,7 @@ func (c *EOFCheck) Description() string {
 }
 
 // Metadata returns comprehensive metadata about the check
-func (c *EOFCheck) Metadata() interface{} {
+func (c *EOFCheck) Metadata() any {
 	return CheckMetadata{
 		Name:              "eof",
 		Description:       "Ensure text files end with a newline character",

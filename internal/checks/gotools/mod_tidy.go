@@ -69,7 +69,7 @@ func (c *ModTidyCheck) Description() string {
 }
 
 // Metadata returns comprehensive metadata about the check
-func (c *ModTidyCheck) Metadata() interface{} {
+func (c *ModTidyCheck) Metadata() any {
 	return CheckMetadata{
 		Name:              "mod-tidy",
 		Description:       "Ensure go.mod and go.sum are up to date and tidy",

@@ -171,17 +171,17 @@ func TestLoadManifestFormats(t *testing.T) {
 	tests := []struct {
 		name     string
 		filename string
-		marshal  func(interface{}) ([]byte, error)
+		marshal  func(any) ([]byte, error)
 	}{
 		{
 			name:     "YAML with .yaml extension",
 			filename: "plugin.yaml",
-			marshal:  func(v interface{}) ([]byte, error) { return yaml.Marshal(v) },
+			marshal:  func(v any) ([]byte, error) { return yaml.Marshal(v) },
 		},
 		{
 			name:     "YAML with .yml extension",
 			filename: "plugin.yml",
-			marshal:  func(v interface{}) ([]byte, error) { return yaml.Marshal(v) },
+			marshal:  func(v any) ([]byte, error) { return yaml.Marshal(v) },
 		},
 		{
 			name:     "JSON",

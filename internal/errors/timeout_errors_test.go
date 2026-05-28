@@ -173,11 +173,6 @@ func TestNewCheckTimeoutError(t *testing.T) {
 		expectedConfigVar string
 	}{
 		{
-			name:              "fmt check",
-			checkName:         "fmt",
-			expectedConfigVar: "GO_PRE_COMMIT_FMT_TIMEOUT",
-		},
-		{
 			name:              "fumpt check",
 			checkName:         "fumpt",
 			expectedConfigVar: "GO_PRE_COMMIT_FUMPT_TIMEOUT",
@@ -201,11 +196,6 @@ func TestNewCheckTimeoutError(t *testing.T) {
 			name:              "eof check",
 			checkName:         "eof",
 			expectedConfigVar: "GO_PRE_COMMIT_EOF_TIMEOUT",
-		},
-		{
-			name:              "ai_detection check",
-			checkName:         "ai_detection",
-			expectedConfigVar: "GO_PRE_COMMIT_AI_DETECTION_TIMEOUT",
 		},
 		{
 			name:              "unknown check defaults to global",

@@ -509,7 +509,7 @@ func TestInitConfigNoRepositoryRoot(t *testing.T) {
 func TestPrintFunctionsWithColor(t *testing.T) {
 	tests := []struct {
 		name         string
-		printFunc    func(string, ...interface{})
+		printFunc    func(string, ...any)
 		expectedIcon string
 		isStderr     bool
 	}{
@@ -606,9 +606,9 @@ func TestPrintFunctionsWithColor(t *testing.T) {
 func TestPrintFunctionsFormatting(t *testing.T) {
 	tests := []struct {
 		name      string
-		printFunc func(string, ...interface{})
+		printFunc func(string, ...any)
 		format    string
-		args      []interface{}
+		args      []any
 		expected  string
 		isStderr  bool
 	}{
@@ -616,7 +616,7 @@ func TestPrintFunctionsFormatting(t *testing.T) {
 			name:      "printSuccess with multiple args",
 			printFunc: printSuccess,
 			format:    "Operation %s completed in %d ms",
-			args:      []interface{}{"test", 42},
+			args:      []any{"test", 42},
 			expected:  "✓ Operation test completed in 42 ms",
 			isStderr:  false,
 		},
@@ -624,7 +624,7 @@ func TestPrintFunctionsFormatting(t *testing.T) {
 			name:      "printError with no args",
 			printFunc: printError,
 			format:    "Simple error message",
-			args:      []interface{}{},
+			args:      []any{},
 			expected:  "✗ Simple error message",
 			isStderr:  true,
 		},
@@ -632,7 +632,7 @@ func TestPrintFunctionsFormatting(t *testing.T) {
 			name:      "printInfo with float",
 			printFunc: printInfo,
 			format:    "Progress: %.2f%%",
-			args:      []interface{}{75.5},
+			args:      []any{75.5},
 			expected:  "ℹ Progress: 75.50%",
 			isStderr:  false,
 		},
@@ -640,7 +640,7 @@ func TestPrintFunctionsFormatting(t *testing.T) {
 			name:      "printWarning with boolean",
 			printFunc: printWarning,
 			format:    "Feature enabled: %t",
-			args:      []interface{}{true},
+			args:      []any{true},
 			expected:  "⚠ Feature enabled: true",
 			isStderr:  true,
 		},

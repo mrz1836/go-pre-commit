@@ -103,7 +103,7 @@ func (p *Plugin) Description() string {
 }
 
 // Metadata returns comprehensive metadata about the plugin
-func (p *Plugin) Metadata() interface{} {
+func (p *Plugin) Metadata() any {
 	return PluginMetadata{
 		Name:              p.manifest.Name,
 		Description:       p.manifest.Description,

@@ -90,7 +90,7 @@ func TestWhitespaceCheckWithTimeout_Metadata(t *testing.T) {
 func TestCheckMetadata_FieldValidation(t *testing.T) {
 	tests := []struct {
 		name     string
-		check    interface{ Metadata() interface{} }
+		check    interface{ Metadata() any }
 		validate func(t *testing.T, metadata CheckMetadata)
 	}{
 		{

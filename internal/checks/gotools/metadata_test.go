@@ -139,7 +139,7 @@ func TestAllGotoolsChecks_Metadata(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		check     interface{ Metadata() interface{} }
+		check     interface{ Metadata() any }
 		checkName string
 		category  string
 		hasFiles  bool

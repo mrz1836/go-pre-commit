@@ -86,7 +86,7 @@ func (c *FumptCheck) Description() string {
 }
 
 // Metadata returns comprehensive metadata about the check
-func (c *FumptCheck) Metadata() interface{} {
+func (c *FumptCheck) Metadata() any {
 	return CheckMetadata{
 		Name:              "fumpt",
 		Description:       "Format Go code with gofumpt (stricter gofmt)",

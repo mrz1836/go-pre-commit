@@ -58,6 +58,8 @@ func TestSetInstallTimeout_ConcurrentAccess(t *testing.T) {
 }
 
 func TestInstallTool_TimeoutConfiguration(t *testing.T) {
+	fakeInstallBlocking(t) // blocks until the timeout fires; no network
+
 	// Test that InstallTool respects the configured timeout
 	originalTimeout := GetInstallTimeout()
 	defer SetInstallTimeout(originalTimeout)
@@ -98,6 +100,8 @@ func TestInstallTool_TimeoutConfiguration(t *testing.T) {
 }
 
 func TestInstallTool_ContextAlreadyCanceled(t *testing.T) {
+	fakeInstallBlocking(t) // returns ctx.Err() immediately; no network
+
 	originalTimeout := GetInstallTimeout()
 	defer SetInstallTimeout(originalTimeout)
 
@@ -120,6 +124,8 @@ func TestInstallTool_ContextAlreadyCanceled(t *testing.T) {
 }
 
 func TestInstallGolangciLint_TimeoutHandling(t *testing.T) {
+	fakeInstallBlocking(t) // both primary and fallback block until timeout; no network
+
 	originalTimeout := GetInstallTimeout()
 	defer SetInstallTimeout(originalTimeout)
 
@@ -160,6 +166,7 @@ func TestInstallTool_ProgressTracking(t *testing.T) {
 
 	// This test mainly ensures progress tracking doesn't break installation
 	// We can't easily test the actual progress output without complex mocking
+	fakeInstallErr(t) // fail fast without network
 
 	fakeTool := &Tool{
 		Name:       "quick-fail-tool",

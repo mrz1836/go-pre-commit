@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -19,6 +20,9 @@ import (
 // mockHTTPClient redirects requests to test server
 type mockHTTPClient struct {
 	testServerURL string
+	// timeout overrides the client timeout; when zero it defaults to 15s to
+	// match version.go. Tests use a small value to exercise timeout paths fast.
+	timeout time.Duration
 }
 
 func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
@@ -35,11 +39,29 @@ func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 		newReq.Header[k] = v
 	}
 
-	// Use default client with timeout to make the request to test server
+	timeout := m.timeout
+	if timeout == 0 {
+		timeout = 15 * time.Second // Match the timeout from version.go
+	}
+
+	// Use a client with timeout to make the request to the test server
 	client := &http.Client{
-		Timeout: 15 * time.Second, // Match the timeout from version.go
+		Timeout: timeout,
 	}
 	return client.Do(newReq) // #nosec G704 - request is made to a controlled test server
+}
+
+// errSimulatedDNS simulates a DNS/connection failure for injected HTTP clients.
+var errSimulatedDNS = errors.New("dial tcp: lookup invalid-host: no such host")
+
+// errHTTPClient is an HTTPClient that always fails, simulating connection-level
+// errors (DNS failure, connection refused) without any real network access.
+type errHTTPClient struct {
+	err error
+}
+
+func (e *errHTTPClient) Do(_ *http.Request) (*http.Response, error) {
+	return nil, e.err
 }
 
 // NetworkErrorTestSuite tests network error handling across the application
@@ -84,6 +106,7 @@ func (s *NetworkErrorTestSuite) TestGetLatestRelease_NetworkErrors() {
 		serverFunc    func() *httptest.Server
 		owner         string
 		repo          string
+		clientTimeout time.Duration // overrides the mock client timeout (0 = default)
 		expectError   bool
 		errorContains string
 		description   string
@@ -152,13 +175,14 @@ func (s *NetworkErrorTestSuite) TestGetLatestRelease_NetworkErrors() {
 			name: "Server connection timeout",
 			serverFunc: func() *httptest.Server {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					// Simulate slow server by sleeping longer than client timeout
-					time.Sleep(20 * time.Second) // Longer than the 15s client timeout
+					// Simulate a slow server by sleeping longer than the client timeout
+					time.Sleep(300 * time.Millisecond) // Longer than the 100ms client timeout below
 					w.WriteHeader(http.StatusOK)
 				}))
 			},
 			owner:         "test",
 			repo:          "repo",
+			clientTimeout: 100 * time.Millisecond,
 			expectError:   true,
 			errorContains: "fetching release",
 			description:   "Should handle connection timeouts",
@@ -227,20 +251,12 @@ func (s *NetworkErrorTestSuite) TestGetLatestRelease_NetworkErrors() {
 			// Create a mock HTTP client that redirects to our test server
 			mockClient := &mockHTTPClient{
 				testServerURL: server.URL,
+				timeout:       tc.clientTimeout,
 			}
 
-			var err error
-			var release *version.GitHubRelease
-
-			if tc.name == "Successful response" {
-				// For successful test, we'll just verify it doesn't error with valid repos
-				// In real test, you might use dependency injection or interface to mock HTTP calls
-				s.T().Log("This test would require HTTP client mocking for full validation")
-				return // Skip this test as it requires production GitHub API
-			}
-
-			// Use the mock client to test error scenarios
-			release, err = version.GetLatestReleaseWithVersionAndClient(tc.owner, tc.repo, "v1.0.0", mockClient)
+			// Use the mock client (redirecting to the test server) for every
+			// scenario, including the successful response.
+			release, err := version.GetLatestReleaseWithVersionAndClient(tc.owner, tc.repo, "v1.0.0", mockClient)
 
 			if tc.expectError {
 				s.Require().Error(err, tc.description)
@@ -250,7 +266,8 @@ func (s *NetworkErrorTestSuite) TestGetLatestRelease_NetworkErrors() {
 				s.Nil(release, "Release should be nil on error")
 			} else {
 				s.Require().NoError(err, tc.description)
-				s.NotNil(release, "Release should not be nil on success")
+				s.Require().NotNil(release, "Release should not be nil on success")
+				s.Equal("v1.2.3", release.TagName, "Should parse the release tag")
 			}
 
 			s.T().Logf("✓ %s: %s", tc.name, tc.description)
@@ -258,12 +275,14 @@ func (s *NetworkErrorTestSuite) TestGetLatestRelease_NetworkErrors() {
 	}
 }
 
-// TestGetLatestRelease_AuthenticationScenarios tests GitHub authentication scenarios
+// TestGetLatestRelease_AuthenticationScenarios verifies the correct Authorization
+// header is sent based on the configured token environment, using a local test
+// server that captures the header (no real network call).
 func (s *NetworkErrorTestSuite) TestGetLatestRelease_AuthenticationScenarios() {
 	testCases := []struct {
 		name        string
 		setupAuth   func()
-		expectError bool
+		wantAuth    string
 		description string
 	}{
 		{
@@ -272,8 +291,8 @@ func (s *NetworkErrorTestSuite) TestGetLatestRelease_AuthenticationScenarios() {
 				_ = os.Unsetenv("GITHUB_TOKEN")
 				_ = os.Unsetenv("GH_TOKEN")
 			},
-			expectError: false, // Should work without auth (with rate limits)
-			description: "Should work without authentication token",
+			wantAuth:    "",
+			description: "Should send no Authorization header without a token",
 		},
 		{
 			name: "GITHUB_TOKEN Set",
@@ -281,7 +300,7 @@ func (s *NetworkErrorTestSuite) TestGetLatestRelease_AuthenticationScenarios() {
 				_ = os.Setenv("GITHUB_TOKEN", "fake-token-for-testing")
 				_ = os.Unsetenv("GH_TOKEN")
 			},
-			expectError: false, // Should work (though token is fake)
+			wantAuth:    "token fake-token-for-testing",
 			description: "Should use GITHUB_TOKEN when available",
 		},
 		{
@@ -290,7 +309,7 @@ func (s *NetworkErrorTestSuite) TestGetLatestRelease_AuthenticationScenarios() {
 				_ = os.Unsetenv("GITHUB_TOKEN")
 				_ = os.Setenv("GH_TOKEN", "fake-gh-token-for-testing")
 			},
-			expectError: false, // Should work (though token is fake)
+			wantAuth:    "token fake-gh-token-for-testing",
 			description: "Should use GH_TOKEN when GITHUB_TOKEN is not available",
 		},
 		{
@@ -299,7 +318,7 @@ func (s *NetworkErrorTestSuite) TestGetLatestRelease_AuthenticationScenarios() {
 				_ = os.Setenv("GITHUB_TOKEN", "github-token-priority")
 				_ = os.Setenv("GH_TOKEN", "gh-token-fallback")
 			},
-			expectError: false, // Should work
+			wantAuth:    "token github-token-priority",
 			description: "Should prioritize GITHUB_TOKEN over GH_TOKEN",
 		},
 	}
@@ -308,67 +327,50 @@ func (s *NetworkErrorTestSuite) TestGetLatestRelease_AuthenticationScenarios() {
 		s.Run(tc.name, func() {
 			tc.setupAuth()
 
-			// Use a repository that exists but may have rate limits to test authentication paths
-			// This will make actual network calls
-			_, err := version.GetLatestReleaseWithVersion("mrz1836", "go-pre-commit", "v1.0.0")
+			var gotAuth string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotAuth = r.Header.Get("Authorization")
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				_ = json.NewEncoder(w).Encode(version.GitHubRelease{TagName: "v1.0.0"})
+			}))
+			defer server.Close()
 
-			if tc.expectError {
-				s.Require().Error(err, tc.description)
-			} else {
-				// May error due to network/rate limits, but shouldn't error due to auth setup
-				if err != nil {
-					s.T().Logf("Network/API error (expected in test environment): %v", err)
-				}
-			}
+			mockClient := &mockHTTPClient{testServerURL: server.URL}
+			release, err := version.GetLatestReleaseWithVersionAndClient("mrz1836", "go-pre-commit", "v1.0.0", mockClient)
 
-			s.T().Logf("✓ %s: %s", tc.name, tc.description)
+			s.Require().NoError(err, tc.description)
+			s.Require().NotNil(release)
+			s.Equal(tc.wantAuth, gotAuth, tc.description)
 		})
 	}
 }
 
-// TestNetworkConnectivity tests network connectivity scenarios
+// TestNetworkConnectivity tests network connectivity error handling using
+// injected clients, so no real DNS resolution or network call is performed.
 func (s *NetworkErrorTestSuite) TestNetworkConnectivity() {
-	testCases := []struct {
-		name        string
-		testFunc    func() error
-		expectError bool
-		description string
-	}{
-		{
-			name: "Invalid hostname",
-			testFunc: func() error {
-				// This will definitely fail due to invalid hostname
-				_, err := version.GetLatestReleaseWithVersion("invalid-hostname-that-does-not-exist", "repo", "v1.0.0")
-				return err
-			},
-			expectError: true,
-			description: "Should handle DNS resolution failures",
-		},
-		{
-			name: "Valid hostname but nonexistent repository",
-			testFunc: func() error {
-				// This will fail with 404 from GitHub API
-				_, err := version.GetLatestReleaseWithVersion("nonexistentuser12345", "nonexistentrepo12345", "v1.0.0")
-				return err
-			},
-			expectError: true,
-			description: "Should handle non-existent repositories",
-		},
-	}
+	s.Run("DNS resolution failure", func() {
+		// Simulate a DNS/connection error via an always-failing client
+		client := &errHTTPClient{err: errSimulatedDNS}
+		_, err := version.GetLatestReleaseWithVersionAndClient("invalid-host", "repo", "v1.0.0", client)
 
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			err := tc.testFunc()
+		s.Require().Error(err, "Should surface connection errors")
+		s.Contains(err.Error(), "fetching release", "Connection errors are wrapped as fetch failures")
+	})
 
-			if tc.expectError {
-				s.Require().Error(err, tc.description)
-			} else {
-				s.Require().NoError(err, tc.description)
-			}
+	s.Run("Nonexistent repository (404)", func() {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"message": "Not Found"}`))
+		}))
+		defer server.Close()
 
-			s.T().Logf("✓ %s: %s", tc.name, tc.description)
-		})
-	}
+		client := &mockHTTPClient{testServerURL: server.URL}
+		_, err := version.GetLatestReleaseWithVersionAndClient("nonexistentuser12345", "nonexistentrepo12345", "v1.0.0", client)
+
+		s.Require().Error(err, "Should handle non-existent repositories")
+		s.Contains(err.Error(), "GitHub API request failed")
+	})
 }
 
 // TestVersionComparison_NetworkIndependent tests version comparison without network calls
@@ -583,19 +585,28 @@ func (s *NetworkErrorTestSuite) TestNetworkErrorRecovery() {
 		},
 	}
 
+	// Local server that always returns 404, so each attempt fails deterministically
+	// without any real network call.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message": "Not Found"}`))
+	}))
+	defer server.Close()
+
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			var lastErr error
 
 			// Simulate retry logic (the actual function doesn't implement retries)
 			for attempt := 0; attempt < tc.attempts; attempt++ {
-				_, err := version.GetLatestReleaseWithVersion("nonexistent-user", "nonexistent-repo", "v1.0.0")
+				client := &mockHTTPClient{testServerURL: server.URL}
+				_, err := version.GetLatestReleaseWithVersionAndClient("nonexistent-user", "nonexistent-repo", "v1.0.0", client)
 				lastErr = err
 
 				if err != nil {
 					s.T().Logf("Attempt %d failed: %v", attempt+1, err)
 					if attempt < tc.attempts-1 {
-						time.Sleep(100 * time.Millisecond) // Brief delay between retries
+						time.Sleep(10 * time.Millisecond) // Brief delay between retries
 					}
 				} else {
 					break

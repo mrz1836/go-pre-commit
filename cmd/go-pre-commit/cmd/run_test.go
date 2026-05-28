@@ -47,7 +47,7 @@ func TestRunCmd_FlagParsing(t *testing.T) {
 		name     string
 		args     []string
 		flagName string
-		expected interface{}
+		expected any
 	}{
 		{
 			name:     "all-files flag",
@@ -216,7 +216,7 @@ func TestRunCmd_runChecksWithConfig(t *testing.T) {
 				Files:    []string{"test.go"},
 				Parallel: 1,
 			},
-			args:    []string{"fmt"},
+			args:    []string{"eof"},
 			wantErr: false,
 		},
 		{
@@ -310,6 +310,7 @@ func TestRunCmd_runChecksWithConfig(t *testing.T) {
 
 // setupTempGitRepoForRun creates a temporary git repository for testing run functionality
 func setupTempGitRepoForRun(t *testing.T, enabled, hasConfig bool) string {
+	t.Helper()
 	tempDir := t.TempDir()
 
 	// Create .git directory and minimal git structure
@@ -363,7 +364,6 @@ func setupTempGitRepoForRun(t *testing.T, enabled, hasConfig bool) string {
 		}
 
 		// Add basic check configurations
-		configContent += "GO_PRE_COMMIT_ENABLE_FMT=true\n"
 		configContent += "GO_PRE_COMMIT_ENABLE_FUMPT=false\n"
 		configContent += "GO_PRE_COMMIT_ENABLE_LINT=false\n"
 		configContent += "GO_PRE_COMMIT_ENABLE_MOD_TIDY=false\n"

@@ -518,13 +518,11 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 					MaxFilesOpen: 100,
 					LogLevel:     "info",
 				}
-				cfg.CheckTimeouts.Fmt = 30
 				cfg.CheckTimeouts.Fumpt = 30
 				cfg.CheckTimeouts.Lint = 60
 				cfg.CheckTimeouts.ModTidy = 30
 				cfg.CheckTimeouts.Whitespace = 30
 				cfg.CheckTimeouts.EOF = 30
-				cfg.CheckTimeouts.AIDetection = 30
 				cfg.CheckTimeouts.Gitleaks = 60
 				cfg.Performance.ParallelWorkers = 4
 				cfg.ToolVersions.Fumpt = "latest"
@@ -545,20 +543,18 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 					MaxFilesOpen: 100,
 					LogLevel:     "info",
 				}
-				cfg.CheckTimeouts.Fmt = 0    // Invalid
 				cfg.CheckTimeouts.Fumpt = -5 // Invalid
 				cfg.CheckTimeouts.Lint = 60
-				cfg.CheckTimeouts.ModTidy = 30
+				cfg.CheckTimeouts.ModTidy = 0 // Invalid
 				cfg.CheckTimeouts.Whitespace = 30
 				cfg.CheckTimeouts.EOF = 30
-				cfg.CheckTimeouts.AIDetection = 30
 				cfg.CheckTimeouts.Gitleaks = 0 // Invalid
 				cfg.Performance.ParallelWorkers = 4
 				cfg.ToolInstallation.Timeout = 0 // Invalid
 				return cfg
 			},
 			expectError: true,
-			errorCount:  5, // timeout, tool install timeout, fmt timeout, fumpt timeout, gitleaks timeout
+			errorCount:  5, // timeout, tool install timeout, fumpt timeout, modTidy timeout, gitleaks timeout
 			description: "Should reject invalid timeout values",
 		},
 		{
@@ -570,13 +566,11 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 					MaxFilesOpen: 0,  // Invalid
 					LogLevel:     "info",
 				}
-				cfg.CheckTimeouts.Fmt = 30
 				cfg.CheckTimeouts.Fumpt = 30
 				cfg.CheckTimeouts.Lint = 60
 				cfg.CheckTimeouts.ModTidy = 30
 				cfg.CheckTimeouts.Whitespace = 30
 				cfg.CheckTimeouts.EOF = 30
-				cfg.CheckTimeouts.AIDetection = 30
 				cfg.CheckTimeouts.Gitleaks = 0       // Invalid
 				cfg.Performance.ParallelWorkers = -1 // Invalid
 				cfg.ToolInstallation.Timeout = 300
@@ -595,13 +589,11 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 					MaxFilesOpen: 100,
 					LogLevel:     "invalid", // Invalid
 				}
-				cfg.CheckTimeouts.Fmt = 30
 				cfg.CheckTimeouts.Fumpt = 30
 				cfg.CheckTimeouts.Lint = 60
 				cfg.CheckTimeouts.ModTidy = 30
 				cfg.CheckTimeouts.Whitespace = 30
 				cfg.CheckTimeouts.EOF = 30
-				cfg.CheckTimeouts.AIDetection = 30
 				cfg.CheckTimeouts.Gitleaks = 0 // Invalid
 				cfg.Performance.ParallelWorkers = 4
 				cfg.ToolVersions.Fumpt = "invalid-version"     // Invalid
@@ -622,13 +614,11 @@ func (s *ConfigUtilitiesTestSuite) TestConfigValidation_ComprehensiveRules() {
 					MaxFilesOpen: 100,
 					LogLevel:     "info",
 				}
-				cfg.CheckTimeouts.Fmt = 30
 				cfg.CheckTimeouts.Fumpt = 30
 				cfg.CheckTimeouts.Lint = 60
 				cfg.CheckTimeouts.ModTidy = 30
 				cfg.CheckTimeouts.Whitespace = 30
 				cfg.CheckTimeouts.EOF = 30
-				cfg.CheckTimeouts.AIDetection = 30
 				cfg.CheckTimeouts.Gitleaks = 0 // Invalid
 				cfg.Performance.ParallelWorkers = 4
 				cfg.ToolInstallation.Timeout = 300

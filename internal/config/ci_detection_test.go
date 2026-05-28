@@ -211,38 +211,29 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 					Timeout: 300,
 				},
 				CheckTimeouts: struct {
-					Fmt         int
-					Fumpt       int
-					Goimports   int
-					Lint        int
-					ModTidy     int
-					Whitespace  int
-					EOF         int
-					AIDetection int
-					Gitleaks    int
+					Fumpt      int
+					Lint       int
+					ModTidy    int
+					Whitespace int
+					EOF        int
+					Gitleaks   int
 				}{
-					Fmt:         30,
-					Fumpt:       30,
-					Goimports:   30,
-					Lint:        600,
-					ModTidy:     60,
-					Whitespace:  30,
-					EOF:         30,
-					AIDetection: 30,
-					Gitleaks:    60,
+					Fumpt:      30,
+					Lint:       600,
+					ModTidy:    60,
+					Whitespace: 30,
+					EOF:        30,
+					Gitleaks:   60,
 				},
 			},
 			expectedAdjustments: map[string]int{
 				"global":           1440, // 24 minutes (720 * 2)
 				"toolInstallation": 600,  // 10 minutes (300 * 2)
 				"lint":             1800, // 30 minutes (600 * 3)
-				"fmt":              60,   // 1 minute
 				"fumpt":            60,   // 1 minute
-				"goimports":        60,   // 1 minute
 				"modTidy":          180,  // 3 minutes
 				"whitespace":       45,   // 45 seconds
 				"eof":              45,   // 45 seconds
-				"aiDetection":      60,   // 1 minute
 			},
 		},
 		{
@@ -255,38 +246,29 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 					Timeout: 180, // Custom timeout
 				},
 				CheckTimeouts: struct {
-					Fmt         int
-					Fumpt       int
-					Goimports   int
-					Lint        int
-					ModTidy     int
-					Whitespace  int
-					EOF         int
-					AIDetection int
-					Gitleaks    int
+					Fumpt      int
+					Lint       int
+					ModTidy    int
+					Whitespace int
+					EOF        int
+					Gitleaks   int
 				}{
-					Fmt:         45,  // Custom timeout
-					Fumpt:       30,  // Default - should be adjusted
-					Goimports:   30,  // Default - should be adjusted
-					Lint:        120, // Custom timeout
-					ModTidy:     45,  // Custom timeout
-					Whitespace:  30,  // Default - should be adjusted
-					EOF:         30,  // Default - should be adjusted
-					AIDetection: 30,  // Default - should be adjusted
-					Gitleaks:    60,  // Default - should be adjusted
+					Fumpt:      30,  // Default - should be adjusted
+					Lint:       120, // Custom timeout
+					ModTidy:    45,  // Custom timeout
+					Whitespace: 30,  // Default - should be adjusted
+					EOF:        30,  // Default - should be adjusted
+					Gitleaks:   60,  // Default - should be adjusted
 				},
 			},
 			expectedAdjustments: map[string]int{
 				"global":           120, // Unchanged (custom)
 				"toolInstallation": 180, // Unchanged (custom)
 				"lint":             120, // Unchanged (custom)
-				"fmt":              45,  // Unchanged (custom)
 				"fumpt":            60,  // Adjusted (was default)
-				"goimports":        60,  // Adjusted (was default)
 				"modTidy":          45,  // Unchanged (custom)
 				"whitespace":       45,  // Adjusted (was default)
 				"eof":              45,  // Adjusted (was default)
-				"aiDetection":      60,  // Adjusted (was default)
 			},
 		},
 	}
@@ -299,13 +281,10 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 			assert.Equal(t, tt.expectedAdjustments["global"], cfg.Timeout)
 			assert.Equal(t, tt.expectedAdjustments["toolInstallation"], cfg.ToolInstallation.Timeout)
 			assert.Equal(t, tt.expectedAdjustments["lint"], cfg.CheckTimeouts.Lint)
-			assert.Equal(t, tt.expectedAdjustments["fmt"], cfg.CheckTimeouts.Fmt)
 			assert.Equal(t, tt.expectedAdjustments["fumpt"], cfg.CheckTimeouts.Fumpt)
-			assert.Equal(t, tt.expectedAdjustments["goimports"], cfg.CheckTimeouts.Goimports)
 			assert.Equal(t, tt.expectedAdjustments["modTidy"], cfg.CheckTimeouts.ModTidy)
 			assert.Equal(t, tt.expectedAdjustments["whitespace"], cfg.CheckTimeouts.Whitespace)
 			assert.Equal(t, tt.expectedAdjustments["eof"], cfg.CheckTimeouts.EOF)
-			assert.Equal(t, tt.expectedAdjustments["aiDetection"], cfg.CheckTimeouts.AIDetection)
 		})
 	}
 }
@@ -516,25 +495,19 @@ func BenchmarkApplyCITimeoutAdjustments(b *testing.B) {
 			Timeout: 300,
 		},
 		CheckTimeouts: struct {
-			Fmt         int
-			Fumpt       int
-			Goimports   int
-			Lint        int
-			ModTidy     int
-			Whitespace  int
-			EOF         int
-			AIDetection int
-			Gitleaks    int
+			Fumpt      int
+			Lint       int
+			ModTidy    int
+			Whitespace int
+			EOF        int
+			Gitleaks   int
 		}{
-			Fmt:         30,
-			Fumpt:       30,
-			Goimports:   30,
-			Lint:        60,
-			ModTidy:     60,
-			Whitespace:  30,
-			EOF:         30,
-			AIDetection: 30,
-			Gitleaks:    60,
+			Fumpt:      30,
+			Lint:       60,
+			ModTidy:    60,
+			Whitespace: 30,
+			EOF:        30,
+			Gitleaks:   60,
 		},
 	}
 

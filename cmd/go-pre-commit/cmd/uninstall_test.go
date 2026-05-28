@@ -203,6 +203,7 @@ echo "Some other pre-commit hook"
 
 // setupTempGitRepoForUninstall creates a temporary git repository for testing uninstall functionality
 func setupTempGitRepoForUninstall(t *testing.T) string {
+	t.Helper()
 	tempDir := t.TempDir()
 
 	// Create .git directory and minimal git structure

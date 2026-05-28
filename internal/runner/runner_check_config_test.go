@@ -17,15 +17,12 @@ func TestGetCheckTimeout(t *testing.T) {
 		Enabled: true,
 		Timeout: 120, // Default timeout
 	}
-	cfg.CheckTimeouts.Fmt = 30
 	cfg.CheckTimeouts.Fumpt = 45
 	cfg.CheckTimeouts.Gitleaks = 60
-	cfg.CheckTimeouts.Goimports = 35
 	cfg.CheckTimeouts.Lint = 90
 	cfg.CheckTimeouts.ModTidy = 50
 	cfg.CheckTimeouts.Whitespace = 20
 	cfg.CheckTimeouts.EOF = 15
-	cfg.CheckTimeouts.AIDetection = 100
 
 	runner := New(cfg, "/tmp")
 
@@ -35,12 +32,6 @@ func TestGetCheckTimeout(t *testing.T) {
 		expectedTime time.Duration
 		description  string
 	}{
-		{
-			name:         "Fmt timeout",
-			checkName:    checkNameFmt,
-			expectedTime: 30 * time.Second,
-			description:  "Should return configured fmt timeout",
-		},
 		{
 			name:         "Fumpt timeout",
 			checkName:    checkNameFumpt,
@@ -52,12 +43,6 @@ func TestGetCheckTimeout(t *testing.T) {
 			checkName:    checkNameGitleaks,
 			expectedTime: 60 * time.Second,
 			description:  "Should return configured gitleaks timeout",
-		},
-		{
-			name:         "Goimports timeout",
-			checkName:    checkNameGoimports,
-			expectedTime: 35 * time.Second,
-			description:  "Should return configured goimports timeout",
 		},
 		{
 			name:         "Lint timeout",
@@ -82,12 +67,6 @@ func TestGetCheckTimeout(t *testing.T) {
 			checkName:    checkNameEOF,
 			expectedTime: 15 * time.Second,
 			description:  "Should return configured eof timeout",
-		},
-		{
-			name:         "AI Detection timeout",
-			checkName:    checkNameAIDetection,
-			expectedTime: 100 * time.Second,
-			description:  "Should return configured ai_detection timeout",
 		},
 		{
 			name:         "Unknown check defaults to global timeout",
@@ -117,7 +96,7 @@ func TestGetCheckTimeoutWithZeroValues(t *testing.T) {
 		Enabled: true,
 		Timeout: 60,
 	}
-	cfg.CheckTimeouts.Fmt = 0 // Zero timeout
+	cfg.CheckTimeouts.ModTidy = 0 // Zero timeout
 	cfg.CheckTimeouts.Fumpt = 0
 	cfg.CheckTimeouts.Lint = 0
 
@@ -127,7 +106,7 @@ func TestGetCheckTimeoutWithZeroValues(t *testing.T) {
 		checkName    string
 		expectedTime time.Duration
 	}{
-		{checkNameFmt, 0 * time.Second},
+		{checkNameModTidy, 0 * time.Second},
 		{checkNameFumpt, 0 * time.Second},
 		{checkNameLint, 0 * time.Second},
 		{"unknown", 60 * time.Second}, // Should still use global timeout
@@ -147,12 +126,9 @@ func TestIsCheckEnabled(t *testing.T) {
 	cfg := &config.Config{
 		Enabled: true,
 	}
-	cfg.Checks.AIDetection = true
 	cfg.Checks.EOF = true
-	cfg.Checks.Fmt = false
 	cfg.Checks.Fumpt = true
 	cfg.Checks.Gitleaks = false
-	cfg.Checks.Goimports = true
 	cfg.Checks.Lint = true
 	cfg.Checks.ModTidy = false
 	cfg.Checks.Whitespace = true
@@ -166,22 +142,10 @@ func TestIsCheckEnabled(t *testing.T) {
 		description string
 	}{
 		{
-			name:        "AI Detection enabled",
-			checkName:   checkNameAIDetection,
-			expected:    true,
-			description: "Should return true when ai_detection is enabled",
-		},
-		{
 			name:        "EOF enabled",
 			checkName:   checkNameEOF,
 			expected:    true,
 			description: "Should return true when eof is enabled",
-		},
-		{
-			name:        "Fmt disabled",
-			checkName:   checkNameFmt,
-			expected:    false,
-			description: "Should return false when fmt is disabled",
 		},
 		{
 			name:        "Fumpt enabled",
@@ -194,12 +158,6 @@ func TestIsCheckEnabled(t *testing.T) {
 			checkName:   checkNameGitleaks,
 			expected:    false,
 			description: "Should return false when gitleaks is disabled",
-		},
-		{
-			name:        "Goimports enabled",
-			checkName:   checkNameGoimports,
-			expected:    true,
-			description: "Should return true when goimports is enabled",
 		},
 		{
 			name:        "Lint enabled",
@@ -246,12 +204,9 @@ func TestIsCheckEnabledAllEnabled(t *testing.T) {
 	cfg := &config.Config{
 		Enabled: true,
 	}
-	cfg.Checks.AIDetection = true
 	cfg.Checks.EOF = true
-	cfg.Checks.Fmt = true
 	cfg.Checks.Fumpt = true
 	cfg.Checks.Gitleaks = true
-	cfg.Checks.Goimports = true
 	cfg.Checks.Lint = true
 	cfg.Checks.ModTidy = true
 	cfg.Checks.Whitespace = true
@@ -259,12 +214,9 @@ func TestIsCheckEnabledAllEnabled(t *testing.T) {
 	runner := New(cfg, "/tmp")
 
 	allChecks := []string{
-		checkNameAIDetection,
 		checkNameEOF,
-		checkNameFmt,
 		checkNameFumpt,
 		checkNameGitleaks,
-		checkNameGoimports,
 		checkNameLint,
 		checkNameModTidy,
 		checkNameWhitespace,
@@ -282,12 +234,9 @@ func TestIsCheckEnabledAllDisabled(t *testing.T) {
 	cfg := &config.Config{
 		Enabled: true,
 	}
-	cfg.Checks.AIDetection = false
 	cfg.Checks.EOF = false
-	cfg.Checks.Fmt = false
 	cfg.Checks.Fumpt = false
 	cfg.Checks.Gitleaks = false
-	cfg.Checks.Goimports = false
 	cfg.Checks.Lint = false
 	cfg.Checks.ModTidy = false
 	cfg.Checks.Whitespace = false
@@ -295,12 +244,9 @@ func TestIsCheckEnabledAllDisabled(t *testing.T) {
 	runner := New(cfg, "/tmp")
 
 	allChecks := []string{
-		checkNameAIDetection,
 		checkNameEOF,
-		checkNameFmt,
 		checkNameFumpt,
 		checkNameGitleaks,
-		checkNameGoimports,
 		checkNameLint,
 		checkNameModTidy,
 		checkNameWhitespace,
@@ -319,7 +265,7 @@ func TestGetCheckTimeoutConsistency(t *testing.T) {
 		Enabled: true,
 		Timeout: 120,
 	}
-	cfg.CheckTimeouts.Fmt = 30
+	cfg.CheckTimeouts.ModTidy = 30
 	cfg.CheckTimeouts.Fumpt = 45
 	cfg.CheckTimeouts.Lint = 90
 
@@ -327,7 +273,7 @@ func TestGetCheckTimeoutConsistency(t *testing.T) {
 
 	// Call multiple times and verify consistency
 	for i := 0; i < 10; i++ {
-		assert.Equal(t, 30*time.Second, runner.getCheckTimeout("fmt"))
+		assert.Equal(t, 30*time.Second, runner.getCheckTimeout(checkNameModTidy))
 		assert.Equal(t, 45*time.Second, runner.getCheckTimeout(checkNameFumpt))
 		assert.Equal(t, 90*time.Second, runner.getCheckTimeout(checkNameLint))
 	}
@@ -338,7 +284,7 @@ func TestIsCheckEnabledConsistency(t *testing.T) {
 	cfg := &config.Config{
 		Enabled: true,
 	}
-	cfg.Checks.Fmt = true
+	cfg.Checks.ModTidy = true
 	cfg.Checks.Fumpt = false
 	cfg.Checks.Lint = true
 
@@ -346,7 +292,7 @@ func TestIsCheckEnabledConsistency(t *testing.T) {
 
 	// Call multiple times and verify consistency
 	for i := 0; i < 10; i++ {
-		assert.True(t, runner.isCheckEnabled("fmt"))
+		assert.True(t, runner.isCheckEnabled(checkNameModTidy))
 		assert.False(t, runner.isCheckEnabled(checkNameFumpt))
 		assert.True(t, runner.isCheckEnabled(checkNameLint))
 	}
@@ -373,7 +319,7 @@ func TestRunnerConfigDefaults(t *testing.T) {
 	require.NotNil(t, runner)
 
 	// When timeout is 0, getCheckTimeout should return 0
-	assert.Equal(t, 0*time.Second, runner.getCheckTimeout("fmt"))
+	assert.Equal(t, 0*time.Second, runner.getCheckTimeout(checkNameModTidy))
 	assert.Equal(t, 0*time.Second, runner.getCheckTimeout("unknown"))
 }
 
@@ -383,10 +329,10 @@ func TestCheckNameCaseSensitivity(t *testing.T) {
 		Enabled: true,
 		Timeout: 120,
 	}
-	cfg.Checks.Fmt = true
+	cfg.Checks.ModTidy = true
 	cfg.Checks.Fumpt = true
 	cfg.Checks.Lint = true
-	cfg.CheckTimeouts.Fmt = 30
+	cfg.CheckTimeouts.ModTidy = 30
 	cfg.CheckTimeouts.Fumpt = 45
 	cfg.CheckTimeouts.Lint = 60
 
@@ -397,9 +343,9 @@ func TestCheckNameCaseSensitivity(t *testing.T) {
 		name      string
 		checkName string
 	}{
-		{"Uppercase FMT", "FMT"},
+		{"Uppercase MOD-TIDY", "MOD-TIDY"},
 		{"Uppercase FUMPT", "FUMPT"},
-		{"Mixed case Fmt", "Fmt"},
+		{"Mixed case Mod-Tidy", "Mod-Tidy"},
 		{"Mixed case Fumpt", "Fumpt"},
 		{"Uppercase LINT", "LINT"},
 	}

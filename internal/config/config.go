@@ -29,32 +29,25 @@ type Config struct {
 
 	// Check configurations
 	Checks struct {
-		Fmt              bool // GO_PRE_COMMIT_ENABLE_FMT
 		Fumpt            bool // GO_PRE_COMMIT_ENABLE_FUMPT
-		Goimports        bool // GO_PRE_COMMIT_ENABLE_GOIMPORTS
 		Lint             bool // GO_PRE_COMMIT_ENABLE_LINT
 		ModTidy          bool // GO_PRE_COMMIT_ENABLE_MOD_TIDY
 		Whitespace       bool // GO_PRE_COMMIT_ENABLE_WHITESPACE
 		EOF              bool // GO_PRE_COMMIT_ENABLE_EOF
-		AIDetection      bool // GO_PRE_COMMIT_ENABLE_AI_DETECTION
 		Gitleaks         bool // GO_PRE_COMMIT_ENABLE_GITLEAKS
 		GitleaksAllFiles bool // GO_PRE_COMMIT_GITLEAKS_ALL_FILES
 	}
 
 	// Check behaviors
 	CheckBehaviors struct {
-		FmtAutoStage        bool // GO_PRE_COMMIT_FMT_AUTO_STAGE
 		FumptAutoStage      bool // GO_PRE_COMMIT_FUMPT_AUTO_STAGE
-		GoimportsAutoStage  bool // GO_PRE_COMMIT_GOIMPORTS_AUTO_STAGE
 		WhitespaceAutoStage bool // GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE
 		EOFAutoStage        bool // GO_PRE_COMMIT_EOF_AUTO_STAGE
-		AIDetectionAutoFix  bool // GO_PRE_COMMIT_AI_DETECTION_AUTO_FIX
 	}
 
 	// Tool versions
 	ToolVersions struct {
 		Fumpt        string // GO_PRE_COMMIT_FUMPT_VERSION
-		Goimports    string // GO_PRE_COMMIT_GOIMPORTS_VERSION
 		GolangciLint string // GO_PRE_COMMIT_GOLANGCI_LINT_VERSION
 		Gitleaks     string // GO_PRE_COMMIT_GITLEAKS_VERSION
 	}
@@ -67,15 +60,12 @@ type Config struct {
 
 	// Check timeouts (in seconds)
 	CheckTimeouts struct {
-		Fmt         int // GO_PRE_COMMIT_FMT_TIMEOUT (default: 30)
-		Fumpt       int // GO_PRE_COMMIT_FUMPT_TIMEOUT (default: 30)
-		Goimports   int // GO_PRE_COMMIT_GOIMPORTS_TIMEOUT (default: 30)
-		Lint        int // GO_PRE_COMMIT_LINT_TIMEOUT (default: 60)
-		ModTidy     int // GO_PRE_COMMIT_MOD_TIDY_TIMEOUT (default: 30)
-		Whitespace  int // GO_PRE_COMMIT_WHITESPACE_TIMEOUT (default: 30)
-		EOF         int // GO_PRE_COMMIT_EOF_TIMEOUT (default: 30)
-		AIDetection int // GO_PRE_COMMIT_AI_DETECTION_TIMEOUT (default: 30)
-		Gitleaks    int // GO_PRE_COMMIT_GITLEAKS_TIMEOUT (default: 60)
+		Fumpt      int // GO_PRE_COMMIT_FUMPT_TIMEOUT (default: 30)
+		Lint       int // GO_PRE_COMMIT_LINT_TIMEOUT (default: 600)
+		ModTidy    int // GO_PRE_COMMIT_MOD_TIDY_TIMEOUT (default: 60)
+		Whitespace int // GO_PRE_COMMIT_WHITESPACE_TIMEOUT (default: 30)
+		EOF        int // GO_PRE_COMMIT_EOF_TIMEOUT (default: 30)
+		Gitleaks   int // GO_PRE_COMMIT_GITLEAKS_TIMEOUT (default: 60)
 	}
 
 	// Git settings
@@ -150,28 +140,21 @@ func Load() (*Config, error) {
 	cfg.Timeout = getIntEnv("GO_PRE_COMMIT_TIMEOUT_SECONDS", 720) // Global timeout in seconds (updated default)
 
 	// Check configurations
-	cfg.Checks.Fmt = getBoolEnv("GO_PRE_COMMIT_ENABLE_FMT", true)
 	cfg.Checks.Fumpt = getBoolEnv("GO_PRE_COMMIT_ENABLE_FUMPT", true)
-	cfg.Checks.Goimports = getBoolEnv("GO_PRE_COMMIT_ENABLE_GOIMPORTS", true)
 	cfg.Checks.Lint = getBoolEnv("GO_PRE_COMMIT_ENABLE_LINT", true)
 	cfg.Checks.ModTidy = getBoolEnv("GO_PRE_COMMIT_ENABLE_MOD_TIDY", true)
 	cfg.Checks.Whitespace = getBoolEnv("GO_PRE_COMMIT_ENABLE_WHITESPACE", true)
 	cfg.Checks.EOF = getBoolEnv("GO_PRE_COMMIT_ENABLE_EOF", true)
-	cfg.Checks.AIDetection = getBoolEnv("GO_PRE_COMMIT_ENABLE_AI_DETECTION", true)
 	cfg.Checks.Gitleaks = getBoolEnv("GO_PRE_COMMIT_ENABLE_GITLEAKS", false)
 	cfg.Checks.GitleaksAllFiles = getBoolEnv("GO_PRE_COMMIT_GITLEAKS_ALL_FILES", false)
 
 	// Check behaviors
-	cfg.CheckBehaviors.FmtAutoStage = getBoolEnv("GO_PRE_COMMIT_FMT_AUTO_STAGE", true)
 	cfg.CheckBehaviors.FumptAutoStage = getBoolEnv("GO_PRE_COMMIT_FUMPT_AUTO_STAGE", true)
-	cfg.CheckBehaviors.GoimportsAutoStage = getBoolEnv("GO_PRE_COMMIT_GOIMPORTS_AUTO_STAGE", true)
 	cfg.CheckBehaviors.WhitespaceAutoStage = getBoolEnv("GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE", true)
 	cfg.CheckBehaviors.EOFAutoStage = getBoolEnv("GO_PRE_COMMIT_EOF_AUTO_STAGE", true)
-	cfg.CheckBehaviors.AIDetectionAutoFix = getBoolEnv("GO_PRE_COMMIT_AI_DETECTION_AUTO_FIX", false)
 
 	// Tool versions
 	cfg.ToolVersions.Fumpt = getStringEnv("GO_PRE_COMMIT_FUMPT_VERSION", "latest")
-	cfg.ToolVersions.Goimports = getStringEnv("GO_PRE_COMMIT_GOIMPORTS_VERSION", "latest")
 	cfg.ToolVersions.GolangciLint = getStringEnv("GO_PRE_COMMIT_GOLANGCI_LINT_VERSION", "latest")
 	cfg.ToolVersions.Gitleaks = getStringEnv("GO_PRE_COMMIT_GITLEAKS_VERSION", "v8.29.0")
 
@@ -180,14 +163,11 @@ func Load() (*Config, error) {
 	cfg.Performance.FailFast = getBoolEnv("GO_PRE_COMMIT_FAIL_FAST", false)
 
 	// Check timeouts
-	cfg.CheckTimeouts.Fmt = getIntEnv("GO_PRE_COMMIT_FMT_TIMEOUT", 30)
 	cfg.CheckTimeouts.Fumpt = getIntEnv("GO_PRE_COMMIT_FUMPT_TIMEOUT", 30)
-	cfg.CheckTimeouts.Goimports = getIntEnv("GO_PRE_COMMIT_GOIMPORTS_TIMEOUT", 30)
 	cfg.CheckTimeouts.Lint = getIntEnv("GO_PRE_COMMIT_LINT_TIMEOUT", 600)
 	cfg.CheckTimeouts.ModTidy = getIntEnv("GO_PRE_COMMIT_MOD_TIDY_TIMEOUT", 60)
 	cfg.CheckTimeouts.Whitespace = getIntEnv("GO_PRE_COMMIT_WHITESPACE_TIMEOUT", 30)
 	cfg.CheckTimeouts.EOF = getIntEnv("GO_PRE_COMMIT_EOF_TIMEOUT", 30)
-	cfg.CheckTimeouts.AIDetection = getIntEnv("GO_PRE_COMMIT_AI_DETECTION_TIMEOUT", 30)
 	cfg.CheckTimeouts.Gitleaks = getIntEnv("GO_PRE_COMMIT_GITLEAKS_TIMEOUT", 60)
 
 	// Git settings
@@ -244,10 +224,6 @@ func (c *Config) Validate() error {
 		errors = append(errors, "GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT must be greater than 0")
 	}
 
-	if c.CheckTimeouts.Fmt <= 0 {
-		errors = append(errors, "GO_PRE_COMMIT_FMT_TIMEOUT must be greater than 0")
-	}
-
 	if c.CheckTimeouts.Fumpt <= 0 {
 		errors = append(errors, "GO_PRE_COMMIT_FUMPT_TIMEOUT must be greater than 0")
 	}
@@ -266,10 +242,6 @@ func (c *Config) Validate() error {
 
 	if c.CheckTimeouts.EOF <= 0 {
 		errors = append(errors, "GO_PRE_COMMIT_EOF_TIMEOUT must be greater than 0")
-	}
-
-	if c.CheckTimeouts.AIDetection <= 0 {
-		errors = append(errors, "GO_PRE_COMMIT_AI_DETECTION_TIMEOUT must be greater than 0")
 	}
 
 	if c.CheckTimeouts.Gitleaks <= 0 {
@@ -383,17 +355,15 @@ Core Settings:
   GO_PRE_COMMIT_AUTO_ADJUST_CI_TIMEOUTS=true   Auto-adjust timeouts for CI environments
 
 Check Configuration:
-  GO_PRE_COMMIT_ENABLE_FMT=true             Enable go fmt formatting
   GO_PRE_COMMIT_ENABLE_FUMPT=true           Enable gofumpt formatting
   GO_PRE_COMMIT_ENABLE_LINT=true            Enable golangci-lint
   GO_PRE_COMMIT_ENABLE_MOD_TIDY=true        Enable go mod tidy
   GO_PRE_COMMIT_ENABLE_WHITESPACE=true      Enable whitespace check
   GO_PRE_COMMIT_ENABLE_EOF=true             Enable EOF newline check
+  GO_PRE_COMMIT_ENABLE_GITLEAKS=false       Enable gitleaks secret scanning
 
 Check Behaviors:
-  GO_PRE_COMMIT_FMT_AUTO_STAGE=true         Auto-stage files after fmt fixes
   GO_PRE_COMMIT_FUMPT_AUTO_STAGE=true       Auto-stage files after fumpt fixes
-  GO_PRE_COMMIT_GOIMPORTS_AUTO_STAGE=true   Auto-stage files after goimports fixes
   GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true  Auto-stage files after whitespace fixes
   GO_PRE_COMMIT_EOF_AUTO_STAGE=true         Auto-stage files after EOF fixes
 
@@ -406,12 +376,12 @@ Performance Settings:
   GO_PRE_COMMIT_FAIL_FAST=false             Stop on first failure
 
 Check Timeouts (seconds):
-  GO_PRE_COMMIT_FMT_TIMEOUT=30              go fmt timeout
   GO_PRE_COMMIT_FUMPT_TIMEOUT=30            gofumpt timeout
-  GO_PRE_COMMIT_LINT_TIMEOUT=60             golangci-lint timeout
-  GO_PRE_COMMIT_MOD_TIDY_TIMEOUT=30         go mod tidy timeout
+  GO_PRE_COMMIT_LINT_TIMEOUT=600           golangci-lint timeout
+  GO_PRE_COMMIT_MOD_TIDY_TIMEOUT=60         go mod tidy timeout
   GO_PRE_COMMIT_WHITESPACE_TIMEOUT=30       whitespace check timeout
   GO_PRE_COMMIT_EOF_TIMEOUT=30              EOF check timeout
+  GO_PRE_COMMIT_GITLEAKS_TIMEOUT=60         gitleaks scan timeout
 
 Git Settings:
   GO_PRE_COMMIT_HOOKS_PATH=.git/hooks       Git hooks directory
@@ -446,18 +416,17 @@ Example .github/env/ (modular):
     GO_PRE_COMMIT_EXCLUDE_PATTERNS="vendor/,node_modules/,.git/"
 
   99-local.env (git-ignored, skipped in CI):
-    GO_PRE_COMMIT_ENABLE_AI_DETECTION=false
+    GO_PRE_COMMIT_ENABLE_LINT=false
 
 Example .github/.env.base (legacy):
   ENABLE_GO_PRE_COMMIT=true
-  GO_PRE_COMMIT_ENABLE_FMT=true
   GO_PRE_COMMIT_ENABLE_FUMPT=true
   GO_PRE_COMMIT_LINT_TIMEOUT=120
   GO_PRE_COMMIT_EXCLUDE_PATTERNS="vendor/,node_modules/,.git/,*.tmp,*.log"
 
 Example .github/.env.custom (legacy, optional overrides):
   GO_PRE_COMMIT_LINT_TIMEOUT=180
-  GO_PRE_COMMIT_ENABLE_AI_DETECTION=false
+  GO_PRE_COMMIT_ENABLE_GITLEAKS=true
 `
 }
 
@@ -638,13 +607,10 @@ func applyCITimeoutAdjustments(cfg *Config) {
 		}
 	}
 
-	adjustTimeout(&cfg.CheckTimeouts.Fmt, 30, 60)
 	adjustTimeout(&cfg.CheckTimeouts.Fumpt, 30, 60)
-	adjustTimeout(&cfg.CheckTimeouts.Goimports, 30, 60)
 	adjustTimeout(&cfg.CheckTimeouts.ModTidy, 60, 180)
 	adjustTimeout(&cfg.CheckTimeouts.Whitespace, 30, 45)
 	adjustTimeout(&cfg.CheckTimeouts.EOF, 30, 45)
-	adjustTimeout(&cfg.CheckTimeouts.AIDetection, 30, 60)
 }
 
 func getIntEnv(key string, defaultValue int) int {

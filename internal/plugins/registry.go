@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -166,11 +168,7 @@ func (r *Registry) Names() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	names := make([]string, 0, len(r.plugins))
-	for name := range r.plugins {
-		names = append(names, name)
-	}
-	return names
+	return slices.Sorted(maps.Keys(r.plugins))
 }
 
 // AddPlugin manually adds a plugin to the registry

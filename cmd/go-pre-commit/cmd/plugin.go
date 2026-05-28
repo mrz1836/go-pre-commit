@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"text/tabwriter"
@@ -15,6 +16,13 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/plugins"
 )
+
+// promptReader is the source the remove command reads its interactive y/N
+// confirmation from. It defaults to standard input and is overridable in tests
+// so the confirmation branches can be exercised without a real terminal.
+//
+//nolint:gochecknoglobals // Injectable seam so tests can drive the confirmation prompt
+var promptReader io.Reader = os.Stdin
 
 // Define plugin command errors
 var (
@@ -248,12 +256,15 @@ The source can be:
 
 // buildPluginRemoveCmd creates the plugin remove command
 func (cb *CommandBuilder) buildPluginRemoveCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "remove <plugin-name>",
 		Short: "Remove an installed plugin",
 		Long:  `Remove an installed plugin from the plugin directory.`,
 		Example: `  # Remove a plugin
-  go-pre-commit plugin remove todo-checker`,
+  go-pre-commit plugin remove todo-checker
+
+  # Remove a plugin without the confirmation prompt
+  go-pre-commit plugin remove todo-checker --force`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return ErrPluginNameRequired
@@ -282,7 +293,7 @@ func (cb *CommandBuilder) buildPluginRemoveCmd() *cobra.Command {
 			if !force {
 				_, _ = color.New().Printf("Remove plugin '%s'? [y/N]: ", pluginName)
 				var response string
-				_, _ = fmt.Scanln(&response)
+				_, _ = fmt.Fscanln(promptReader, &response)
 				if response != "y" && response != "Y" {
 					color.Yellow("Canceled")
 					return nil
@@ -298,6 +309,9 @@ func (cb *CommandBuilder) buildPluginRemoveCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolP("force", "f", false, "Skip the confirmation prompt")
+	return cmd
 }
 
 // buildPluginInfoCmd creates the plugin info command

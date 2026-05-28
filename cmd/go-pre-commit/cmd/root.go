@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/mrz1836/go-pre-commit/internal/update"
+	"github.com/mrz1836/go-pre-commit/internal/version"
 )
 
 // CLIApp holds the application state and configuration
@@ -46,11 +47,24 @@ func (app *CLIApp) SetUpdateChan(updateChan <-chan *update.CheckResult) {
 // CommandBuilder creates cobra commands with dependency injection
 type CommandBuilder struct {
 	app *CLIApp
+
+	// fetchRelease retrieves the latest release from GitHub. It defaults to the
+	// real version.GetLatestReleaseWithVersion and is overridable in tests to
+	// avoid real network calls.
+	fetchRelease releaseFetcher
+
+	// installRelease performs the actual binary install (go install). It defaults
+	// to defaultGoInstall and is overridable in tests to avoid network/exec.
+	installRelease releaseInstaller
 }
 
 // NewCommandBuilder creates a new command builder
 func NewCommandBuilder(app *CLIApp) *CommandBuilder {
-	return &CommandBuilder{app: app}
+	return &CommandBuilder{
+		app:            app,
+		fetchRelease:   version.GetLatestReleaseWithVersion,
+		installRelease: defaultGoInstall,
+	}
 }
 
 // BuildRootCmd creates the root command
@@ -223,7 +237,7 @@ func hasGitHubConfig(dir string) bool {
 
 // Helper functions for consistent output - these will be updated to use app config
 // For now keeping them as legacy functions for backward compatibility
-func printSuccess(format string, args ...interface{}) {
+func printSuccess(format string, args ...any) {
 	if !color.NoColor {
 		color.Green("✓ " + fmt.Sprintf(format, args...))
 	} else {
@@ -231,7 +245,7 @@ func printSuccess(format string, args ...interface{}) {
 	}
 }
 
-func printError(format string, args ...interface{}) {
+func printError(format string, args ...any) {
 	if !color.NoColor {
 		color.Red("✗ " + fmt.Sprintf(format, args...))
 	} else {
@@ -239,7 +253,7 @@ func printError(format string, args ...interface{}) {
 	}
 }
 
-func printInfo(format string, args ...interface{}) {
+func printInfo(format string, args ...any) {
 	if !color.NoColor {
 		color.Blue("ℹ " + fmt.Sprintf(format, args...))
 	} else {
@@ -247,7 +261,7 @@ func printInfo(format string, args ...interface{}) {
 	}
 }
 
-func printWarning(format string, args ...interface{}) {
+func printWarning(format string, args ...any) {
 	if !color.NoColor {
 		color.Yellow("⚠ " + fmt.Sprintf(format, args...))
 	} else {

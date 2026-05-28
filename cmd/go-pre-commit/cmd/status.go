@@ -139,7 +139,7 @@ func printSubheader(text string) {
 	formatter.Info("\n%s:", text)
 }
 
-func printDetail(format string, args ...interface{}) {
+func printDetail(format string, args ...any) {
 	formatter := output.NewDefault()
 	formatter.Info(format, args...)
 }

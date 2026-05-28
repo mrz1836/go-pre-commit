@@ -3,6 +3,7 @@ package update
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -82,7 +83,7 @@ func GetCheckInterval() time.Duration {
 func GetCacheDir() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("get user home dir: %w", err)
 	}
 	return filepath.Join(homeDir, cacheDir), nil
 }
@@ -113,12 +114,12 @@ func ReadCache() (*CacheEntry, error) {
 			// No cache file exists yet - not an error
 			return nil, nil //nolint:nilnil // nil entry with nil error is the expected return for missing cache
 		}
-		return nil, err
+		return nil, fmt.Errorf("read cache file %s: %w", filePath, err)
 	}
 
 	var entry CacheEntry
 	if err := json.Unmarshal(data, &entry); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse cache file %s: %w", filePath, err)
 	}
 
 	return &entry, nil
@@ -137,7 +138,7 @@ func WriteCache(entry *CacheEntry) error {
 
 	// Ensure cache directory exists
 	if mkdirErr := os.MkdirAll(dir, 0o700); mkdirErr != nil {
-		return mkdirErr
+		return fmt.Errorf("create cache dir %s: %w", dir, mkdirErr)
 	}
 
 	filePath, err := getCacheFilePath()
@@ -151,16 +152,19 @@ func WriteCache(entry *CacheEntry) error {
 	// Marshal to JSON
 	jsonData, err := json.MarshalIndent(entry, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal cache entry: %w", err)
 	}
 
 	// Write atomically by writing to temp file first, then renaming
 	tempFile := filePath + ".tmp"
 	if err := os.WriteFile(tempFile, jsonData, 0o600); err != nil {
-		return err
+		return fmt.Errorf("write cache temp file %s: %w", tempFile, err)
 	}
 
-	return os.Rename(tempFile, filePath)
+	if err := os.Rename(tempFile, filePath); err != nil {
+		return fmt.Errorf("rename cache temp file to %s: %w", filePath, err)
+	}
+	return nil
 }
 
 // IsCacheValid checks if the cache entry is still valid based on the interval
@@ -180,7 +184,7 @@ func ClearCache() error {
 	}
 
 	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("remove cache file %s: %w", filePath, err)
 	}
 	return nil
 }

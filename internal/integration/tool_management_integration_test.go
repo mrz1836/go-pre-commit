@@ -92,7 +92,6 @@ go 1.21
 	envContent := `# Tool management configuration
 ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_TIMEOUT_SECONDS=300
-GO_PRE_COMMIT_ENABLE_FMT=true
 GO_PRE_COMMIT_ENABLE_FUMPT=true
 GO_PRE_COMMIT_ENABLE_LINT=true
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
@@ -315,14 +314,14 @@ func (s *ToolManagementIntegrationTestSuite) TestToolConfigurationIntegration() 
 	configs := []struct {
 		name           string
 		envSettings    map[string]string
-		expectedValues map[string]interface{}
+		expectedValues map[string]any
 	}{
 		{
 			name: "Default configuration",
 			envSettings: map[string]string{
 				"ENABLE_GO_PRE_COMMIT": "true",
 			},
-			expectedValues: map[string]interface{}{
+			expectedValues: map[string]any{
 				"timeout": 720,
 			},
 		},
@@ -333,7 +332,7 @@ func (s *ToolManagementIntegrationTestSuite) TestToolConfigurationIntegration() 
 				"GO_PRE_COMMIT_FUMPT_VERSION":         "v0.8.0",
 				"GO_PRE_COMMIT_GOLANGCI_LINT_VERSION": "v2.4.0",
 			},
-			expectedValues: map[string]interface{}{
+			expectedValues: map[string]any{
 				"fumpt_version":         "v0.8.0",
 				"golangci_lint_version": "v2.4.0",
 			},
@@ -345,7 +344,7 @@ func (s *ToolManagementIntegrationTestSuite) TestToolConfigurationIntegration() 
 				"GO_PRE_COMMIT_AUTO_INSTALL_TOOLS":   "false",
 				"GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT": "60",
 			},
-			expectedValues: map[string]interface{}{
+			expectedValues: map[string]any{
 				"auto_install":    false,
 				"install_timeout": 60,
 			},

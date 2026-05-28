@@ -68,7 +68,7 @@ func (c *WhitespaceCheck) Description() string {
 }
 
 // Metadata returns comprehensive metadata about the check
-func (c *WhitespaceCheck) Metadata() interface{} {
+func (c *WhitespaceCheck) Metadata() any {
 	return CheckMetadata{
 		Name:              "whitespace",
 		Description:       "Remove trailing whitespace from text files",

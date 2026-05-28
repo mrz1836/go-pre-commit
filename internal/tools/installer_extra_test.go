@@ -11,7 +11,42 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// errSimulatedInstall is a non-network error returned by fake install commands.
+var errSimulatedInstall = errors.New("simulated install failure")
+
+// fakeInstall replaces the package install-command runner for the duration of the
+// test, restoring the real one on cleanup. This lets tool-installation tests run
+// without executing real `go install`/`curl` commands or touching the network.
+func fakeInstall(t *testing.T, fn func(ctx context.Context, env []string, name string, args ...string) ([]byte, error)) {
+	t.Helper()
+	orig := runInstallCommand
+	t.Cleanup(func() { runInstallCommand = orig })
+	runInstallCommand = fn
+}
+
+// fakeInstallErr makes the install runner fail immediately with a non-network
+// error, so InstallTool/EnsureInstalled fail fast without any network access.
+func fakeInstallErr(t *testing.T) {
+	t.Helper()
+	fakeInstall(t, func(context.Context, []string, string, ...string) ([]byte, error) {
+		return []byte("simulated install failure output"), errSimulatedInstall
+	})
+}
+
+// fakeInstallBlocking makes the install runner block until the context is done and
+// then return ctx.Err(). This drives timeout/cancellation tests deterministically
+// with no real execution.
+func fakeInstallBlocking(t *testing.T) {
+	t.Helper()
+	fakeInstall(t, func(ctx context.Context, _ []string, _ string, _ ...string) ([]byte, error) {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	})
+}
+
 func TestInstallTool_ContextCancelled(t *testing.T) {
+	fakeInstallBlocking(t) // returns ctx.Err() without any real execution
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -28,6 +63,8 @@ func TestInstallTool_ContextCancelled(t *testing.T) {
 }
 
 func TestInstallTool_Timeout(t *testing.T) {
+	fakeInstallBlocking(t) // blocks until the timeout fires; no network
+
 	// Set a very short timeout for testing
 	origTimeout := GetInstallTimeout()
 	defer SetInstallTimeout(origTimeout)
@@ -48,8 +85,9 @@ func TestInstallTool_Timeout(t *testing.T) {
 }
 
 func TestInstallGitleaks_DownloadError(t *testing.T) {
-	// We can test this by calling InstallTool with "gitleaks" and an invalid version
-	// This exercises the installGitleaks function
+	// Exercise the installGitleaks download path with a simulated download failure,
+	// so no real request is made to github.com.
+	fakeInstallErr(t)
 
 	// Use a lock to prevent concurrent access to tools map
 	toolsMu.Lock()
@@ -69,15 +107,10 @@ func TestInstallGitleaks_DownloadError(t *testing.T) {
 	}()
 
 	ctx := context.Background()
-	// We expect this to fail
+	// We expect this to fail because the simulated download returns an error
 	err := EnsureInstalled(ctx, "gitleaks")
-
-	// If it succeeds unexpectedly, we need to know why
-	if err == nil {
-		t.Logf("Expected download error but got success")
-	} else {
-		assert.Contains(t, err.Error(), "tool installation failed")
-	}
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "tool installation failed")
 }
 
 func TestRetryWithBackoff_Success(t *testing.T) {
@@ -232,8 +265,10 @@ func TestLoadVersionsFromEnv_PartialVariables(t *testing.T) {
 }
 
 func TestInstallAllTools_PartialFailure(t *testing.T) {
-	// Test that InstallAllTools handles partial failures gracefully
-	// by attempting to install a tool that doesn't exist
+	// Test that InstallAllTools handles partial failures gracefully by attempting
+	// to install a tool that doesn't exist. The install runner is faked so no real
+	// `go install` is performed.
+	fakeInstallErr(t)
 	ctx := context.Background()
 
 	// Save original tools

@@ -19,17 +19,19 @@ import (
 
 // Check name constants
 const (
-	checkNameFmt         = "fmt"
-	checkNameFumpt       = "fumpt"
-	checkNameGitleaks    = "gitleaks"
-	checkNameGoimports   = "goimports"
-	checkNameLint        = "lint"
-	checkNameModTidy     = "mod-tidy"
-	checkNameEOF         = "eof"
-	checkNameAIDetection = "ai_detection"
-	checkNameWhitespace  = "whitespace"
-	envSkip              = "SKIP"
+	checkNameFumpt      = "fumpt"
+	checkNameGitleaks   = "gitleaks"
+	checkNameLint       = "lint"
+	checkNameModTidy    = "mod-tidy"
+	checkNameEOF        = "eof"
+	checkNameWhitespace = "whitespace"
+	envSkip             = "SKIP"
 )
+
+// ErrCheckPanicked indicates a check's Run method panicked. The runner recovers
+// from it so one faulty check or plugin degrades to a failed result instead of
+// crashing the entire pre-commit run.
+var ErrCheckPanicked = errors.New("check panicked")
 
 // Runner executes pre-commit checks
 type Runner struct {
@@ -108,13 +110,7 @@ func (r *Runner) Run(ctx context.Context, opts Options) (*Results, error) {
 	}
 
 	// Determine parallelism
-	parallel := opts.Parallel
-	if parallel <= 0 {
-		parallel = r.config.Performance.ParallelWorkers
-		if parallel <= 0 {
-			parallel = runtime.NumCPU()
-		}
-	}
+	parallel := r.resolveParallelism(opts)
 
 	// Create context with timeout
 	globalTimeout := time.Duration(r.config.Timeout) * time.Second
@@ -123,11 +119,7 @@ func (r *Runner) Run(ctx context.Context, opts Options) (*Results, error) {
 
 	// Debug timeout information
 	if opts.DebugTimeout {
-		fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] Global timeout set to: %v\n", globalTimeout)
-		fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] Tool installation timeout: %v\n", time.Duration(r.config.ToolInstallation.Timeout)*time.Second)
-		if r.config.Environment.IsCI {
-			fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] CI environment detected: %s (auto-adjust: %t)\n", r.config.Environment.CIProvider, r.config.Environment.AutoAdjustTimers)
-		}
+		r.debugTimeoutInfo(globalTimeout)
 	}
 
 	// Run checks
@@ -137,83 +129,99 @@ func (r *Runner) Run(ctx context.Context, opts Options) (*Results, error) {
 	}
 
 	if opts.FailFast {
-		// Sequential execution with fail-fast
-		for _, check := range checksToRun {
-			if opts.ProgressCallback != nil {
-				opts.ProgressCallback(check.Name(), "running", 0)
-			}
-
-			result := r.runCheck(ctxWithTimeout, check, opts.Files, opts.GracefulDegradation, opts.DebugTimeout)
-			results.CheckResults = append(results.CheckResults, result)
-
-			if result.Success {
-				results.Passed++
-				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(check.Name(), "passed", result.Duration)
-				}
-			} else if result.CanSkip && opts.GracefulDegradation {
-				results.Skipped++
-				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(check.Name(), "skipped", result.Duration)
-				}
-			} else {
-				results.Failed++
-				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(check.Name(), "failed", result.Duration)
-				}
-				break // Stop on first failure
-			}
-		}
+		r.runSequential(ctxWithTimeout, checksToRun, opts, results)
 	} else {
-		// Parallel execution
-		resultsChan := make(chan CheckResult, len(checksToRun))
-		var wg sync.WaitGroup
-		semaphore := make(chan struct{}, parallel)
-
-		for _, check := range checksToRun {
-			wg.Add(1)
-			go func(c checks.Check) {
-				defer wg.Done()
-
-				semaphore <- struct{}{}
-				defer func() { <-semaphore }()
-
-				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(c.Name(), "running", 0)
-				}
-
-				result := r.runCheck(ctxWithTimeout, c, opts.Files, opts.GracefulDegradation, opts.DebugTimeout)
-				resultsChan <- result
-			}(check)
-		}
-
-		wg.Wait()
-		close(resultsChan)
-
-		// Collect results
-		for result := range resultsChan {
-			results.CheckResults = append(results.CheckResults, result)
-			if result.Success {
-				results.Passed++
-				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(result.Name, "passed", result.Duration)
-				}
-			} else if result.CanSkip && opts.GracefulDegradation {
-				results.Skipped++
-				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(result.Name, "skipped", result.Duration)
-				}
-			} else {
-				results.Failed++
-				if opts.ProgressCallback != nil {
-					opts.ProgressCallback(result.Name, "failed", result.Duration)
-				}
-			}
-		}
+		r.runParallel(ctxWithTimeout, checksToRun, parallel, opts, results)
 	}
 
 	results.TotalDuration = time.Since(start)
 	return results, nil
+}
+
+// resolveParallelism determines the worker count, preferring the explicit
+// option, then the configured value, then the host CPU count.
+func (r *Runner) resolveParallelism(opts Options) int {
+	if opts.Parallel > 0 {
+		return opts.Parallel
+	}
+	if r.config.Performance.ParallelWorkers > 0 {
+		return r.config.Performance.ParallelWorkers
+	}
+	return runtime.NumCPU()
+}
+
+// debugTimeoutInfo prints timeout diagnostics to stderr when --debug-timeout is set.
+func (r *Runner) debugTimeoutInfo(globalTimeout time.Duration) {
+	fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] Global timeout set to: %v\n", globalTimeout)
+	fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] Tool installation timeout: %v\n", time.Duration(r.config.ToolInstallation.Timeout)*time.Second)
+	if r.config.Environment.IsCI {
+		fmt.Fprintf(os.Stderr, "🐛 [DEBUG-TIMEOUT] CI environment detected: %s (auto-adjust: %t)\n", r.config.Environment.CIProvider, r.config.Environment.AutoAdjustTimers)
+	}
+}
+
+// runSequential executes checks one at a time, stopping at the first hard failure.
+func (r *Runner) runSequential(ctx context.Context, checksToRun []checks.Check, opts Options, results *Results) {
+	for _, check := range checksToRun {
+		r.notifyProgress(opts, check.Name(), "running", 0)
+		result := r.runCheck(ctx, check, opts.Files, opts.GracefulDegradation, opts.DebugTimeout)
+		if r.tallyResult(result, opts, results) {
+			break // Stop on first failure
+		}
+	}
+}
+
+// runParallel executes checks concurrently, bounded by the given worker count.
+func (r *Runner) runParallel(ctx context.Context, checksToRun []checks.Check, parallel int, opts Options, results *Results) {
+	resultsChan := make(chan CheckResult, len(checksToRun))
+	var wg sync.WaitGroup
+	semaphore := make(chan struct{}, parallel)
+
+	for _, check := range checksToRun {
+		wg.Add(1)
+		go func(c checks.Check) {
+			defer wg.Done()
+
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
+
+			r.notifyProgress(opts, c.Name(), "running", 0)
+			resultsChan <- r.runCheck(ctx, c, opts.Files, opts.GracefulDegradation, opts.DebugTimeout)
+		}(check)
+	}
+
+	wg.Wait()
+	close(resultsChan)
+
+	for result := range resultsChan {
+		r.tallyResult(result, opts, results)
+	}
+}
+
+// tallyResult records a finished check result into the aggregate counts and
+// emits the matching progress callback. It reports whether the result counted
+// as a hard failure (used to drive fail-fast termination).
+func (r *Runner) tallyResult(result CheckResult, opts Options, results *Results) (failed bool) {
+	results.CheckResults = append(results.CheckResults, result)
+	switch {
+	case result.Success:
+		results.Passed++
+		r.notifyProgress(opts, result.Name, "passed", result.Duration)
+	case result.CanSkip && opts.GracefulDegradation:
+		results.Skipped++
+		r.notifyProgress(opts, result.Name, "skipped", result.Duration)
+	default:
+		results.Failed++
+		r.notifyProgress(opts, result.Name, "failed", result.Duration)
+		failed = true
+	}
+	return failed
+}
+
+// notifyProgress invokes the progress callback when one is configured.
+func (r *Runner) notifyProgress(opts Options, name, status string, duration time.Duration) {
+	if opts.ProgressCallback != nil {
+		opts.ProgressCallback(name, status, duration)
+	}
 }
 
 // runCheck executes a single check
@@ -238,8 +246,9 @@ func (r *Runner) runCheck(ctx context.Context, check checks.Check, files []strin
 		}
 	}
 
-	// Run the check
-	err := check.Run(ctx, filteredFiles)
+	// Run the check, recovering from panics so a single faulty check (or plugin)
+	// becomes a failed result rather than crashing the whole run.
+	err := r.safeCheckRun(ctx, check, filteredFiles)
 
 	result := CheckResult{
 		Name:     check.Name(),
@@ -285,6 +294,17 @@ func (r *Runner) runCheck(ctx context.Context, check checks.Check, files []strin
 	}
 
 	return result
+}
+
+// safeCheckRun executes check.Run, converting any panic into an error so a faulty
+// check or plugin degrades to a failed result instead of crashing the process.
+func (r *Runner) safeCheckRun(ctx context.Context, check checks.Check, files []string) (err error) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			err = fmt.Errorf("%w in %s: %v", ErrCheckPanicked, check.Name(), rec)
+		}
+	}()
+	return check.Run(ctx, files)
 }
 
 // determineChecks figures out which checks to run based on options and config
@@ -344,14 +364,10 @@ func (r *Runner) determineChecks(opts Options) ([]checks.Check, error) {
 // getCheckTimeout returns the timeout for a specific check
 func (r *Runner) getCheckTimeout(checkName string) time.Duration {
 	switch checkName {
-	case checkNameFmt:
-		return time.Duration(r.config.CheckTimeouts.Fmt) * time.Second
 	case checkNameFumpt:
 		return time.Duration(r.config.CheckTimeouts.Fumpt) * time.Second
 	case checkNameGitleaks:
 		return time.Duration(r.config.CheckTimeouts.Gitleaks) * time.Second
-	case checkNameGoimports:
-		return time.Duration(r.config.CheckTimeouts.Goimports) * time.Second
 	case checkNameLint:
 		return time.Duration(r.config.CheckTimeouts.Lint) * time.Second
 	case checkNameModTidy:
@@ -360,8 +376,6 @@ func (r *Runner) getCheckTimeout(checkName string) time.Duration {
 		return time.Duration(r.config.CheckTimeouts.Whitespace) * time.Second
 	case checkNameEOF:
 		return time.Duration(r.config.CheckTimeouts.EOF) * time.Second
-	case checkNameAIDetection:
-		return time.Duration(r.config.CheckTimeouts.AIDetection) * time.Second
 	default:
 		return time.Duration(r.config.Timeout) * time.Second
 	}
@@ -370,18 +384,12 @@ func (r *Runner) getCheckTimeout(checkName string) time.Duration {
 // isCheckEnabled checks if a check is enabled in the configuration
 func (r *Runner) isCheckEnabled(name string) bool {
 	switch name {
-	case checkNameAIDetection:
-		return r.config.Checks.AIDetection
 	case checkNameEOF:
 		return r.config.Checks.EOF
-	case checkNameFmt:
-		return r.config.Checks.Fmt
 	case checkNameFumpt:
 		return r.config.Checks.Fumpt
 	case checkNameGitleaks:
 		return r.config.Checks.Gitleaks
-	case checkNameGoimports:
-		return r.config.Checks.Goimports
 	case checkNameLint:
 		return r.config.Checks.Lint
 	case checkNameModTidy:
@@ -482,7 +490,7 @@ func (r *Runner) parseSkipValue(value string) []string {
 
 	// Handle special values
 	if strings.ToLower(value) == "all" {
-		return []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection}
+		return []string{checkNameFumpt, checkNameGitleaks, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF}
 	}
 
 	// Split by comma and clean up
@@ -490,15 +498,12 @@ func (r *Runner) parseSkipValue(value string) []string {
 	var skips []string
 	var hasContent bool // Track if we found any non-empty content
 	validChecks := map[string]bool{
-		checkNameFmt:         true,
-		checkNameFumpt:       true,
-		checkNameGitleaks:    true,
-		checkNameGoimports:   true,
-		checkNameLint:        true,
-		checkNameModTidy:     true,
-		checkNameWhitespace:  true,
-		checkNameEOF:         true,
-		checkNameAIDetection: true,
+		checkNameFumpt:      true,
+		checkNameGitleaks:   true,
+		checkNameLint:       true,
+		checkNameModTidy:    true,
+		checkNameWhitespace: true,
+		checkNameEOF:        true,
 	}
 	for _, part := range parts {
 		if cleaned := strings.TrimSpace(part); cleaned != "" {
@@ -529,15 +534,12 @@ func (r *Runner) deduplicateAndValidateSkips(skips []string) []string {
 	result := make([]string, 0, len(skips))
 
 	validChecks := map[string]bool{
-		checkNameFmt:         true,
-		checkNameFumpt:       true,
-		checkNameGitleaks:    true,
-		checkNameGoimports:   true,
-		checkNameLint:        true,
-		checkNameModTidy:     true,
-		checkNameWhitespace:  true,
-		checkNameEOF:         true,
-		checkNameAIDetection: true,
+		checkNameFumpt:      true,
+		checkNameGitleaks:   true,
+		checkNameLint:       true,
+		checkNameModTidy:    true,
+		checkNameWhitespace: true,
+		checkNameEOF:        true,
 	}
 
 	for _, skip := range skips {

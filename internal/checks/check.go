@@ -42,7 +42,7 @@ type Check interface {
 	Description() string
 
 	// Metadata returns comprehensive metadata about the check
-	Metadata() interface{}
+	Metadata() any
 
 	// Run executes the check on the given files
 	Run(ctx context.Context, files []string) error

@@ -40,25 +40,20 @@ func (s *SkipFunctionalityTestSuite) SetupSuite() {
 	envContent := `# Test environment configuration for SKIP functionality testing
 ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=info
-GO_PRE_COMMIT_ENABLE_FMT=true
 GO_PRE_COMMIT_ENABLE_FUMPT=true
-GO_PRE_COMMIT_ENABLE_GOIMPORTS=true
 GO_PRE_COMMIT_ENABLE_LINT=true
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
 GO_PRE_COMMIT_ENABLE_WHITESPACE=true
 GO_PRE_COMMIT_ENABLE_EOF=true
 GO_PRE_COMMIT_TIMEOUT_SECONDS=300
 GO_PRE_COMMIT_PARALLEL_WORKERS=2
-GO_PRE_COMMIT_FMT_TIMEOUT=30
 GO_PRE_COMMIT_FUMPT_TIMEOUT=30
-GO_PRE_COMMIT_GOIMPORTS_TIMEOUT=30
 GO_PRE_COMMIT_LINT_TIMEOUT=60
 GO_PRE_COMMIT_MOD_TIDY_TIMEOUT=30
 GO_PRE_COMMIT_WHITESPACE_TIMEOUT=30
 GO_PRE_COMMIT_EOF_TIMEOUT=30
 GO_PRE_COMMIT_FUMPT_VERSION=latest
 GO_PRE_COMMIT_GOLANGCI_LINT_VERSION=latest
-GO_PRE_COMMIT_GOIMPORTS_VERSION=latest
 `
 	s.Require().NoError(os.WriteFile(s.envFile, []byte(envContent), 0o600))
 
@@ -326,7 +321,7 @@ func (s *SkipFunctionalityTestSuite) TestSkipMultipleChecks() {
 // TestSkipAllChecks validates skipping all checks
 func (s *SkipFunctionalityTestSuite) TestSkipAllChecks() {
 	// Set SKIP to include all checks
-	skipValue := "fmt,fumpt,goimports,lint,mod-tidy,whitespace,eof,gitleaks"
+	skipValue := "fumpt,lint,mod-tidy,whitespace,eof,gitleaks"
 	s.Require().NoError(os.Setenv("SKIP", skipValue))
 	s.T().Logf("Setting SKIP to: %s", skipValue)
 
@@ -644,8 +639,8 @@ func (s *SkipFunctionalityTestSuite) runChecks(testContext string) *runner.Resul
 	s.T().Logf("SKIP env var in runChecks: %s", os.Getenv("SKIP"))
 
 	// Debug: Check what's in the config
-	s.T().Logf("Config checks enabled - Fmt: %v, Fumpt: %v, Lint: %v, ModTidy: %v, Whitespace: %v, EOF: %v",
-		cfg.Checks.Fmt, cfg.Checks.Fumpt, cfg.Checks.Lint, cfg.Checks.ModTidy, cfg.Checks.Whitespace, cfg.Checks.EOF)
+	s.T().Logf("Config checks enabled - Fumpt: %v, Lint: %v, ModTidy: %v, Whitespace: %v, EOF: %v",
+		cfg.Checks.Fumpt, cfg.Checks.Lint, cfg.Checks.ModTidy, cfg.Checks.Whitespace, cfg.Checks.EOF)
 
 	// Create runner
 	r := runner.New(cfg, s.tempDir)

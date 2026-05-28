@@ -23,6 +23,23 @@ var (
 	ErrVersionParseFailed = errors.New("could not parse version from output")
 )
 
+// releaseFetcher retrieves the latest release for a repository. It mirrors the
+// signature of version.GetLatestReleaseWithVersion so the production function can
+// be assigned directly, while tests inject a fake to avoid real network calls.
+type releaseFetcher func(owner, repo, currentVersion string) (*version.GitHubRelease, error)
+
+// releaseInstaller installs a Go package (e.g. via `go install`). Tests inject a
+// fake to avoid network access and modifying the host's binaries.
+type releaseInstaller func(ctx context.Context, pkg string) error
+
+// defaultGoInstall is the production installer; it runs `go install <pkg>`.
+func defaultGoInstall(ctx context.Context, pkg string) error {
+	cmd := exec.CommandContext(ctx, "go", "install", pkg) //nolint:gosec // Command is constructed safely
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
 // UpgradeConfig holds configuration for the upgrade command
 type UpgradeConfig struct {
 	Force     bool
@@ -100,7 +117,7 @@ func (cb *CommandBuilder) runUpgradeWithConfig(config UpgradeConfig) error {
 
 	// Fetch latest release
 	printInfo("Checking for updates...")
-	release, err := version.GetLatestReleaseWithVersion("mrz1836", "go-pre-commit", currentVersion)
+	release, err := cb.fetchRelease("mrz1836", "go-pre-commit", currentVersion)
 	if err != nil {
 		return fmt.Errorf("failed to check for updates: %w", err)
 	}
@@ -138,11 +155,7 @@ func (cb *CommandBuilder) runUpgradeWithConfig(config UpgradeConfig) error {
 
 	printInfo("Running: go install %s", installCmd)
 
-	cmd := exec.CommandContext(context.Background(), "go", "install", installCmd) //nolint:gosec // Command is constructed safely
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
+	if err := cb.installRelease(context.Background(), installCmd); err != nil {
 		return fmt.Errorf("failed to upgrade: %w", err)
 	}
 

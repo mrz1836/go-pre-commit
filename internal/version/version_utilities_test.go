@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +14,25 @@ import (
 // VersionUtilitiesTestSuite tests additional version utility functions
 type VersionUtilitiesTestSuite struct {
 	suite.Suite
+}
+
+// testServerClient is an HTTPClient that redirects every request to a local test
+// server. It lets GetLatestReleaseWithVersionAndClient be exercised end-to-end
+// (including header handling) without any real network access.
+type testServerClient struct {
+	baseURL string
+}
+
+// Do rewrites the request to target the test server and executes it.
+func (c *testServerClient) Do(req *http.Request) (*http.Response, error) {
+	out, err := http.NewRequestWithContext(req.Context(), req.Method, c.baseURL+req.URL.Path, req.Body) //nolint:gosec // baseURL is a controlled test server URL
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range req.Header {
+		out.Header[k] = v
+	}
+	return http.DefaultClient.Do(out) //nolint:gosec // request targets a controlled test server
 }
 
 // TestIsCommitHash tests the isCommitHash utility function
@@ -372,11 +390,19 @@ func (s *VersionUtilitiesTestSuite) TestGitHubReleaseFunctionsWithMocking() {
 			server := tc.serverFunc()
 			defer server.Close()
 
-			// This is a simplified test since we can't easily inject the server URL
-			// into the GetLatestReleaseWithVersion function without modifying the API
-			// In a real scenario, we'd need dependency injection or interface mocking
+			// Inject a client that redirects to the test server: no real network.
+			client := &testServerClient{baseURL: server.URL}
+			release, err := GetLatestReleaseWithVersionAndClient("owner", "repo", "v1.0.0", client)
 
-			s.T().Logf("✓ %s: %s (mocking test - would need API modification for full testing)", tc.name, tc.description)
+			if tc.expectError {
+				s.Require().Error(err, tc.description)
+				s.Nil(release, "release should be nil on error")
+				return
+			}
+
+			s.Require().NoError(err, tc.description)
+			s.Require().NotNil(release, "release should be parsed")
+			s.Equal(tc.expectedTag, release.TagName, tc.description)
 		})
 	}
 }
@@ -491,42 +517,82 @@ func (s *VersionUtilitiesTestSuite) TestGetGitHubToken() {
 	}
 }
 
-// TestFormatGitHubError tests GitHub error formatting indirectly
+// TestFormatGitHubError tests GitHub error formatting directly (white-box, no
+// network) across the status codes the API can return.
 func (s *VersionUtilitiesTestSuite) TestFormatGitHubError() {
-	// Since formatGitHubError is a private function, we test error handling behavior
-	// through the public API
-
 	testCases := []struct {
 		name        string
-		expectError bool
+		statusCode  int
+		body        string
+		headers     map[string]string
+		contains    []string
+		notContains []string
 		description string
 	}{
 		{
-			name:        "Invalid owner/repo combination",
-			expectError: true,
-			description: "Should return formatted error for invalid repositories",
+			name:        "Not found",
+			statusCode:  http.StatusNotFound,
+			body:        `{"message": "Not Found"}`,
+			contains:    []string{"status 404", "Not Found"},
+			notContains: []string{"rate limit"},
+			description: "Should format a plain 404 without rate-limit guidance",
+		},
+		{
+			name:       "Rate limit with headers",
+			statusCode: http.StatusForbidden,
+			body:       `{"message": "API rate limit exceeded"}`,
+			headers: map[string]string{
+				"X-RateLimit-Limit":     "60",
+				"X-RateLimit-Remaining": "0",
+			},
+			contains:    []string{"status 403", "GITHUB_TOKEN", "Current limit: 60", "Remaining: 0"},
+			description: "Should include rate-limit guidance and header details",
+		},
+		{
+			name:        "Non-rate-limit 403",
+			statusCode:  http.StatusForbidden,
+			body:        `{"message": "Forbidden"}`,
+			contains:    []string{"status 403", "Forbidden"},
+			notContains: []string{"GITHUB_TOKEN"},
+			description: "Should not add rate-limit guidance for a generic 403",
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			// Test with invalid repo that will generate an error
-			_, err := GetLatestReleaseWithVersion("nonexistent-user-12345", "nonexistent-repo-12345", "v1.0.0")
-
-			if tc.expectError {
-				s.Require().Error(err, tc.description)
-				// Skip TLS/network unavailability errors - these are environment issues
-				if strings.Contains(err.Error(), "tls:") || strings.Contains(err.Error(), "x509:") {
-					s.T().Skipf("Skipping: TLS/network unavailable: %v", err)
-				}
-				s.Contains(err.Error(), "GitHub API request failed", "Error should contain GitHub API failure message")
-			} else {
-				s.Require().NoError(err, tc.description)
+			headers := make(http.Header)
+			for k, v := range tc.headers {
+				headers.Set(k, v)
 			}
 
-			s.T().Logf("✓ %s: %s", tc.name, tc.description)
+			msg := formatGitHubError(tc.statusCode, tc.body, headers)
+
+			for _, want := range tc.contains {
+				s.Contains(msg, want, tc.description)
+			}
+			for _, notWant := range tc.notContains {
+				s.NotContains(msg, notWant, tc.description)
+			}
 		})
 	}
+}
+
+// TestGetLatestReleaseError_PropagatesFormattedError verifies the formatted error
+// surfaces through the public API using an injected client (no real network).
+func (s *VersionUtilitiesTestSuite) TestGetLatestReleaseError_PropagatesFormattedError() {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message": "Not Found"}`))
+	}))
+	defer server.Close()
+
+	client := &testServerClient{baseURL: server.URL}
+	release, err := GetLatestReleaseWithVersionAndClient("nonexistent", "repo", "v1.0.0", client)
+
+	s.Require().Error(err)
+	s.Nil(release)
+	s.Contains(err.Error(), "GitHub API request failed")
+	s.Contains(err.Error(), "status 404")
 }
 
 // TestContextHandling tests context-aware behavior

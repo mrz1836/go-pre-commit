@@ -160,7 +160,6 @@ func TestMain(t *testing.T) {
 	envContent := `# Go pre-commit configuration
 ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_TIMEOUT_SECONDS=300
-GO_PRE_COMMIT_ENABLE_FMT=true
 GO_PRE_COMMIT_ENABLE_FUMPT=true
 GO_PRE_COMMIT_ENABLE_LINT=true
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
@@ -233,7 +232,7 @@ func (s *E2EIntegrationTestSuite) TestCompleteRunnerWorkflow() {
 	// Test 1: Load configuration
 	cfg, err := config.Load()
 	s.Require().NoError(err, "Should load configuration successfully")
-	s.True(cfg.Checks.Fmt, "Format check should be enabled")
+	s.True(cfg.Checks.Fumpt, "Fumpt check should be enabled")
 	s.True(cfg.Checks.Lint, "Lint check should be enabled")
 	s.Equal("info", cfg.LogLevel, "Log level should be info")
 	s.Positive(cfg.Timeout, "Timeout should be greater than 0")
@@ -351,10 +350,10 @@ fmt.Println(   "needs formatting"   )
 
 	s.NotNil(results)
 
-	// Verify fmt check was executed
+	// Verify fumpt (format) check was executed
 	var fmtResult *runner.CheckResult
 	for _, result := range results.CheckResults {
-		if result.Name == "fmt" {
+		if result.Name == "fumpt" {
 			fmtResult = &result
 			break
 		}

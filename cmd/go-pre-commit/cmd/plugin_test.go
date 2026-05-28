@@ -401,7 +401,7 @@ func TestDisplayPluginDetails(t *testing.T) {
 
 func TestPluginManifestFormats(t *testing.T) {
 	// Test that the same plugin data can be loaded from both YAML and JSON
-	testData := map[string]interface{}{
+	testData := map[string]any{
 		"name":           "format-test-plugin",
 		"version":        "1.0.0",
 		"description":    "Plugin to test format compatibility",

@@ -241,6 +241,7 @@ func TestInstallCmd_runInstallWithConfig(t *testing.T) {
 
 // setupTempGitRepo creates a temporary git repository for testing
 func setupTempGitRepo(t *testing.T, enabled, hasConfig bool) string {
+	t.Helper()
 	tempDir := t.TempDir()
 
 	// Create .git directory and minimal git structure

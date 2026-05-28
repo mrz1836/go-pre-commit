@@ -2,13 +2,82 @@ package update
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mrz1836/go-pre-commit/internal/version"
 )
+
+// errTestNetwork is a sentinel error used by fake fetchers to simulate a
+// network/API failure without making real network calls.
+var errTestNetwork = errors.New("simulated network failure")
+
+// writeExpiredCache writes a cache entry directly to disk with a back-dated
+// CheckedAt timestamp. WriteCache always resets CheckedAt to time.Now(), so it
+// cannot be used to create an expired entry; this helper bypasses that to force
+// the fetch path during tests.
+func writeExpiredCache(t *testing.T) {
+	t.Helper()
+	dir, err := GetCacheDir()
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(dir, 0o700))
+
+	filePath, err := getCacheFilePath()
+	require.NoError(t, err)
+
+	entry := &CacheEntry{
+		CheckedAt:      time.Now().Add(-25 * time.Hour),
+		CurrentVersion: testVersionCurrent,
+		LatestVersion:  testVersionCurrent,
+	}
+	data, err := json.MarshalIndent(entry, "", "  ")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filePath, data, 0o600))
+}
+
+// stubFetcher returns a ReleaseFetcher that yields a release with the given tag.
+func stubFetcher(tag string) ReleaseFetcher {
+	return func(_, _, _ string) (*version.GitHubRelease, error) {
+		return &version.GitHubRelease{TagName: tag}, nil
+	}
+}
+
+// errFetcher returns a ReleaseFetcher that always fails with the given error.
+func errFetcher(err error) ReleaseFetcher {
+	return func(_, _, _ string) (*version.GitHubRelease, error) {
+		return nil, err
+	}
+}
+
+// failingFetcher returns a ReleaseFetcher that fails the test if it is ever
+// invoked. Use it when a valid cache should short-circuit the network path.
+func failingFetcher(t *testing.T) ReleaseFetcher {
+	t.Helper()
+	return func(_, _, _ string) (*version.GitHubRelease, error) {
+		t.Error("release fetcher should not be called when cache is valid")
+		return nil, errTestNetwork
+	}
+}
+
+// blockingFetcher returns a ReleaseFetcher that blocks until the test completes.
+// This makes context timeout/cancellation paths deterministic: the fetcher never
+// wins the select against an already-done context. The fetcher returns once the
+// test's cleanup unblocks it (its buffered result is discarded, so no leak).
+func blockingFetcher(t *testing.T) ReleaseFetcher {
+	t.Helper()
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	return func(_, _, _ string) (*version.GitHubRelease, error) {
+		<-release
+		return nil, errTestNetwork
+	}
+}
 
 func TestStartBackgroundCheckDisabled(t *testing.T) {
 	t.Setenv("GO_PRE_COMMIT_DISABLE_UPDATE_CHECK", "1")
@@ -78,39 +147,27 @@ func TestStartBackgroundCheckWithValidCache(t *testing.T) {
 }
 
 func TestStartBackgroundCheckWithExpiredCache(t *testing.T) {
-	// Skip if no GitHub token available (would make real API call)
-	if os.Getenv("GITHUB_TOKEN") == "" &&
-		os.Getenv("GH_TOKEN") == "" &&
-		os.Getenv("GO_PRE_COMMIT_GITHUB_TOKEN") == "" {
-		t.Skip("Skipping test that requires GitHub token")
-	}
-
 	tempDir := t.TempDir()
 	t.Setenv("HOME", tempDir)
 	t.Setenv("GO_PRE_COMMIT_DISABLE_UPDATE_CHECK", "")
 	t.Setenv("CI", "")
 
-	// Pre-populate cache with expired entry
-	cacheEntry := &CacheEntry{
-		CheckedAt:      time.Now().Add(-25 * time.Hour),
-		CurrentVersion: testVersionCurrent,
-		LatestVersion:  testVersionCurrent,
-	}
-	err := WriteCache(cacheEntry)
-	require.NoError(t, err)
+	// Pre-populate cache with an expired entry so the fetcher path is exercised
+	writeExpiredCache(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	resultChan := StartBackgroundCheck(ctx, testVersionCurrent)
+	// Inject a fake fetcher so no real network call is made
+	resultChan := startBackgroundCheck(ctx, testVersionCurrent, stubFetcher(testVersionLatest))
 
-	// Should receive result (from API call or error)
 	select {
 	case result := <-resultChan:
-		// Result might be nil if API call failed
-		if result != nil {
-			assert.False(t, result.FromCache, "Result should not be from cache")
-		}
+		require.NotNil(t, result, "Should receive a fresh result")
+		assert.False(t, result.FromCache, "Result should not be from cache")
+		assert.Equal(t, testVersionLatest, result.LatestVersion)
+		assert.True(t, result.UpdateAvailable, "Newer version should be available")
+		require.NoError(t, result.Error)
 	case <-time.After(11 * time.Second):
 		t.Fatal("Timeout waiting for result")
 	}
@@ -129,7 +186,8 @@ func TestCheckForUpdateWithValidCache(t *testing.T) {
 	err := WriteCache(cacheEntry)
 	require.NoError(t, err)
 
-	result := checkForUpdate(context.Background(), testVersionCurrent)
+	// Valid cache should short-circuit before the fetcher is ever called
+	result := checkForUpdate(context.Background(), testVersionCurrent, failingFetcher(t))
 	require.NotNil(t, result)
 
 	assert.True(t, result.FromCache)
@@ -139,7 +197,7 @@ func TestCheckForUpdateWithValidCache(t *testing.T) {
 	assert.NoError(t, result.Error)
 }
 
-func TestCheckForUpdateWithExpiredCacheAndNoToken(t *testing.T) {
+func TestCheckForUpdateWithExpiredCacheFetchError(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Setenv("HOME", tempDir)
 	// Clear all token env vars
@@ -147,24 +205,19 @@ func TestCheckForUpdateWithExpiredCacheAndNoToken(t *testing.T) {
 	t.Setenv("GH_TOKEN", "")
 	t.Setenv("GO_PRE_COMMIT_GITHUB_TOKEN", "")
 
-	// Pre-populate cache with expired entry
-	cacheEntry := &CacheEntry{
-		CheckedAt:      time.Now().Add(-25 * time.Hour),
-		CurrentVersion: testVersionCurrent,
-		LatestVersion:  testVersionCurrent,
-	}
-	err := WriteCache(cacheEntry)
-	require.NoError(t, err)
+	// Pre-populate cache with an expired entry to force the fetch path
+	writeExpiredCache(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	result := checkForUpdate(ctx, testVersionCurrent)
+	// Inject a fetcher that fails (simulating a network/API error)
+	result := checkForUpdate(ctx, testVersionCurrent, errFetcher(errTestNetwork))
 
-	// Should return a result (possibly with error due to rate limiting)
 	require.NotNil(t, result)
-	// API call without token might hit rate limit or succeed
-	// The result may or may not be from cache depending on API success
+	require.Error(t, result.Error, "Fetch failure should be surfaced on the result")
+	require.ErrorIs(t, result.Error, errTestNetwork)
+	assert.False(t, result.FromCache, "Failed fetch should not report a cached result")
 }
 
 func TestGetGitHubToken(t *testing.T) {
@@ -277,19 +330,14 @@ func TestStartBackgroundCheckContextCancellation(t *testing.T) {
 	t.Setenv("GO_PRE_COMMIT_DISABLE_UPDATE_CHECK", "")
 	t.Setenv("CI", "")
 
-	// Create expired cache to force API call
-	cacheEntry := &CacheEntry{
-		CheckedAt:      time.Now().Add(-25 * time.Hour),
-		CurrentVersion: testVersionCurrent,
-		LatestVersion:  testVersionCurrent,
-	}
-	err := WriteCache(cacheEntry)
-	require.NoError(t, err)
+	// Create an expired cache to force the fetch path so cancellation matters
+	writeExpiredCache(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	resultChan := StartBackgroundCheck(ctx, testVersionCurrent)
+	// blockingFetcher guarantees the canceled context wins the select
+	resultChan := startBackgroundCheck(ctx, testVersionCurrent, blockingFetcher(t))
 
 	// Should receive result or channel closes
 	select {
@@ -316,7 +364,7 @@ func TestStartBackgroundCheckRecoversFromPanic(t *testing.T) {
 	t.Setenv("CI", "")
 
 	// This should not panic regardless of what happens internally
-	resultChan := StartBackgroundCheck(context.Background(), testVersionCurrent)
+	resultChan := startBackgroundCheck(context.Background(), testVersionCurrent, stubFetcher(testVersionLatest))
 
 	select {
 	case <-resultChan:
@@ -339,8 +387,10 @@ func TestCheckForUpdateSetsCheckedAt(t *testing.T) {
 	err := WriteCache(cacheEntry)
 	require.NoError(t, err)
 
+	// Cache is 1 hour old (within the default check interval) so it is valid
+	// and the fetcher must not be called.
 	before := time.Now()
-	result := checkForUpdate(context.Background(), testVersionCurrent)
+	result := checkForUpdate(context.Background(), testVersionCurrent, failingFetcher(t))
 	after := time.Now()
 
 	require.NotNil(t, result)
@@ -361,14 +411,8 @@ func TestCheckForUpdateTimeout(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Setenv("HOME", tempDir)
 
-	// Create expired cache to force API call
-	cacheEntry := &CacheEntry{
-		CheckedAt:      time.Now().Add(-25 * time.Hour),
-		CurrentVersion: testVersionCurrent,
-		LatestVersion:  testVersionCurrent,
-	}
-	err := WriteCache(cacheEntry)
-	require.NoError(t, err)
+	// Create an expired cache to force the fetch path
+	writeExpiredCache(t)
 
 	// Use a context with very short timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
@@ -377,14 +421,15 @@ func TestCheckForUpdateTimeout(t *testing.T) {
 	// Wait a bit to ensure timeout
 	time.Sleep(10 * time.Millisecond)
 
-	result := checkForUpdate(ctx, testVersionCurrent)
+	// blockingFetcher never returns before the test ends, so the already-expired
+	// context deterministically produces a timeout result with no network call.
+	result := checkForUpdate(ctx, testVersionCurrent, blockingFetcher(t))
 
 	// Should return result with timeout error
 	require.NotNil(t, result)
-	if result.Error != nil {
-		// Timeout or deadline exceeded
-		assert.False(t, result.FromCache)
-	}
+	require.Error(t, result.Error, "expired context should produce an error")
+	require.ErrorIs(t, result.Error, context.DeadlineExceeded)
+	assert.False(t, result.FromCache)
 }
 
 func TestGitHubConstants(t *testing.T) {
@@ -395,41 +440,29 @@ func TestGitHubConstants(t *testing.T) {
 }
 
 func TestCheckForUpdateWritesCache(t *testing.T) {
-	// Skip if no GitHub token available
-	if os.Getenv("GITHUB_TOKEN") == "" &&
-		os.Getenv("GH_TOKEN") == "" &&
-		os.Getenv("GO_PRE_COMMIT_GITHUB_TOKEN") == "" {
-		t.Skip("Skipping test that requires GitHub token")
-	}
-
 	tempDir := t.TempDir()
 	t.Setenv("HOME", tempDir)
 
-	// Create expired cache to force API call
-	cacheEntry := &CacheEntry{
-		CheckedAt:      time.Now().Add(-25 * time.Hour),
-		CurrentVersion: testVersionCurrent,
-		LatestVersion:  testVersionCurrent,
-	}
-	err := WriteCache(cacheEntry)
-	require.NoError(t, err)
+	// Create an expired cache to force the fetch path
+	oldCheckedAt := time.Now().Add(-25 * time.Hour)
+	writeExpiredCache(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	result := checkForUpdate(ctx, testVersionCurrent)
+	// Inject a stub fetcher returning a newer version; no real network call
+	result := checkForUpdate(ctx, testVersionCurrent, stubFetcher(testVersionLatest))
 	require.NotNil(t, result)
+	require.NoError(t, result.Error)
+	assert.False(t, result.FromCache)
+	assert.Equal(t, testVersionLatest, result.LatestVersion)
 
-	// If successful, cache should be updated
-	if result.Error == nil && !result.FromCache {
-		// Read cache back
-		cached, err := ReadCache()
-		require.NoError(t, err)
-		require.NotNil(t, cached)
-
-		// Cache should be newer than the old entry
-		assert.True(t, cached.CheckedAt.After(cacheEntry.CheckedAt))
-	}
+	// Cache should be updated with the freshly fetched version
+	cached, err := ReadCache()
+	require.NoError(t, err)
+	require.NotNil(t, cached)
+	assert.Equal(t, testVersionLatest, cached.LatestVersion)
+	assert.True(t, cached.CheckedAt.After(oldCheckedAt))
 }
 
 func TestStartBackgroundCheckChannelBehavior(t *testing.T) {
@@ -490,7 +523,8 @@ func TestCheckForUpdateUpdateAvailableLogic(t *testing.T) {
 			err := WriteCache(cacheEntry)
 			require.NoError(t, err)
 
-			result := checkForUpdate(context.Background(), tt.currentVersion)
+			// Fresh, valid cache: the fetcher must not be called
+			result := checkForUpdate(context.Background(), tt.currentVersion, failingFetcher(t))
 			require.NotNil(t, result)
 
 			assert.Equal(t, tt.expectAvailable, result.UpdateAvailable,

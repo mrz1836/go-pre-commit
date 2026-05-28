@@ -53,6 +53,8 @@ func (s *ConfigEnvironmentIntegrationTestSuite) SetupSuite() {
 	s.saveSuiteEnvironment("GO_PRE_COMMIT_MAX_FILES_OPEN")
 	s.saveSuiteEnvironment("GO_PRE_COMMIT_TEST_CONFIG_DIR")
 	s.saveSuiteEnvironment("ENABLE_GO_PRE_COMMIT")
+	s.saveSuiteEnvironment("GO_PRE_COMMIT_ENABLE_FUMPT")
+	s.saveSuiteEnvironment("GO_PRE_COMMIT_ENABLE_LINT")
 
 	// Create multiple test project scenarios
 	s.createTestProjects()
@@ -194,13 +196,11 @@ GO_PRE_COMMIT_TIMEOUT_SECONDS=600
 GO_PRE_COMMIT_LOG_LEVEL=debug
 
 # All checks enabled
-GO_PRE_COMMIT_ENABLE_FMT=true
 GO_PRE_COMMIT_ENABLE_FUMPT=true
 GO_PRE_COMMIT_ENABLE_LINT=true
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=true
 GO_PRE_COMMIT_ENABLE_WHITESPACE=true
 GO_PRE_COMMIT_ENABLE_EOF=true
-GO_PRE_COMMIT_ENABLE_AI_DETECTION=false
 
 # Performance settings
 GO_PRE_COMMIT_PARALLEL_WORKERS=4
@@ -212,13 +212,11 @@ GO_PRE_COMMIT_TOOL_FUMPT_VERSION=latest
 GO_PRE_COMMIT_TOOL_GOLANGCI_LINT_VERSION=latest
 
 # Timeouts
-GO_PRE_COMMIT_FMT_TIMEOUT=60
 GO_PRE_COMMIT_FUMPT_TIMEOUT=60
 GO_PRE_COMMIT_LINT_TIMEOUT=120
 GO_PRE_COMMIT_MOD_TIDY_TIMEOUT=60
 GO_PRE_COMMIT_WHITESPACE_TIMEOUT=30
 GO_PRE_COMMIT_EOF_TIMEOUT=30
-GO_PRE_COMMIT_AI_DETECTION_TIMEOUT=60
 
 # Tool versions
 GO_PRE_COMMIT_FUMPT_VERSION=latest
@@ -446,7 +444,7 @@ go 1.21
 	// Create base configuration
 	baseEnvContent := `ENABLE_GO_PRE_COMMIT=true
 GO_PRE_COMMIT_LOG_LEVEL=info
-GO_PRE_COMMIT_ENABLE_FMT=true
+GO_PRE_COMMIT_ENABLE_FUMPT=true
 GO_PRE_COMMIT_ENABLE_LINT=true
 `
 	s.Require().NoError(os.WriteFile(filepath.Join(githubDir, ".env.base"), []byte(baseEnvContent), 0o600))
@@ -621,11 +619,11 @@ func (s *ConfigEnvironmentIntegrationTestSuite) TestEnvironmentVariableOverrides
 		{
 			name: "Check disabling",
 			envVars: map[string]string{
-				"GO_PRE_COMMIT_ENABLE_FMT":  "false",
-				"GO_PRE_COMMIT_ENABLE_LINT": "false",
+				"GO_PRE_COMMIT_ENABLE_FUMPT": "false",
+				"GO_PRE_COMMIT_ENABLE_LINT":  "false",
 			},
 			checkFunc: func(cfg *config.Config) {
-				s.False(cfg.Checks.Fmt, "Format check should be disabled")
+				s.False(cfg.Checks.Fumpt, "Fumpt check should be disabled")
 				s.False(cfg.Checks.Lint, "Lint check should be disabled")
 			},
 			description: "Environment should disable checks",

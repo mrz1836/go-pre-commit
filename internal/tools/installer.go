@@ -5,9 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -22,6 +24,20 @@ const (
 	toolGolangciLint  = "golangci-lint"
 	toolVersionLatest = "latest"
 )
+
+// runInstallCommand runs an install/download command and returns its combined
+// output. It is a package variable so tests can substitute a fake implementation
+// that avoids real process execution and network access (go install, curl).
+// When env is nil the process inherits the parent environment.
+//
+//nolint:gochecknoglobals // Injectable seam so tests can avoid real exec/network
+var runInstallCommand = func(ctx context.Context, env []string, name string, args ...string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec // arguments are constructed from trusted tool config
+	if env != nil {
+		cmd.Env = env
+	}
+	return cmd.CombinedOutput()
+}
 
 // Error variables for tool installation
 var (
@@ -357,11 +373,8 @@ func InstallTool(ctx context.Context, tool *Tool) error {
 	start := time.Now()
 
 	err := retryWithBackoff(installCtx, fmt.Sprintf("installing %s", tool.Name), func() error {
-		cmd := exec.CommandContext(installCtx, "go", "install", installPath) //nolint:gosec // installPath is constructed from trusted tool config
-		cmd.Env = append(os.Environ(), "GO111MODULE=on")
-
 		var cmdErr error
-		output, cmdErr = cmd.CombinedOutput()
+		output, cmdErr = runInstallCommand(installCtx, append(os.Environ(), "GO111MODULE=on"), "go", "install", installPath)
 		return cmdErr
 	})
 
@@ -426,11 +439,8 @@ func installGolangciLint(ctx context.Context, version string) error {
 	var output []byte
 
 	err := retryWithBackoff(ctx, "installing golangci-lint", func() error {
-		cmd := exec.CommandContext(ctx, "sh", "-c", fmt.Sprintf(installScript, version)) //nolint:gosec // version comes from trusted config
-		cmd.Env = append(os.Environ(), "GO111MODULE=on")
-
 		var cmdErr error
-		output, cmdErr = cmd.CombinedOutput()
+		output, cmdErr = runInstallCommand(ctx, append(os.Environ(), "GO111MODULE=on"), "sh", "-c", fmt.Sprintf(installScript, version))
 		return cmdErr
 	})
 
@@ -458,11 +468,8 @@ func installGolangciLint(ctx context.Context, version string) error {
 		fallbackStart := time.Now()
 
 		fallbackErr := retryWithBackoff(ctx, "installing golangci-lint (fallback)", func() error {
-			fallbackCmd := exec.CommandContext(ctx, "go", "install", installPath) //nolint:gosec // installPath is constructed from trusted tool config
-			fallbackCmd.Env = append(os.Environ(), "GO111MODULE=on")
-
 			var cmdErr error
-			fallbackOutput, cmdErr = fallbackCmd.CombinedOutput()
+			fallbackOutput, cmdErr = runInstallCommand(ctx, append(os.Environ(), "GO111MODULE=on"), "go", "install", installPath)
 			return cmdErr
 		})
 
@@ -586,9 +593,8 @@ func installGitleaks(ctx context.Context, version string) error {
 	var output []byte
 
 	err = retryWithBackoff(ctx, "downloading gitleaks", func() error {
-		cmd := exec.CommandContext(ctx, "curl", "-sSfL", "-o", archivePath, downloadURL) //nolint:gosec // downloadURL is constructed from trusted version
 		var cmdErr error
-		output, cmdErr = cmd.CombinedOutput()
+		output, cmdErr = runInstallCommand(ctx, nil, "curl", "-sSfL", "-o", archivePath, downloadURL)
 		return cmdErr
 	})
 
@@ -694,10 +700,7 @@ func InstallAllTools(ctx context.Context) error {
 
 	// Snapshot tool names under read lock to avoid race with map modifications
 	toolsMu.RLock()
-	toolNames := make([]string, 0, len(tools))
-	for name := range tools {
-		toolNames = append(toolNames, name)
-	}
+	toolNames := slices.Collect(maps.Keys(tools))
 	toolsMu.RUnlock()
 
 	var wg sync.WaitGroup

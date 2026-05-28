@@ -77,7 +77,7 @@ func (c *GitleaksCheck) Description() string {
 }
 
 // Metadata returns comprehensive metadata about the check
-func (c *GitleaksCheck) Metadata() interface{} {
+func (c *GitleaksCheck) Metadata() any {
 	return CheckMetadata{
 		Name:              "gitleaks",
 		Description:       "Scan for secrets and credentials in code using gitleaks",

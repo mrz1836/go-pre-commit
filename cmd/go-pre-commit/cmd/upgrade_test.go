@@ -1,14 +1,64 @@
 package cmd
 
 import (
-	"bytes"
+	"context"
+	"errors"
 	"os"
-	"strings"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mrz1836/go-pre-commit/internal/version"
 )
+
+// errTestFetch is a sentinel error for simulating a failed release fetch.
+var errTestFetch = errors.New("simulated fetch failure")
+
+// stubRelease returns a releaseFetcher that yields a release with the given tag.
+func stubRelease(tag string) releaseFetcher {
+	return func(_, _, _ string) (*version.GitHubRelease, error) {
+		return &version.GitHubRelease{TagName: tag}, nil
+	}
+}
+
+// errRelease returns a releaseFetcher that always fails with the given error.
+func errRelease(err error) releaseFetcher {
+	return func(_, _, _ string) (*version.GitHubRelease, error) {
+		return nil, err
+	}
+}
+
+// newTestBuilder builds a CommandBuilder with injected fetcher/installer so the
+// upgrade flow can be exercised without real network calls or `go install`.
+func newTestBuilder(v string, fetch releaseFetcher, install releaseInstaller) *CommandBuilder {
+	builder := NewCommandBuilder(NewCLIApp(v, "test-commit", "2024-01-01"))
+	if fetch != nil {
+		builder.fetchRelease = fetch
+	}
+	if install != nil {
+		builder.installRelease = install
+	}
+	return builder
+}
+
+// isolateInTempGitRepo chdirs into a fresh temp git repo with an isolated HOME so
+// cache writes and hook reinstall checks never touch the real repository.
+func isolateInTempGitRepo(t *testing.T) {
+	t.Helper()
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.Chdir(oldWd) })
+	require.NoError(t, os.Chdir(tmpDir))
+
+	// git init so FindRepositoryRoot resolves to this temp dir (network-free)
+	cmd := exec.CommandContext(context.Background(), "git", "init")
+	require.NoError(t, cmd.Run())
+}
 
 func TestBuildUpgradeCmd(t *testing.T) {
 	app := NewCLIApp("1.0.0", "abc123", "2024-01-01")
@@ -27,14 +77,9 @@ func TestBuildUpgradeCmd(t *testing.T) {
 }
 
 func TestUpgradeCommand_CheckOnly(t *testing.T) {
-	// Create app with a specific version
-	app := NewCLIApp("1.0.0", "abc123", "2024-01-01")
-	builder := NewCommandBuilder(app)
-
-	// Capture output
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
+	// Inject a fake fetcher so no real GitHub request is made. CheckOnly returns
+	// before any install, so no installer is needed.
+	builder := newTestBuilder("1.0.0", stubRelease("v1.2.0"), nil)
 
 	config := UpgradeConfig{
 		CheckOnly: true,
@@ -42,24 +87,18 @@ func TestUpgradeCommand_CheckOnly(t *testing.T) {
 		Reinstall: false,
 	}
 
-	// This will try to fetch from GitHub
-	// In a real test environment, we'd mock this
 	err := builder.runUpgradeWithConfig(config)
+	require.NoError(t, err, "check-only should succeed with a mocked release")
+}
 
-	_ = w.Close()
-	os.Stdout = oldStdout
+func TestUpgradeCommand_CheckOnly_FetchError(t *testing.T) {
+	// A failed fetch should surface as a wrapped "failed to check for updates" error.
+	builder := newTestBuilder("1.0.0", errRelease(errTestFetch), nil)
 
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
-	output := buf.String()
-
-	// The command should not error when checking
-	// It may fail to fetch from GitHub in test environment
-	if err != nil {
-		assert.Contains(t, err.Error(), "failed to check for updates")
-	} else {
-		assert.Contains(t, output, "version")
-	}
+	err := builder.runUpgradeWithConfig(UpgradeConfig{CheckOnly: true})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to check for updates")
+	assert.ErrorIs(t, err, errTestFetch)
 }
 
 func TestUpgradeCommand_DevVersion(t *testing.T) {
@@ -149,145 +188,104 @@ func TestGetBinaryLocation(t *testing.T) {
 	}
 }
 
-func TestUpgradeCmd_Integration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+func TestUpgradeCmd_CheckViaCobra(t *testing.T) {
+	// Exercise the full cobra command wiring (flag parsing -> runUpgradeWithConfig)
+	// with an injected fetcher so no real network call is made.
+	t.Setenv("HOME", t.TempDir())
 
-	// Create a temporary directory for testing
-	tmpDir := t.TempDir()
-	oldWd, _ := os.Getwd()
-	defer func() { _ = os.Chdir(oldWd) }()
+	builder := newTestBuilder("1.0.0", stubRelease("v1.2.0"), nil)
 
-	err := os.Chdir(tmpDir)
-	require.NoError(t, err)
-
-	// Initialize as a git repo
-	err = os.MkdirAll(".git/hooks", 0o750)
-	require.NoError(t, err)
-
-	// Create app and builder
-	app := NewCLIApp("1.0.0", "test", "2024-01-01")
-	builder := NewCommandBuilder(app)
-
-	// Build the command
 	cmd := builder.BuildUpgradeCmd()
-
-	// Set check-only flag
 	cmd.SetArgs([]string{"--check"})
 
-	// Execute command (may fail due to network)
-	err = cmd.Execute()
-	// We don't fail the test if network is unavailable
-	if err != nil {
-		t.Logf("Command execution failed (may be offline): %v", err)
-	}
+	require.NoError(t, cmd.Execute())
 }
 
-// TestRunUpgradeWithConfig_Comprehensive tests the runUpgradeWithConfig function with various scenarios
+// TestRunUpgradeWithConfig_Comprehensive tests runUpgradeWithConfig across
+// scenarios using injected fetcher/installer so no real network call or
+// `go install` is performed.
 func TestRunUpgradeWithConfig_Comprehensive(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping comprehensive upgrade test in short mode")
-	}
 	testCases := []struct {
 		name           string
 		currentVersion string
+		latestTag      string
 		config         UpgradeConfig
-		expectedError  bool
-		errorContains  string
+		expectInstall  bool
 		description    string
 	}{
 		{
 			name:           "Force Upgrade Dev Version",
 			currentVersion: versionDev,
-			config: UpgradeConfig{
-				Force:     true,
-				CheckOnly: false,
-				Reinstall: false,
-			},
-			expectedError: false, // Should succeed when network is available
-			errorContains: "",
-			description:   "Should allow force upgrade of dev version",
+			latestTag:      "v2.0.0",
+			config:         UpgradeConfig{Force: true},
+			expectInstall:  true,
+			description:    "Should allow force upgrade of dev version and install",
 		},
 		{
 			name:           "Check Only Mode with Commit Hash",
 			currentVersion: "abc123def456789", // Looks like commit hash
-			config: UpgradeConfig{
-				Force:     false,
-				CheckOnly: true,
-				Reinstall: false,
-			},
-			expectedError: false, // Should succeed when network is available
-			errorContains: "",
-			description:   "Should handle commit hash versions in check-only mode",
+			latestTag:      "v2.0.0",
+			config:         UpgradeConfig{CheckOnly: true},
+			expectInstall:  false,
+			description:    "Should report update in check-only mode without installing",
 		},
 		{
 			name:           "Reinstall After Upgrade",
 			currentVersion: "1.0.0",
-			config: UpgradeConfig{
-				Force:     false,
-				CheckOnly: false,
-				Reinstall: true,
-			},
-			expectedError: false, // Should succeed when network is available
-			errorContains: "",
-			description:   "Should attempt to reinstall hooks after upgrade",
+			latestTag:      "v2.0.0",
+			config:         UpgradeConfig{Reinstall: true},
+			expectInstall:  true,
+			description:    "Should install then attempt to reinstall hooks",
 		},
 		{
 			name:           "Empty Version String",
 			currentVersion: "",
-			config: UpgradeConfig{
-				Force:     false,
-				CheckOnly: true,
-				Reinstall: false,
-			},
-			expectedError: false, // Should succeed when network is available
-			errorContains: "",
-			description:   "Should handle empty version string as dev build",
+			latestTag:      "v2.0.0",
+			config:         UpgradeConfig{CheckOnly: true},
+			expectInstall:  false,
+			description:    "Should handle empty version string as dev build in check-only mode",
+		},
+		{
+			name:           "Already On Latest",
+			currentVersion: "2.0.0",
+			latestTag:      "v2.0.0",
+			config:         UpgradeConfig{},
+			expectInstall:  false,
+			description:    "Should short-circuit without installing when already current",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create app with the specific version
-			app := NewCLIApp(tc.currentVersion, "test-commit", "2024-01-01")
-			builder := NewCommandBuilder(app)
+			// Isolate cwd/HOME so cache and hook reinstall stay in a temp git repo
+			isolateInTempGitRepo(t)
 
-			// Run the upgrade with config
+			var installed bool
+			install := func(_ context.Context, _ string) error {
+				installed = true
+				return nil
+			}
+			builder := newTestBuilder(tc.currentVersion, stubRelease(tc.latestTag), install)
+
 			err := builder.runUpgradeWithConfig(tc.config)
-
-			// Special case: Skip test if published version has replace directives
-			// This is a known issue with v1.2.4 that will be fixed in v1.2.5+
-			// The error is "failed to upgrade: exit status 1" because the stderr with
-			// replace directive details goes to os.Stderr, not captured in error
-			if err != nil && strings.Contains(err.Error(), "failed to upgrade: exit status 1") {
-				t.Skipf("Skipping test: published version likely has replace directives (will pass after v1.2.5 release)")
-			}
-
-			// Special case: Skip test if rate limited
-			// This can happen in CI when running without GitHub token or when rate limit is exhausted
-			if err != nil && strings.Contains(err.Error(), "rate limit") {
-				t.Skipf("Skipping test: GitHub API rate limit exceeded (set GITHUB_TOKEN for authenticated requests)")
-			}
-
-			// Special case: Skip test if TLS/network unavailable
-			if err != nil && (strings.Contains(err.Error(), "tls:") || strings.Contains(err.Error(), "x509:")) {
-				t.Skipf("Skipping test: TLS/network unavailable: %v", err)
-			}
-
-			if tc.expectedError {
-				require.Error(t, err, "Expected error for case: %s", tc.description)
-				if tc.errorContains != "" {
-					assert.Contains(t, err.Error(), tc.errorContains,
-						"Error should contain '%s' for case: %s", tc.errorContains, tc.description)
-				}
-			} else {
-				require.NoError(t, err, "Should not error for case: %s", tc.description)
-			}
-
-			t.Logf("✓ %s: %s", tc.name, tc.description)
+			require.NoError(t, err, "case %q should not error", tc.description)
+			assert.Equal(t, tc.expectInstall, installed,
+				"install expectation mismatch for case: %s", tc.description)
 		})
 	}
+}
+
+// TestRunUpgradeWithConfig_InstallError verifies an install failure is surfaced.
+func TestRunUpgradeWithConfig_InstallError(t *testing.T) {
+	isolateInTempGitRepo(t)
+
+	builder := newTestBuilder(versionDev, stubRelease("v2.0.0"),
+		func(_ context.Context, _ string) error { return errTestFetch })
+
+	err := builder.runUpgradeWithConfig(UpgradeConfig{Force: true})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to upgrade")
+	assert.ErrorIs(t, err, errTestFetch)
 }
 
 // TestUpgradeConfigValidation tests upgrade configuration validation

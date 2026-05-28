@@ -64,7 +64,7 @@ func (c *LintCheck) Description() string {
 }
 
 // Metadata returns comprehensive metadata about the check
-func (c *LintCheck) Metadata() interface{} {
+func (c *LintCheck) Metadata() any {
 	return CheckMetadata{
 		Name:              "lint",
 		Description:       "Run golangci-lint to check code quality and style",
@@ -325,6 +325,24 @@ func (c *LintCheck) runLintOnDirectory(ctx context.Context, repoRoot, dir string
 	return nil
 }
 
+// runGolangciLintRetry runs golangci-lint for the build-constraints retry path
+// and returns the combined stdout+stderr together with the run error. It is a
+// package-level variable so tests can exercise the retry success / linting-issues
+// / failure branches deterministically without a real golangci-lint binary.
+//
+//nolint:gochecknoglobals // Injectable seam for testing the build-constraints retry
+var runGolangciLintRetry = func(ctx context.Context, dir string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "golangci-lint", args...) //nolint:gosec // Command arguments are validated
+	cmd.Dir = dir
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	return stdout.String() + stderr.String(), err
+}
+
 // handleBuildConstraintsError handles the case where build constraints exclude all Go files
 func (c *LintCheck) handleBuildConstraintsError(ctx context.Context, repoRoot, dir, originalOutput string) error {
 	// Get all Go files in the directory
@@ -353,20 +371,11 @@ func (c *LintCheck) handleBuildConstraintsError(ctx context.Context, repoRoot, d
 	retryArgs = append(retryArgs, "run", "--new-from-rev=HEAD~1", "--build-tags", strings.Join(buildTags, ","))
 	retryArgs = append(retryArgs, filepath.Join(repoRoot, dir))
 
-	retryCmd := exec.CommandContext(ctx, "golangci-lint", retryArgs...) //nolint:gosec // Command arguments are validated
-	retryCmd.Dir = repoRoot
-
-	var retryStdout, retryStderr bytes.Buffer
-	retryCmd.Stdout = &retryStdout
-	retryCmd.Stderr = &retryStderr
-
-	if err := retryCmd.Run(); err == nil {
+	retryOutput, retryErr := runGolangciLintRetry(ctx, repoRoot, retryArgs...)
+	if retryErr == nil {
 		// Success with auto-detected build tags
 		return nil
 	}
-
-	// Still failing, provide helpful error with detected tags
-	retryOutput := retryStdout.String() + retryStderr.String()
 
 	// Check if the retry attempt shows linting issues (success case)
 	if strings.Contains(retryOutput, ".go:") && strings.Contains(retryOutput, ":") {
@@ -457,7 +466,7 @@ func detectBuildTags(files []string) []string {
 			maxLines = 10
 		}
 
-		for i := 0; i < maxLines; i++ {
+		for i := range maxLines {
 			line := strings.TrimSpace(lines[i])
 
 			// Check for //go:build constraints (Go 1.17+)

@@ -165,6 +165,7 @@ echo "Some other pre-commit hook"
 
 // setupTempGitRepoForStatus creates a temporary git repository for testing status functionality
 func setupTempGitRepoForStatus(t *testing.T, enabled, hasConfig bool) string {
+	t.Helper()
 	tempDir := t.TempDir()
 
 	// Create .git directory and minimal git structure
@@ -218,7 +219,6 @@ func setupTempGitRepoForStatus(t *testing.T, enabled, hasConfig bool) string {
 		}
 
 		// Add basic check configurations
-		configContent += "GO_PRE_COMMIT_ENABLE_FMT=true\n"
 		configContent += "GO_PRE_COMMIT_ENABLE_FUMPT=true\n"
 		configContent += "GO_PRE_COMMIT_ENABLE_LINT=true\n"
 		configContent += "GO_PRE_COMMIT_ENABLE_MOD_TIDY=true\n"

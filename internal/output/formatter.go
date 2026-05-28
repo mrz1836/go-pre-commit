@@ -148,7 +148,7 @@ func isTTY() bool {
 }
 
 // Success prints a success message with green checkmark
-func (f *Formatter) Success(format string, args ...interface{}) {
+func (f *Formatter) Success(format string, args ...any) {
 	if f.colorEnabled {
 		c := color.New(color.FgGreen)
 		c.SetWriter(f.out)
@@ -159,7 +159,7 @@ func (f *Formatter) Success(format string, args ...interface{}) {
 }
 
 // Error prints an error message with red X
-func (f *Formatter) Error(format string, args ...interface{}) {
+func (f *Formatter) Error(format string, args ...any) {
 	if f.colorEnabled {
 		c := color.New(color.FgRed)
 		c.SetWriter(f.err)
@@ -170,7 +170,7 @@ func (f *Formatter) Error(format string, args ...interface{}) {
 }
 
 // Warning prints a warning message with yellow warning symbol
-func (f *Formatter) Warning(format string, args ...interface{}) {
+func (f *Formatter) Warning(format string, args ...any) {
 	if f.colorEnabled {
 		c := color.New(color.FgYellow)
 		c.SetWriter(f.err)
@@ -181,7 +181,7 @@ func (f *Formatter) Warning(format string, args ...interface{}) {
 }
 
 // Info prints an info message with blue info symbol
-func (f *Formatter) Info(format string, args ...interface{}) {
+func (f *Formatter) Info(format string, args ...any) {
 	if f.colorEnabled {
 		c := color.New(color.FgBlue)
 		c.SetWriter(f.out)
@@ -192,7 +192,7 @@ func (f *Formatter) Info(format string, args ...interface{}) {
 }
 
 // Progress prints a progress message with spinning indicator
-func (f *Formatter) Progress(format string, args ...interface{}) {
+func (f *Formatter) Progress(format string, args ...any) {
 	if f.colorEnabled {
 		c := color.New(color.FgCyan)
 		c.SetWriter(f.out)
@@ -228,7 +228,7 @@ func (f *Formatter) Subheader(text string) {
 }
 
 // Detail prints detailed information with indentation
-func (f *Formatter) Detail(format string, args ...interface{}) {
+func (f *Formatter) Detail(format string, args ...any) {
 	_, _ = fmt.Fprintf(f.out, "  "+format+"\n", args...)
 }
 

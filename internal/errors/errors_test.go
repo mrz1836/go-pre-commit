@@ -204,12 +204,14 @@ func (s *ErrorTestSuite) TestCheckErrorFields() {
 
 // Unit tests for edge cases
 func TestCheckErrorNilWrapping(t *testing.T) {
+	t.Parallel()
 	checkErr := &pkgerrors.CheckError{Err: nil}
 	require.NoError(t, checkErr.Unwrap())
 	assert.False(t, checkErr.Is(pkgerrors.ErrToolNotFound))
 }
 
 func TestCheckErrorEmptyMessage(t *testing.T) {
+	t.Parallel()
 	checkErr := &pkgerrors.CheckError{
 		Err:     pkgerrors.ErrToolNotFound,
 		Message: "",
@@ -218,12 +220,14 @@ func TestCheckErrorEmptyMessage(t *testing.T) {
 }
 
 func TestErrorComparisons(t *testing.T) {
+	t.Parallel()
 	// Test that our predefined errors are distinct
 	assert.NotEqual(t, pkgerrors.ErrChecksFailed, pkgerrors.ErrNoChecksToRun)
 	assert.NotEqual(t, pkgerrors.ErrToolNotFound, pkgerrors.ErrLintingIssues)
 }
 
 func TestErrorWrappingWithStandardLibrary(t *testing.T) {
+	t.Parallel()
 	originalErr := pkgerrors.ErrToolNotFound
 	wrappedErr := pkgerrors.NewCheckError(originalErr, "custom message", "fix it")
 
@@ -238,6 +242,7 @@ func TestErrorWrappingWithStandardLibrary(t *testing.T) {
 }
 
 func TestAllConstructors(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		constructor func() *pkgerrors.CheckError
@@ -274,6 +279,7 @@ func TestAllConstructors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := tt.constructor()
 			assert.NotNil(t, err)
 			assert.True(t, err.Is(tt.expectedErr))

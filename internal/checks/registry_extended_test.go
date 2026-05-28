@@ -29,7 +29,7 @@ func (m *mockCheckWithBuiltinMetadata) Run(_ context.Context, _ []string) error 
 	return nil
 }
 func (m *mockCheckWithBuiltinMetadata) FilterFiles(files []string) []string { return files }
-func (m *mockCheckWithBuiltinMetadata) Metadata() interface{} {
+func (m *mockCheckWithBuiltinMetadata) Metadata() any {
 	// Return a struct that mimics builtin.CheckMetadata
 	type builtinMetadata struct {
 		Name              string
@@ -64,7 +64,7 @@ func (m *mockCheckWithPointerMetadata) Run(_ context.Context, _ []string) error 
 	return nil
 }
 func (m *mockCheckWithPointerMetadata) FilterFiles(files []string) []string { return files }
-func (m *mockCheckWithPointerMetadata) Metadata() interface{} {
+func (m *mockCheckWithPointerMetadata) Metadata() any {
 	metadata := &CheckMetadata{
 		Name:              m.name,
 		Description:       "Pointer metadata check",
@@ -89,7 +89,7 @@ func (m *mockCheckWithInvalidMetadata) Run(_ context.Context, _ []string) error 
 	return nil
 }
 func (m *mockCheckWithInvalidMetadata) FilterFiles(files []string) []string { return files }
-func (m *mockCheckWithInvalidMetadata) Metadata() interface{} {
+func (m *mockCheckWithInvalidMetadata) Metadata() any {
 	// Return a non-struct type
 	return "invalid metadata"
 }
@@ -115,17 +115,13 @@ func TestNewRegistryWithConfig(t *testing.T) {
 			name: "config with custom timeouts",
 			config: &config.Config{
 				CheckTimeouts: struct {
-					Fmt         int
-					Fumpt       int
-					Goimports   int
-					Lint        int
-					ModTidy     int
-					Whitespace  int
-					EOF         int
-					AIDetection int
-					Gitleaks    int
+					Fumpt      int
+					Lint       int
+					ModTidy    int
+					Whitespace int
+					EOF        int
+					Gitleaks   int
 				}{
-					Fmt:        60,
 					Fumpt:      60,
 					Lint:       120,
 					ModTidy:    45,
@@ -152,17 +148,13 @@ func TestNewRegistryWithConfig(t *testing.T) {
 			name: "config with zero timeouts uses defaults",
 			config: &config.Config{
 				CheckTimeouts: struct {
-					Fmt         int
-					Fumpt       int
-					Goimports   int
-					Lint        int
-					ModTidy     int
-					Whitespace  int
-					EOF         int
-					AIDetection int
-					Gitleaks    int
+					Fumpt      int
+					Lint       int
+					ModTidy    int
+					Whitespace int
+					EOF        int
+					Gitleaks   int
 				}{
-					Fmt:        0,
 					Fumpt:      0,
 					Lint:       0,
 					ModTidy:    0,

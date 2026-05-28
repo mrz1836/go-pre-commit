@@ -3,7 +3,9 @@ package checks
 import (
 	"context"
 	"fmt"
+	"maps"
 	"reflect"
+	"slices"
 	"sync"
 	"time"
 
@@ -101,11 +103,7 @@ func (r *Registry) Names() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	names := make([]string, 0, len(r.checks))
-	for name := range r.checks {
-		names = append(names, name)
-	}
-	return names
+	return slices.Sorted(maps.Keys(r.checks))
 }
 
 // GetMetadata returns metadata for a specific check
@@ -227,7 +225,7 @@ func (r *Registry) GetEstimatedDuration() time.Duration {
 
 // convertMetadata converts from the specific metadata type to the generic CheckMetadata
 // This is needed to handle different metadata types from different packages
-func (r *Registry) convertMetadata(checkMetadata interface{}) CheckMetadata {
+func (r *Registry) convertMetadata(checkMetadata any) CheckMetadata {
 	// Use type assertion to handle different metadata types
 	switch metadata := checkMetadata.(type) {
 	case CheckMetadata:
@@ -239,7 +237,7 @@ func (r *Registry) convertMetadata(checkMetadata interface{}) CheckMetadata {
 }
 
 // convertMetadataReflection uses reflection to convert metadata types
-func (r *Registry) convertMetadataReflection(checkMetadata interface{}) CheckMetadata {
+func (r *Registry) convertMetadataReflection(checkMetadata any) CheckMetadata {
 	val := reflect.ValueOf(checkMetadata)
 	if val.Kind() == reflect.Pointer {
 		val = val.Elem()

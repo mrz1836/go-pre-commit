@@ -31,11 +31,23 @@ type CheckResult struct {
 	Error           error
 }
 
+// ReleaseFetcher fetches the latest release for a repository given the current
+// version (used for the request User-Agent). It mirrors the signature of
+// version.GetLatestReleaseWithVersion so the production fetcher can be passed
+// directly, while tests can inject a fake to avoid real network calls.
+type ReleaseFetcher func(owner, repo, currentVersion string) (*version.GitHubRelease, error)
+
 // StartBackgroundCheck starts an asynchronous update check
 // Returns a channel that receives the result when complete
 // The check is non-blocking and runs in a goroutine
 // The channel is closed after sending the result or on early return
 func StartBackgroundCheck(ctx context.Context, currentVersion string) <-chan *CheckResult {
+	return startBackgroundCheck(ctx, currentVersion, version.GetLatestReleaseWithVersion)
+}
+
+// startBackgroundCheck is the injectable implementation behind StartBackgroundCheck.
+// The fetch parameter allows tests to substitute a fake release fetcher.
+func startBackgroundCheck(ctx context.Context, currentVersion string, fetch ReleaseFetcher) <-chan *CheckResult {
 	resultChan := make(chan *CheckResult, 1)
 
 	go func() {
@@ -60,7 +72,7 @@ func StartBackgroundCheck(ctx context.Context, currentVersion string) <-chan *Ch
 			return
 		}
 
-		result := checkForUpdate(ctx, currentVersion)
+		result := checkForUpdate(ctx, currentVersion, fetch)
 		if result != nil {
 			resultChan <- result
 		}
@@ -69,8 +81,9 @@ func StartBackgroundCheck(ctx context.Context, currentVersion string) <-chan *Ch
 	return resultChan
 }
 
-// checkForUpdate performs the update check with cache logic
-func checkForUpdate(ctx context.Context, currentVersion string) *CheckResult {
+// checkForUpdate performs the update check with cache logic. The fetch parameter
+// supplies the latest release; tests inject a fake to avoid real network calls.
+func checkForUpdate(ctx context.Context, currentVersion string, fetch ReleaseFetcher) *CheckResult {
 	// Check cache first
 	cached, err := ReadCache()
 	if err == nil && IsCacheValid(cached, GetCheckInterval()) {
@@ -108,7 +121,7 @@ func checkForUpdate(ctx context.Context, currentVersion string) *CheckResult {
 		}
 	}
 
-	// Use goroutine to respect context timeout since version.GetLatestReleaseWithVersion
+	// Use goroutine to respect context timeout since the release fetcher
 	// doesn't accept a context parameter
 	type apiResult struct {
 		release *version.GitHubRelease
@@ -116,8 +129,8 @@ func checkForUpdate(ctx context.Context, currentVersion string) *CheckResult {
 	}
 	resultChan := make(chan apiResult, 1)
 
-	go func() { //nolint:contextcheck // GetLatestReleaseWithVersion doesn't accept context; timeout enforced via select
-		rel, err := version.GetLatestReleaseWithVersion(gitHubOwner, gitHubRepo, currentVersion)
+	go func() {
+		rel, err := fetch(gitHubOwner, gitHubRepo, currentVersion)
 		resultChan <- apiResult{release: rel, err: err}
 	}()
 

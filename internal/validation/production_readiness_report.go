@@ -476,7 +476,7 @@ func (v *ProductionReadinessValidator) measureAveragePerformance(cfg *config.Con
 
 	var totalDuration time.Duration
 
-	for i := 0; i < iterations; i++ {
+	for range iterations {
 		r := runner.New(cfg, v.tempDir)
 		if r == nil {
 			return 0, ErrRunnerCreationFailed

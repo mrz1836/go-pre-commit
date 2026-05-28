@@ -169,14 +169,11 @@ func (s *ProductionReadinessTestSuite) TestPerformanceValidation() {
 	cfg := &config.Config{
 		Enabled: true,
 		Checks: struct {
-			Fmt              bool
 			Fumpt            bool
-			Goimports        bool
 			Lint             bool
 			ModTidy          bool
 			Whitespace       bool
 			EOF              bool
-			AIDetection      bool
 			Gitleaks         bool
 			GitleaksAllFiles bool
 		}{
@@ -226,14 +223,11 @@ func (s *ProductionReadinessTestSuite) TestParallelScaling() {
 	cfg := &config.Config{
 		Enabled: true,
 		Checks: struct {
-			Fmt              bool
 			Fumpt            bool
-			Goimports        bool
 			Lint             bool
 			ModTidy          bool
 			Whitespace       bool
 			EOF              bool
-			AIDetection      bool
 			Gitleaks         bool
 			GitleaksAllFiles bool
 		}{
@@ -275,14 +269,11 @@ func (s *ProductionReadinessTestSuite) TestMemoryEfficiency() {
 	cfg := &config.Config{
 		Enabled: true,
 		Checks: struct {
-			Fmt              bool
 			Fumpt            bool
-			Goimports        bool
 			Lint             bool
 			ModTidy          bool
 			Whitespace       bool
 			EOF              bool
-			AIDetection      bool
 			Gitleaks         bool
 			GitleaksAllFiles bool
 		}{
@@ -800,14 +791,11 @@ func TestPerformanceMeasurementWithContext(t *testing.T) {
 	cfg := &config.Config{
 		Enabled: true,
 		Checks: struct {
-			Fmt              bool
 			Fumpt            bool
-			Goimports        bool
 			Lint             bool
 			ModTidy          bool
 			Whitespace       bool
 			EOF              bool
-			AIDetection      bool
 			Gitleaks         bool
 			GitleaksAllFiles bool
 		}{

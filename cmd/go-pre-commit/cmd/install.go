@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -100,7 +101,10 @@ func (cb *CommandBuilder) runInstallWithConfig(installConfig InstallConfig, _ *c
 
 		err := installer.InstallHook(hookType, installConfig.Force)
 		if err != nil {
-			if !installConfig.Force && os.IsExist(err) {
+			// handleExistingHook wraps os.ErrExist, so use errors.Is (os.IsExist
+			// does not unwrap %w-wrapped errors) to detect the already-installed
+			// case and warn-and-continue instead of failing the whole install.
+			if !installConfig.Force && errors.Is(err, os.ErrExist) {
 				printWarning("Hook already exists: %s (use --force to overwrite)", hookType)
 				continue
 			}

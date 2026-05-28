@@ -29,14 +29,12 @@ func (s *SkipFunctionalityTestSuite) SetupSuite() {
 	}
 
 	// Set up checks
-	s.cfg.Checks.Fmt = true
 	s.cfg.Checks.Fumpt = true
-	s.cfg.Checks.Goimports = true
+	s.cfg.Checks.Gitleaks = true
 	s.cfg.Checks.Lint = true
 	s.cfg.Checks.ModTidy = true
 	s.cfg.Checks.Whitespace = true
 	s.cfg.Checks.EOF = true
-	s.cfg.Checks.AIDetection = false
 
 	// Set up performance
 	s.cfg.Performance.ParallelWorkers = 2
@@ -92,12 +90,12 @@ func (s *SkipFunctionalityTestSuite) TestParseSkipValue() {
 		{
 			name:     "Special Value All",
 			input:    "all",
-			expected: []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection},
+			expected: []string{checkNameFumpt, checkNameGitleaks, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF},
 		},
 		{
 			name:     "Special Value ALL (case insensitive)",
 			input:    "ALL",
-			expected: []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection},
+			expected: []string{checkNameFumpt, checkNameGitleaks, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF},
 		},
 		{
 			name:     "With Spaces",
@@ -181,9 +179,9 @@ func (s *SkipFunctionalityTestSuite) TestProcessSkipEnvironment() {
 			name: "Whitespace Only SKIP Falls Back",
 			envVars: map[string]string{
 				envSkip:              "   ",
-				"GO_PRE_COMMIT_SKIP": checkNameFmt,
+				"GO_PRE_COMMIT_SKIP": checkNameModTidy,
 			},
-			expected:    []string{checkNameFmt},
+			expected:    []string{checkNameModTidy},
 			description: "Should fall back when SKIP contains only whitespace",
 		},
 	}
@@ -299,8 +297,8 @@ func (s *SkipFunctionalityTestSuite) TestDeduplicateAndValidateSkips() {
 		},
 		{
 			name:        "Valid Checks",
-			input:       []string{checkNameFmt, checkNameFumpt, checkNameLint},
-			expected:    []string{checkNameFmt, checkNameFumpt, checkNameLint},
+			input:       []string{checkNameModTidy, checkNameFumpt, checkNameLint},
+			expected:    []string{checkNameModTidy, checkNameFumpt, checkNameLint},
 			description: "Should return all valid checks",
 		},
 		{
@@ -323,8 +321,8 @@ func (s *SkipFunctionalityTestSuite) TestDeduplicateAndValidateSkips() {
 		},
 		{
 			name:        "All Valid Checks",
-			input:       []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection},
-			expected:    []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection},
+			input:       []string{checkNameFumpt, checkNameGitleaks, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF},
+			expected:    []string{checkNameFumpt, checkNameGitleaks, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF},
 			description: "Should accept all valid check names",
 		},
 	}
@@ -434,8 +432,8 @@ func (s *SkipFunctionalityTestSuite) TestSkipEnvironmentVariablePrecedence() {
 		{
 			name:        "Only GO_PRE_COMMIT_SKIP set",
 			skipValue:   "", // Not set
-			goSkipValue: "eof,fmt",
-			expected:    []string{checkNameEOF, checkNameFmt},
+			goSkipValue: "eof,mod-tidy",
+			expected:    []string{checkNameEOF, checkNameModTidy},
 			description: "Should use GO_PRE_COMMIT_SKIP when SKIP is not set",
 		},
 	}
@@ -489,7 +487,7 @@ func (s *SkipFunctionalityTestSuite) TestSkipEdgeCases() {
 		{
 			name:        "Mixed Case All",
 			skipValue:   "All",
-			expected:    []string{checkNameFmt, checkNameFumpt, checkNameGitleaks, checkNameGoimports, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF, checkNameAIDetection},
+			expected:    []string{checkNameFumpt, checkNameGitleaks, checkNameLint, checkNameModTidy, checkNameWhitespace, checkNameEOF},
 			description: "Should handle mixed case 'all' keyword",
 		},
 		{

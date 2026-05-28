@@ -236,12 +236,8 @@ func NewToolInstallTimeoutError(toolName string, timeout, elapsed time.Duration)
 func NewCheckTimeoutError(checkName string, timeout, elapsed time.Duration) *TimeoutError {
 	configVar := "GO_PRE_COMMIT_TIMEOUT_SECONDS"
 	switch checkName {
-	case "fmt":
-		configVar = "GO_PRE_COMMIT_FMT_TIMEOUT"
 	case "fumpt":
 		configVar = "GO_PRE_COMMIT_FUMPT_TIMEOUT"
-	case "goimports":
-		configVar = "GO_PRE_COMMIT_GOIMPORTS_TIMEOUT"
 	case "lint":
 		configVar = "GO_PRE_COMMIT_LINT_TIMEOUT"
 	case "mod-tidy":
@@ -250,8 +246,6 @@ func NewCheckTimeoutError(checkName string, timeout, elapsed time.Duration) *Tim
 		configVar = "GO_PRE_COMMIT_WHITESPACE_TIMEOUT"
 	case "eof":
 		configVar = "GO_PRE_COMMIT_EOF_TIMEOUT"
-	case "ai_detection":
-		configVar = "GO_PRE_COMMIT_AI_DETECTION_TIMEOUT"
 	case "gitleaks":
 		configVar = "GO_PRE_COMMIT_GITLEAKS_TIMEOUT"
 	}
