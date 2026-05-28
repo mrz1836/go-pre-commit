@@ -1,0 +1,11 @@
+# gitleaks ignore file
+#
+# Each line is a finding fingerprint (file:rule:startline for --no-git scans,
+# or commit:file:rule:startline for git scans) that gitleaks should treat as a
+# known, intentional false positive.
+#
+# The entries below are fake secrets used purely as test fixtures to exercise
+# the gitleaks check's secret-detection path. They are not real credentials.
+# If a fixture line moves, regenerate its fingerprint with:
+#   gitleaks detect --no-git --source . --report-format json --report-path /tmp/gl.json
+internal/checks/gotools/b2_realtools_test.go:github-pat:87
