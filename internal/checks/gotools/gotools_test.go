@@ -814,11 +814,26 @@ func TestFumptCheckDirectErrorScenarios(t *testing.T) {
 			}
 
 			files := []string{testFileTestGo}
+			runCtx := ctx
 			if tt.name == "timeout in direct gofumpt" {
 				files = []string{"large.go"}
+
+				// Pre-warm the repo-root cache with a valid context so the
+				// only step affected by the expired deadline below is the
+				// gofumpt invocation itself (GetRepoRoot caches via sync.Once).
+				_, repoErr := check.sharedCtx.GetRepoRoot(ctx)
+				require.NoError(t, repoErr)
+
+				// Use an already-expired context so the gofumpt command
+				// deterministically hits the timeout path. Racing a 1ms
+				// wall-clock deadline against gofumpt is flaky on CI runners
+				// where gofumpt can occasionally finish first, returning nil.
+				var cancel context.CancelFunc
+				runCtx, cancel = context.WithDeadline(ctx, time.Now().Add(-time.Hour))
+				defer cancel()
 			}
 
-			err = check.Run(ctx, files)
+			err = check.Run(runCtx, files)
 			if tt.expectedError != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)
