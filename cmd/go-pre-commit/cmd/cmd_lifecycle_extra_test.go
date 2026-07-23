@@ -55,7 +55,8 @@ func TestInstallCmd_VerboseAndExistingHook(t *testing.T) {
 
 		out := captureCmdOutput(t, func() {
 			require.NoError(t, builder.runInstallWithConfig(
-				InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil))
+				InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil,
+			))
 		})
 		assert.Contains(t, out, "Repository root:")
 		assert.Contains(t, out, "Installing pre-commit hook")
@@ -77,7 +78,8 @@ func TestInstallCmd_VerboseAndExistingHook(t *testing.T) {
 
 		out := captureCmdOutput(t, func() {
 			require.NoError(t, builder.runInstallWithConfig(
-				InstallConfig{Force: false, HookTypes: []string{hookTypePreCommit}}, nil, nil))
+				InstallConfig{Force: false, HookTypes: []string{hookTypePreCommit}}, nil, nil,
+			))
 		})
 		assert.Contains(t, out, "Hook already exists")
 		assert.Contains(t, out, "No hooks were installed")
@@ -121,12 +123,14 @@ func TestUninstallCmd_RunE(t *testing.T) {
 		app := NewCLIApp("test", "commit", "date")
 		builder := NewCommandBuilder(app)
 		require.NoError(t, builder.runInstallWithConfig(
-			InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil))
+			InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil,
+		))
 
 		builder.app.config.Verbose = true
 		out := captureCmdOutput(t, func() {
 			require.NoError(t, builder.runUninstallWithHooks(
-				[]string{hookTypePreCommit, hookTypePrePush}, nil, nil))
+				[]string{hookTypePreCommit, hookTypePrePush}, nil, nil,
+			))
 		})
 		assert.Contains(t, out, "Uninstalling pre-commit hook")
 		assert.Contains(t, out, "Successfully uninstalled hooks")
@@ -181,7 +185,8 @@ func TestBuildRunnerOptions_ProgressCallback(t *testing.T) {
 			formatter := output.NewDefault()
 			opts = buildRunnerOptions(
 				RunConfig{ShowProgress: true, Quiet: false, Parallel: 2, FailFast: true, GracefulDegradation: true, DebugTimeout: true},
-				nil, []string{"a.go"}, formatter)
+				nil, []string{"a.go"}, formatter,
+			)
 			require.NotNil(t, opts.ProgressCallback)
 
 			// Exercise each status branch of the callback.
@@ -239,7 +244,8 @@ func TestStatusCmd_Verbose(t *testing.T) {
 	app := NewCLIApp("test", "commit", "date")
 	builder := NewCommandBuilder(app)
 	require.NoError(t, builder.runInstallWithConfig(
-		InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil))
+		InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil,
+	))
 
 	builder.app.config.Verbose = true
 	out := captureCmdOutput(t, func() {
