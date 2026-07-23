@@ -797,7 +797,8 @@ func TestMain_CheckCommand_Success(t *testing.T) {
 	require.NoError(t, tmpFile.Close())
 
 	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 G702 - test binary path is safe
-	cmd.Env = append(os.Environ(),
+	cmd.Env = append(
+		os.Environ(),
 		"GO_TEST_SUBPROCESS=1",
 		"GO_TEST_CASE=missing_header",
 		"LICENSE_HEADER=MIT License",
@@ -832,7 +833,8 @@ func TestCheckLicenseHeaders_MissingHeaders(t *testing.T) {
 	require.NoError(t, tmpFile.Close())
 
 	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 G702 - test binary path is safe
-	cmd.Env = append(os.Environ(),
+	cmd.Env = append(
+		os.Environ(),
 		"GO_TEST_SUBPROCESS=1",
 		"GO_TEST_CASE=missing_header",
 		"LICENSE_HEADER=MIT License",
@@ -879,7 +881,8 @@ func TestCheckLicenseHeaders_LicenseFileNotFound(t *testing.T) {
 	require.NoError(t, tmpFile.Close())
 
 	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestMainProcess") // #nosec G204 G702 - test binary path is safe
-	cmd.Env = append(os.Environ(),
+	cmd.Env = append(
+		os.Environ(),
 		"GO_TEST_SUBPROCESS=1",
 		"GO_TEST_CASE=license_file_not_found",
 		"LICENSE_HEADER=", // Empty to force reading from file
