@@ -111,7 +111,8 @@ func TestReinstallHooks(t *testing.T) {
 		app := NewCLIApp("1.0.0", "c", "d")
 		builder := NewCommandBuilder(app)
 		require.NoError(t, builder.runInstallWithConfig(
-			InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil))
+			InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil,
+		))
 
 		out := captureCmdOutput(t, func() {
 			require.NoError(t, builder.reinstallHooks())
@@ -153,7 +154,8 @@ func TestCheckHookCompatibility(t *testing.T) {
 		app := NewCLIApp("1.0.0", "c", "d")
 		builder := NewCommandBuilder(app)
 		require.NoError(t, builder.runInstallWithConfig(
-			InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil))
+			InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil,
+		))
 
 		builder.app.config.Verbose = true
 		out := captureCmdOutput(t, func() {
@@ -171,7 +173,8 @@ func TestCheckHookCompatibility(t *testing.T) {
 		app := NewCLIApp("1.0.0", "c", "d")
 		builder := NewCommandBuilder(app)
 		require.NoError(t, builder.runInstallWithConfig(
-			InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil))
+			InstallConfig{HookTypes: []string{hookTypePreCommit}}, nil, nil,
+		))
 
 		out := captureCmdOutput(t, func() {
 			builder.checkHookCompatibility()
