@@ -480,7 +480,7 @@ func (s *FileSystemErrorTestSuite) TestContextCancellation() {
 					return ctx.Err()
 				}
 
-				_, err := repo.GetStagedFiles() //nolint:contextcheck // testing error handling without context
+				_, err := repo.GetStagedFiles() //nolint:contextcheck // GetStagedFiles takes no context; this exercises the no-context path
 				return err
 			},
 			expectError: true,

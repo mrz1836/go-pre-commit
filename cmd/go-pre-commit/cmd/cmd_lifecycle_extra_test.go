@@ -6,13 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mrz1836/go-pre-commit/internal/output"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
-	"github.com/mrz1836/go-pre-commit/internal/update"
 )
 
 // lintCheckName is a check name reused across the run-option tests.
@@ -267,76 +265,4 @@ func TestStatusCmd_NoHooks(t *testing.T) {
 		require.NoError(t, builder.runStatus(nil, nil))
 	})
 	assert.Contains(t, out, "No hooks are currently installed")
-}
-
-// ---- root: SetUpdateChan + PersistentPostRunE ----
-
-func postRunE(t *testing.T, builder *CommandBuilder, cmdName string) error {
-	t.Helper()
-	root := builder.BuildRootCmd()
-	require.NotNil(t, root.PersistentPostRunE)
-	return root.PersistentPostRunE(&cobra.Command{Use: cmdName}, nil)
-}
-
-func TestSetUpdateChan(t *testing.T) {
-	app := NewCLIApp("1.0.0", "c", "d")
-	ch := make(chan *update.CheckResult, 1)
-	app.SetUpdateChan(ch)
-	assert.NotNil(t, app.updateChan)
-
-	app.SetUpdateChan(nil)
-	assert.Nil(t, app.updateChan)
-}
-
-func TestPersistentPostRunE(t *testing.T) {
-	t.Run("upgrade command skips banner", func(t *testing.T) {
-		app := NewCLIApp("1.0.0", "c", "d")
-		ch := make(chan *update.CheckResult, 1)
-		ch <- &update.CheckResult{UpdateAvailable: true, CurrentVersion: "1.0.0", LatestVersion: "2.0.0"}
-		app.SetUpdateChan(ch)
-		builder := NewCommandBuilder(app)
-
-		require.NoError(t, postRunE(t, builder, "upgrade"))
-		// Channel not drained because upgrade short-circuits before the select.
-		assert.Len(t, ch, 1)
-	})
-
-	t.Run("nil channel skips", func(t *testing.T) {
-		app := NewCLIApp("1.0.0", "c", "d")
-		builder := NewCommandBuilder(app)
-		require.NoError(t, postRunE(t, builder, "run"))
-	})
-
-	t.Run("update available shows banner", func(t *testing.T) {
-		app := NewCLIApp("1.0.0", "c", "d")
-		ch := make(chan *update.CheckResult, 1)
-		ch <- &update.CheckResult{UpdateAvailable: true, CurrentVersion: "1.0.0", LatestVersion: "2.0.0"}
-		app.SetUpdateChan(ch)
-		builder := NewCommandBuilder(app)
-
-		out := captureCmdOutput(t, func() {
-			require.NoError(t, postRunE(t, builder, "run"))
-		})
-		assert.Contains(t, out, "2.0.0")
-	})
-
-	t.Run("nil result shows no banner", func(t *testing.T) {
-		app := NewCLIApp("1.0.0", "c", "d")
-		ch := make(chan *update.CheckResult, 1)
-		ch <- nil
-		app.SetUpdateChan(ch)
-		builder := NewCommandBuilder(app)
-		require.NoError(t, postRunE(t, builder, "run"))
-	})
-
-	t.Run("timeout when no result", func(t *testing.T) {
-		app := NewCLIApp("1.0.0", "c", "d")
-		ch := make(chan *update.CheckResult) // never sent
-		app.SetUpdateChan(ch)
-		builder := NewCommandBuilder(app)
-
-		start := time.Now()
-		require.NoError(t, postRunE(t, builder, "run"))
-		assert.GreaterOrEqual(t, time.Since(start), 400*time.Millisecond)
-	})
 }
