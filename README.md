@@ -91,13 +91,20 @@ Get up and running with `go-pre-commit` in 30 seconds:
 
 ### Install the binary
 
-```bash
-# Install from source (requires Go 1.25+)
-go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
+Install the latest prebuilt release into `~/.local/bin` — a user‑writable directory, so
+no `sudo`, and `go-pre-commit update` can self‑update in place afterward:
 
-# Upgrade to the latest version
-go-pre-commit upgrade --force
+```bash
+# Install the latest go-pre-commit release into ~/.local/bin
+VER=$(curl -fsSL https://api.github.com/repos/mrz1836/go-pre-commit/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | tr -d v)
+OS=$(uname -s | tr '[:upper:]' '[:lower:]'); ARCH=$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/')
+mkdir -p ~/.local/bin
+curl -fsSL "https://github.com/mrz1836/go-pre-commit/releases/download/v${VER}/go-pre-commit_${VER}_${OS}_${ARCH}.tar.gz" | tar -xzf - -C ~/.local/bin go-pre-commit
+go-pre-commit --version
 ```
+
+If `go-pre-commit` isn't found afterward, add `~/.local/bin` to your `PATH` (put
+`export PATH="$HOME/.local/bin:$PATH"` in your `~/.zshrc` or `~/.bashrc`).
 
 <br>
 
@@ -307,22 +314,28 @@ go-pre-commit status
 
 ### Updating go-pre-commit
 
+`go-pre-commit update` (alias `go-pre-commit upgrade`) downloads the latest release,
+verifies its SHA‑256 checksum against the published `go-pre-commit_<ver>_checksums.txt`,
+and atomically replaces the running binary — no `sudo` when it lives in `~/.local/bin`.
+
 ```bash
-# Check for available updates
-go-pre-commit upgrade --check
-
-# Upgrade to the latest version
-go-pre-commit upgrade
-
-# Force upgrade even if already on latest
-go-pre-commit upgrade --force
-
-# Upgrade and reinstall hooks
-go-pre-commit upgrade --reinstall
-
-# Verify version
-go-pre-commit --version
+go-pre-commit update            # download & install the latest release
+go-pre-commit update --check    # report whether a newer version is available
+go-pre-commit update --force    # reinstall the latest even if already current
+go-pre-commit update --verbose  # narrate each step
+go-pre-commit --version         # print the current version
 ```
+
+Every other command also runs a passive, cached background check and prints a one‑line
+"a new version is available" notice. It never blocks or fails a command, is skipped for
+development builds, and is silenced by `GO_PRE_COMMIT_NO_UPDATE_CHECK=1` (or the shared
+`NO_UPDATE_CHECK` / `CI`). If you hit GitHub API rate limits, a token is read from
+`GO_PRE_COMMIT_GITHUB_TOKEN`, then `GITHUB_TOKEN`, then `GH_TOKEN`.
+
+> **Heads up:** a binary that another installer owns — `go install`'s `~/go/bin`, or a
+> Homebrew prefix — is **refused** by `go-pre-commit update` rather than overwritten (that
+> would break the tool that owns it). Install the release binary into `~/.local/bin` as
+> shown above to keep self‑update working.
 
 ### Uninstalling
 
@@ -555,10 +568,10 @@ EOF
 
 ### 3. Install go-pre-commit
 
-```bash
-# Install the tool
-go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
+Install the `go-pre-commit` binary as shown in the Quickstart above, then set up hooks in
+your repository:
 
+```bash
 # Set up hooks in your repository
 go-pre-commit install
 

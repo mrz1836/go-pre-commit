@@ -20,7 +20,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 - `go-pre-commit run --color=never` - Run without color output (CI-friendly)
 - `go-pre-commit run --no-color` - Same as --color=never
 - `go-pre-commit status` - Show configuration and installation status
-- `go-pre-commit upgrade` - Upgrade to the latest version
+- `go-pre-commit update` - Update to the latest release (alias: `upgrade`)
 - `go-pre-commit uninstall` - Remove installed hooks
 
 **Available checks:**
