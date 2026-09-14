@@ -697,6 +697,50 @@ diff current/go.mod tidy/go.mod
 	}
 }
 
+// TestExtractKeyErrorLines_ToolchainMismatch verifies that a `go install` failure
+// caused by a tool requiring a newer Go toolchain is surfaced rather than dropped.
+// This is the regression guard for the gofumpt v0.12.0 (requires Go 1.26) failure
+// on Go 1.25 runners, whose real cause was previously hidden without --verbose.
+func TestExtractKeyErrorLines_ToolchainMismatch(t *testing.T) {
+	output := `→ Installing gofumpt@v0.12.0...
+tool installation failed for gofumpt: exit status 1
+Output: go: mvdan.cc/gofumpt@v0.12.0 requires go >= 1.26.0 (running go 1.25.1; GOTOOLCHAIN=local)`
+
+	lines := extractKeyErrorLines(output)
+	require.NotEmpty(t, lines, "toolchain-mismatch cause must be surfaced, not dropped")
+
+	joined := strings.Join(lines, "\n")
+	assert.Contains(t, joined, "requires go >= 1.26.0")
+	assert.Contains(t, joined, "GOTOOLCHAIN=local")
+}
+
+// TestFirstMeaningfulLines verifies the last-resort fallback used for failed
+// checks whose output matches none of the extractKeyErrorLines heuristics.
+func TestFirstMeaningfulLines(t *testing.T) {
+	t.Run("skips progress lines and caps output", func(t *testing.T) {
+		output := `Running something...
+Analyzing files...
+weird failure line 1
+weird failure line 2
+weird failure line 3
+weird failure line 4
+weird failure line 5
+weird failure line 6`
+
+		lines := firstMeaningfulLines(output)
+		assert.Len(t, lines, 5)
+		assert.Equal(t, "weird failure line 1", lines[0])
+		for _, l := range lines {
+			assert.NotContains(t, l, "Running")
+			assert.NotContains(t, l, "Analyzing")
+		}
+	})
+
+	t.Run("empty when only progress/blank lines", func(t *testing.T) {
+		assert.Empty(t, firstMeaningfulLines("Running x...\n\nAnalyzing y...\n"))
+	})
+}
+
 // TestStripANSI tests ANSI color code removal
 func TestStripANSI(t *testing.T) {
 	testCases := []struct {

@@ -353,6 +353,30 @@ func extractKeyErrorLines(output string) []string {
 	return errorLines
 }
 
+// maxFallbackErrorLines caps how many raw output lines firstMeaningfulLines
+// surfaces when no heuristic matched, keeping unrecognized-failure output concise.
+const maxFallbackErrorLines = 5
+
+// firstMeaningfulLines returns up to maxFallbackErrorLines non-empty, non-progress
+// lines from output (ANSI-stripped). It is a last-resort fallback for failed checks
+// whose output matched none of the extractKeyErrorLines heuristics, so the real
+// cause is never hidden entirely without --verbose. Callers must only use it for
+// failures (it does not judge whether output represents an error).
+func firstMeaningfulLines(output string) []string {
+	var out []string
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(stripANSI(line))
+		if line == "" || isProgressLine(line) {
+			continue
+		}
+		out = append(out, line)
+		if len(out) >= maxFallbackErrorLines {
+			break
+		}
+	}
+	return out
+}
+
 // isProgressLine reports whether a line is informational progress/status output
 // that should be skipped when extracting error lines.
 func isProgressLine(line string) bool {
@@ -379,6 +403,15 @@ func isKeyErrorLine(line string, goErrorRegex *regexp.Regexp) bool {
 		strings.Contains(line, "ERRO"),
 		strings.Contains(line, "level=error"),
 		strings.Contains(line, "✗"):
+		return true
+	// Tool install / Go toolchain failures (e.g. "go: ...requires go >= 1.26.0",
+	// "GOTOOLCHAIN=local", "exit status 1"). These have no error: prefix and were
+	// previously dropped, hiding the real cause of install failures.
+	case strings.Contains(line, "requires go "),
+		strings.Contains(line, "GOTOOLCHAIN"),
+		strings.Contains(line, "exit status "),
+		strings.Contains(line, "tool installation failed"),
+		strings.HasPrefix(line, "go: "):
 		return true
 	// Module tidy issues
 	case strings.Contains(line, "go.mod") && strings.Contains(line, "not tidy"):
@@ -500,6 +533,13 @@ func displayCheckResult(formatter *output.Formatter, result runner.CheckResult, 
 			// Fall back to full output in verbose mode
 			formatter.Subheader("Command Output")
 			formatter.CodeBlock(result.Output)
+		default:
+			// Nothing matched the heuristics and we're not in verbose mode. Still
+			// surface the first few lines so an unrecognized failure (e.g. a tool
+			// install/toolchain error) is never hidden entirely.
+			for _, line := range firstMeaningfulLines(result.Output) {
+				formatter.Detail("  %s", line)
+			}
 		}
 	}
 
@@ -546,7 +586,8 @@ func displayErrorSummary(formatter *output.Formatter, failedChecks []runner.Chec
 		switch {
 		case check.Output != "":
 			errorLines := extractKeyErrorLines(check.Output)
-			if len(errorLines) > 0 {
+			switch {
+			case len(errorLines) > 0:
 				for i, line := range errorLines {
 					if i < 5 { // Show up to 5 error lines per check in summary
 						formatter.Detail("  %s", line)
@@ -555,9 +596,17 @@ func displayErrorSummary(formatter *output.Formatter, failedChecks []runner.Chec
 				if len(errorLines) > 5 {
 					formatter.Detail("  ... and %d more errors", len(errorLines)-5)
 				}
-			} else {
-				// No specific errors extracted, show generic message
-				formatter.Detail("  %s", check.Error)
+			default:
+				// Nothing matched the heuristics: surface the first few raw lines so
+				// the real cause is never hidden, falling back to the generic message
+				// only when there is genuinely nothing meaningful to show.
+				fallback := firstMeaningfulLines(check.Output)
+				if len(fallback) == 0 {
+					formatter.Detail("  %s", check.Error)
+				}
+				for _, line := range fallback {
+					formatter.Detail("  %s", line)
+				}
 			}
 		case check.Error != "":
 			formatter.Detail("  %s", check.Error)
