@@ -198,6 +198,16 @@ GO_PRE_COMMIT_FUMPT_VERSION=latest
 GO_PRE_COMMIT_GOLANGCI_LINT_VERSION=latest
 GO_PRE_COMMIT_GITLEAKS_VERSION=v8.29.0
 
+# Dual-version pinning for gofumpt (optional). gofumpt raises its go.mod 'go'
+# directive over time, so a newer build will not `go install` on an older Go
+# toolchain. When _LATEST is set, the version is chosen from the active Go:
+#   Go >= _LATEST_MIN_GO -> _LATEST ; otherwise -> GO_PRE_COMMIT_FUMPT_VERSION.
+# This lets one set of synced env files work across repos on different Go
+# versions without forcing every repo to upgrade Go alongside a tool bump.
+# Leave _LATEST unset to keep the single-version behavior above.
+GO_PRE_COMMIT_FUMPT_VERSION_LATEST=            # e.g. v0.12.0 (requires Go 1.26+)
+GO_PRE_COMMIT_FUMPT_VERSION_LATEST_MIN_GO=1.26 # minimum Go for the _LATEST build
+
 # Per-check timeouts (seconds)
 GO_PRE_COMMIT_LINT_TIMEOUT=600          # golangci-lint is usually the slowest
 GO_PRE_COMMIT_MOD_TIDY_TIMEOUT=60

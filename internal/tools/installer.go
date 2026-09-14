@@ -9,7 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -51,7 +53,141 @@ var (
 	ErrInstallTimeout = errors.New("tool installation timed out")
 	// ErrToolNotInstalled is returned when a tool is not installed or not found
 	ErrToolNotInstalled = errors.New("tool not installed")
+	// ErrToolNeedsNewerGo is returned when a tool cannot be installed because it
+	// requires a newer Go toolchain than the one available (and GOTOOLCHAIN is not
+	// permitted to upgrade). This is a common, actionable failure when a pinned tool
+	// version outpaces the runner's Go version.
+	ErrToolNeedsNewerGo = errors.New("tool requires a newer Go toolchain")
 )
+
+// goRequiresVersionRe extracts the required Go version from a failed `go install`
+// output, e.g. "go: mvdan.cc/gofumpt@v0.12.0 requires go >= 1.26.0 (running go
+// 1.25.1; GOTOOLCHAIN=local)". Matches both "requires go >= X" and "requires go X".
+var goRequiresVersionRe = regexp.MustCompile(`(?i)requires go\s*>?=?\s*([0-9]+\.[0-9]+(?:\.[0-9]+)?)`)
+
+// runGoVersionCommand reports the active Go toolchain version (the `go` on PATH
+// that will run `go install`), e.g. "go1.25.3". It is a package variable so tests
+// can substitute a fake implementation that avoids executing the real `go` binary.
+//
+//nolint:gochecknoglobals // Injectable seam so tests can stub Go version detection.
+var runGoVersionCommand = func() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "go", "env", "GOVERSION").Output()
+	return string(out), err
+}
+
+// goMajorMinorRe matches a leading "MAJOR.MINOR" once any "go" prefix is trimmed,
+// tolerating trailing ".patch" or ".x" (e.g. "1.25.3", "1.26.x", "1.26").
+var goMajorMinorRe = regexp.MustCompile(`^([0-9]+)\.([0-9]+)`)
+
+// parseGoMajorMinor extracts the major and minor components from a Go version
+// string. It accepts "go1.25.3", "1.26.x", "1.26" and similar. ok is false when
+// the string cannot be parsed.
+func parseGoMajorMinor(s string) (major, minor int, ok bool) {
+	s = strings.TrimSpace(s)
+	s = strings.TrimPrefix(s, "go")
+	m := goMajorMinorRe.FindStringSubmatch(s)
+	if m == nil {
+		return 0, 0, false
+	}
+	// Regex guarantees both groups are non-empty digit strings.
+	major, _ = strconv.Atoi(m[1])
+	minor, _ = strconv.Atoi(m[2])
+	return major, minor, true
+}
+
+// detectGoVersion returns the major/minor version of the active Go toolchain.
+// ok is false when it cannot be determined (e.g. `go` is not on PATH).
+func detectGoVersion() (major, minor int, ok bool) {
+	out, err := runGoVersionCommand()
+	if err != nil {
+		return 0, 0, false
+	}
+	return parseGoMajorMinor(out)
+}
+
+// selectToolVersion chooses between a baseline pin (compatible with older Go) and
+// a newer "latest" pin that requires a newer Go toolchain, based on the active Go
+// version. It mirrors the GoFortress setup-benchstat selection so the same synced
+// env files work across repos on different Go versions without forcing every repo
+// to upgrade Go in lockstep with a tool bump:
+//
+//   - latest == ""                    -> baseline (dual-pin disabled; current behavior)
+//   - active Go >= minGo              -> latest
+//   - active Go < minGo               -> baseline
+//   - active Go undetectable          -> baseline (conservative: the baseline pin is
+//     chosen to install on the widest range of Go versions)
+//
+// minGo defaults to 1.26 when empty or unparseable, matching the benchstat default.
+func selectToolVersion(baseline, latest, minGo string) string {
+	if latest == "" {
+		return baseline
+	}
+
+	minMajor, minMinor, ok := parseGoMajorMinor(minGo)
+	if !ok {
+		minMajor, minMinor = 1, 26
+	}
+
+	major, minor, ok := detectGoVersion()
+	if !ok {
+		return baseline
+	}
+
+	if major > minMajor || (major == minMajor && minor >= minMinor) {
+		return latest
+	}
+	return baseline
+}
+
+// newToolchainMismatchError inspects failed `go install` output and, when it
+// indicates the tool requires a newer Go toolchain than is available, returns a
+// clear, actionable error wrapping ErrToolNeedsNewerGo. It returns nil when the
+// output is not a toolchain-version mismatch, so callers fall through to their
+// generic error handling.
+func newToolchainMismatchError(tool *Tool, output []byte) error {
+	out := string(output)
+	m := goRequiresVersionRe.FindStringSubmatch(out)
+	if m == nil {
+		return nil
+	}
+
+	required := m[1]
+	current := "unknown"
+	if major, minor, ok := detectGoVersion(); ok {
+		current = fmt.Sprintf("%d.%d", major, minor)
+	}
+
+	envKey := toolEnvKey(tool.Name)
+	return fmt.Errorf("%w: %s@%s requires Go >= %s but this environment has Go %s (GOTOOLCHAIN=%s). "+
+		"Upgrade Go, or pin a compatible %s version via GO_PRE_COMMIT_%s_VERSION "+
+		"(dual-version pinning: GO_PRE_COMMIT_%s_VERSION_LATEST / _LATEST_MIN_GO)\nOutput: %s",
+		ErrToolNeedsNewerGo, tool.Name, tool.Version, required, current, gotoolchainSetting(),
+		tool.Name, envKey, envKey, out)
+}
+
+// gotoolchainSetting reports the effective GOTOOLCHAIN value for diagnostics,
+// defaulting to "auto" (Go's default) when unset.
+func gotoolchainSetting() string {
+	if v := os.Getenv("GOTOOLCHAIN"); v != "" {
+		return v
+	}
+	return "auto"
+}
+
+// toolEnvKey maps a tool name to the uppercase token used in its env-var pins,
+// e.g. "gofumpt" -> "FUMPT", "golangci-lint" -> "GOLANGCI_LINT".
+func toolEnvKey(name string) string {
+	switch name {
+	case "gofumpt":
+		return "FUMPT"
+	case toolGolangciLint:
+		return "GOLANGCI_LINT"
+	default:
+		return strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
+	}
+}
 
 // Configuration for tool installation
 //
@@ -122,8 +258,17 @@ func LoadVersionsFromEnv() {
 		}
 	}
 
-	if v := os.Getenv("GO_PRE_COMMIT_FUMPT_VERSION"); v != "" {
-		if t, ok := tools["gofumpt"]; ok {
+	// gofumpt supports dual-version pinning so a single set of synced env files
+	// works across repos on different Go versions. GO_PRE_COMMIT_FUMPT_VERSION is
+	// the baseline (installs on older Go); GO_PRE_COMMIT_FUMPT_VERSION_LATEST is a
+	// newer build used only when the active Go is >= _LATEST_MIN_GO. When _LATEST is
+	// unset this collapses to the original single-version behavior.
+	if t, ok := tools["gofumpt"]; ok {
+		if v := selectToolVersion(
+			os.Getenv("GO_PRE_COMMIT_FUMPT_VERSION"),
+			os.Getenv("GO_PRE_COMMIT_FUMPT_VERSION_LATEST"),
+			os.Getenv("GO_PRE_COMMIT_FUMPT_VERSION_LATEST_MIN_GO"),
+		); v != "" {
 			t.Version = v
 		}
 	}
@@ -391,6 +536,14 @@ func InstallTool(ctx context.Context, tool *Tool) error {
 			attempts, _ := GetRetryConfig()
 			return fmt.Errorf("%w for %s after %d attempts (network error): %w\nOutput: %s",
 				ErrInstallFailed, tool.Name, attempts, err, output)
+		}
+
+		// Detect the common, actionable case where the pinned tool version requires
+		// a newer Go toolchain than is available. Surface a clear message instead of
+		// the opaque "exit status 1" so users know to upgrade Go or pin an older
+		// version (rather than blindly retrying `go install ...@latest`).
+		if mismatchErr := newToolchainMismatchError(tool, output); mismatchErr != nil {
+			return mismatchErr
 		}
 
 		return fmt.Errorf("%w for %s: %w\nOutput: %s", ErrInstallFailed, tool.Name, err, output)

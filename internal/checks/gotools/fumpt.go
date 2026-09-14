@@ -114,11 +114,17 @@ func (c *FumptCheck) Run(ctx context.Context, files []string) error {
 
 	// Ensure gofumpt is installed
 	if err := tools.EnsureInstalled(ctx, "gofumpt"); err != nil {
-		return prerrors.NewToolExecutionError(
-			"gofumpt",
-			err.Error(),
-			"Failed to install gofumpt. You can install it manually with: go install mvdan.cc/gofumpt@latest",
-		)
+		// The old suggestion ("install manually with go install ...@latest") is
+		// actively misleading when the failure is a Go-toolchain mismatch: @latest
+		// would fail identically. Give an accurate, cause-specific suggestion and
+		// pass the full underlying error through as Output so the real reason (e.g.
+		// "requires go >= 1.26.0") is never hidden.
+		suggestion := "Failed to install gofumpt. Verify network access and that the pinned GO_PRE_COMMIT_FUMPT_VERSION exists, then retry."
+		if errors.Is(err, tools.ErrToolNeedsNewerGo) {
+			suggestion = "gofumpt requires a newer Go toolchain than is available. Upgrade Go, or pin a compatible gofumpt via GO_PRE_COMMIT_FUMPT_VERSION " +
+				"(use GO_PRE_COMMIT_FUMPT_VERSION_LATEST / _LATEST_MIN_GO for dual-version pinning across mixed Go versions)."
+		}
+		return prerrors.NewToolExecutionError("gofumpt", err.Error(), suggestion)
 	}
 
 	// Run gofumpt directly
