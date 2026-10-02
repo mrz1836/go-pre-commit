@@ -64,6 +64,7 @@ func fakeCurlWritingArchive(t *testing.T, archive []byte, capturedURL *string) {
 }
 
 func TestInstallGitleaks_DownloadURLMatrix(t *testing.T) {
+	resetToolState(t)
 	cases := []struct {
 		goos, goarch, want string
 	}{
@@ -96,6 +97,7 @@ func TestInstallGitleaks_DownloadURLMatrix(t *testing.T) {
 }
 
 func TestInstallGitleaks_ExtractionPaths(t *testing.T) {
+	resetToolState(t)
 	if runtime.GOOS == "windows" {
 		t.Skip("uses unix tar extraction")
 	}

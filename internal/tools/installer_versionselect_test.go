@@ -124,10 +124,8 @@ func TestToolEnvKey(t *testing.T) {
 }
 
 func TestLoadVersionsFromEnv_DualPin(t *testing.T) {
-	// Reset tool registry so this standalone test does not depend on suite setup.
-	toolsMu.Lock()
-	tools["gofumpt"] = &Tool{Name: "gofumpt", ImportPath: "mvdan.cc/gofumpt", Version: "", Binary: "gofumpt"}
-	toolsMu.Unlock()
+	// Start from the default registry so this test does not depend on other tests
+	resetToolState(t)
 
 	t.Setenv("GO_PRE_COMMIT_FUMPT_VERSION", "v0.11.0")
 	t.Setenv("GO_PRE_COMMIT_FUMPT_VERSION_LATEST", "v0.12.0")

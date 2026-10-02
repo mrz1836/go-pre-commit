@@ -12,61 +12,13 @@ import (
 
 type InstallerTestSuite struct {
 	suite.Suite
-
-	originalEnv map[string]string
 }
 
 func (s *InstallerTestSuite) SetupTest() {
-	// Save original environment
-	s.originalEnv = make(map[string]string)
-	envVars := []string{
-		"GO_PRE_COMMIT_GOLANGCI_LINT_VERSION",
-		"GO_PRE_COMMIT_FUMPT_VERSION",
-		"GO_PRE_COMMIT_GOIMPORTS_VERSION",
-	}
-
-	for _, key := range envVars {
-		s.originalEnv[key] = os.Getenv(key)
-		_ = os.Unsetenv(key)
-	}
-
-	// Clear caches
+	// Start every test from the default registry with no version overrides;
+	// TestMain already cleared tool version variables from the environment.
+	resetToolState(s.T())
 	CleanCache()
-
-	// Reset tools to default state
-	toolsMu.Lock()
-	tools = map[string]*Tool{
-		toolGolangciLint: {
-			Name:       toolGolangciLint,
-			ImportPath: "github.com/golangci/golangci-lint/cmd/golangci-lint",
-			Version:    "",
-			Binary:     toolGolangciLint,
-		},
-		"gofumpt": {
-			Name:       "gofumpt",
-			ImportPath: "mvdan.cc/gofumpt",
-			Version:    "",
-			Binary:     "gofumpt",
-		},
-		"goimports": {
-			Name:       "goimports",
-			ImportPath: "golang.org/x/tools/cmd/goimports",
-			Version:    toolVersionLatest,
-			Binary:     "goimports",
-		},
-	}
-	toolsMu.Unlock()
-}
-
-func (s *InstallerTestSuite) TearDownTest() {
-	// Restore original environment
-	for key, value := range s.originalEnv {
-		if value != "" {
-			_ = os.Setenv(key, value)
-		} else {
-			_ = os.Unsetenv(key)
-		}
-	}
 }
 
 func TestInstallerSuite(t *testing.T) {
@@ -75,9 +27,9 @@ func TestInstallerSuite(t *testing.T) {
 
 func (s *InstallerTestSuite) TestLoadVersionsFromEnv() {
 	// Test loading from GO_PRE_COMMIT_ prefixed vars
-	_ = os.Setenv("GO_PRE_COMMIT_GOLANGCI_LINT_VERSION", "v1.50.0")
-	_ = os.Setenv("GO_PRE_COMMIT_FUMPT_VERSION", "v0.4.0")
-	_ = os.Setenv("GO_PRE_COMMIT_GOIMPORTS_VERSION", "v0.1.0")
+	s.T().Setenv("GO_PRE_COMMIT_GOLANGCI_LINT_VERSION", "v1.50.0")
+	s.T().Setenv("GO_PRE_COMMIT_FUMPT_VERSION", "v0.4.0")
+	s.T().Setenv("GO_PRE_COMMIT_GOIMPORTS_VERSION", "v0.1.0")
 
 	LoadVersionsFromEnv()
 
@@ -263,11 +215,7 @@ func (s *InstallerTestSuite) TestInstallGolangciLintSpecialHandling() {
 	}
 
 	// Clear PATH to force installation failure
-	originalPath := os.Getenv("PATH")
-	_ = os.Setenv("PATH", "")
-	defer func() {
-		_ = os.Setenv("PATH", originalPath)
-	}()
+	s.T().Setenv("PATH", "")
 
 	// This will fail due to missing PATH/shell, but we can verify the special handling
 	err := InstallTool(ctx, tool)
@@ -284,11 +232,7 @@ func (s *InstallerTestSuite) TestInstallAllToolsErrorAggregation() {
 	defer cancel()
 
 	// Clear PATH to force failures
-	originalPath := os.Getenv("PATH")
-	_ = os.Setenv("PATH", "")
-	defer func() {
-		_ = os.Setenv("PATH", originalPath)
-	}()
+	s.T().Setenv("PATH", "")
 
 	err := InstallAllTools(ctx)
 	s.Require().Error(err)
@@ -594,16 +538,14 @@ func (s *InstallerTestSuite) TestGetGoBinWithUnsetBoth() {
 
 // TestInstallAllToolsPartialFailure tests error aggregation
 func (s *InstallerTestSuite) TestInstallAllToolsPartialFailure() {
-	// Test that partial failures are reported
+	// Test that partial failures are reported; fake the runner so no real
+	// `go install` or gitleaks download is attempted.
+	fakeInstallErr(s.T())
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
 	// Clear PATH to force failures
-	originalPath := os.Getenv("PATH")
-	_ = os.Setenv("PATH", "/nonexistent")
-	defer func() {
-		_ = os.Setenv("PATH", originalPath)
-	}()
+	s.T().Setenv("PATH", "/nonexistent")
 
 	err := InstallAllTools(ctx)
 	s.Require().Error(err)

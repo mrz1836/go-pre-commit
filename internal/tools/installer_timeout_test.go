@@ -58,6 +58,7 @@ func TestSetInstallTimeout_ConcurrentAccess(t *testing.T) {
 }
 
 func TestInstallTool_TimeoutConfiguration(t *testing.T) {
+	resetToolState(t)
 	fakeInstallBlocking(t) // blocks until the timeout fires; no network
 
 	// Test that InstallTool respects the configured timeout
@@ -100,6 +101,7 @@ func TestInstallTool_TimeoutConfiguration(t *testing.T) {
 }
 
 func TestInstallTool_ContextAlreadyCanceled(t *testing.T) {
+	resetToolState(t)
 	fakeInstallBlocking(t) // returns ctx.Err() immediately; no network
 
 	originalTimeout := GetInstallTimeout()
@@ -157,6 +159,7 @@ func TestInstallGolangciLint_TimeoutHandling(t *testing.T) {
 }
 
 func TestInstallTool_ProgressTracking(t *testing.T) {
+	resetToolState(t)
 	// Test that progress tracking works with tool installation
 	originalTimeout := GetInstallTimeout()
 	defer SetInstallTimeout(originalTimeout)
@@ -247,6 +250,7 @@ func TestTimeout_EdgeCases(t *testing.T) {
 }
 
 func TestInstallTool_RealScenario(t *testing.T) {
+	resetToolState(t)
 	if testing.Short() {
 		t.Skip("Skipping real installation test in short mode")
 	}
