@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/mrz1836/go-pre-commit/internal/shared"
+	"github.com/mrz1836/go-pre-commit/internal/tools"
 )
 
 // Constants for repeated strings
@@ -892,14 +893,35 @@ func main() {
 			err = os.WriteFile(testFileTestGo, []byte(goFile), 0o600)
 			require.NoError(t, err)
 
+			// Make golangci-lint unavailable and impossible to install: with only git
+			// on PATH, neither the binary nor its installers (go, sh, curl) can be
+			// found, so the check reports the missing tool without network access.
+			// Clear the install cache so another test's install cannot mask this.
+			t.Setenv("PATH", gitOnlyPath(t))
+			tools.CleanCache()
+			t.Cleanup(tools.CleanCache)
+
 			check := NewLintCheck()
 
-			// When direct tool execution fails, we should get an error
+			// When the tool cannot be found or installed, we should get an error
 			err = check.Run(ctx, []string{testFileTestGo})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)
 		})
 	}
+}
+
+// gitOnlyPath returns a PATH value containing only the git binary
+func gitOnlyPath(t *testing.T) string {
+	t.Helper()
+	gitPath, err := exec.LookPath("git")
+	require.NoError(t, err)
+
+	binDir := t.TempDir()
+	if err := os.Symlink(gitPath, filepath.Join(binDir, filepath.Base(gitPath))); err != nil {
+		t.Skipf("symlinks not supported: %v", err)
+	}
+	return binDir
 }
 
 // Test lint direct execution error scenarios
@@ -1339,13 +1361,14 @@ func TestRepositoryRootFailures(t *testing.T) {
 				check := NewFumptCheck()
 				err = check.Run(ctx, []string{testFileTestGo})
 				require.Error(t, err)
-				// In environments where gofumpt is not available, we get "gofumpt not found"
-				// In environments where gofumpt is available, we get "repository root" error
+				// With gofumpt available we get the "repository root" error. Without it,
+				// the check reports the failed install ("command 'gofumpt' failed", with
+				// the cause), so either way the error must name one of the two.
 				errMsg := err.Error()
 				assert.True(t,
 					strings.Contains(errMsg, "repository root") ||
-						strings.Contains(errMsg, "gofumpt not found"),
-					"Expected error to contain either 'repository root' or 'gofumpt not found', got: %s", errMsg)
+						strings.Contains(errMsg, "gofumpt"),
+					"Expected error to contain either 'repository root' or 'gofumpt', got: %s", errMsg)
 			case "lint":
 				check := NewLintCheck()
 				err = check.Run(ctx, []string{testFileTestGo})
