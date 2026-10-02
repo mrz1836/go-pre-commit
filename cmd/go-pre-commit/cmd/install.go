@@ -94,6 +94,12 @@ func (cb *CommandBuilder) runInstallWithConfig(installConfig InstallConfig, _ *c
 	// Create installer with configuration for enhanced validation
 	installer := git.NewInstallerWithConfig(repoRoot, "", cfg)
 
+	if cb.app.config.Verbose {
+		if hooksDir, hooksErr := installer.HooksDir(); hooksErr == nil {
+			printInfo("Hooks directory: %s", hooksDir)
+		}
+	}
+
 	// Install each hook type
 	installed := make([]string, 0, len(installConfig.HookTypes))
 	for _, hookType := range installConfig.HookTypes {

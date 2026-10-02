@@ -41,6 +41,31 @@ else
     CI_ENV=false
 fi
 
+# Skip repositories without go-pre-commit configuration. A hooks directory can
+# be shared (by every worktree, or by several repositories through a global
+# core.hooksPath), so only run where go-pre-commit is configured. Like
+# go-pre-commit itself, look in the repository root and its parent directories.
+has_go_pre_commit_config() {
+    local dir="$1" parent
+    while true; do
+        if [[ -f "$dir/.github/.env.base" ]] || compgen -G "$dir/.github/env/*.env" >/dev/null; then
+            return 0
+        fi
+        parent="$(dirname "$dir")"
+        if [[ "$parent" == "$dir" ]]; then
+            return 1
+        fi
+        dir="$parent"
+    done
+}
+
+if ! has_go_pre_commit_config "$REPO_ROOT"; then
+    if [[ "$CI_ENV" != "true" ]]; then
+        echo "Go pre-commit system is not configured for this repository (no .github/env/ or .github/.env.base), skipping"
+    fi
+    exit 0
+fi
+
 # Check if pre-commit system is enabled
 if [[ -f "$CONFIG_FILE" ]]; then
     # Source config to check if enabled
