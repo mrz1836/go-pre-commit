@@ -8,9 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 func TestLoad(t *testing.T) {
+	testutil.IsolateEnv(t) // Load writes configuration into the process environment
+
 	// Clean environment to avoid interference from other tests
 	envVarsToClean := []string{
 		"GO_PRE_COMMIT_LOG_LEVEL", "ENABLE_GO_PRE_COMMIT",
@@ -176,6 +180,9 @@ func TestConfigSuite(t *testing.T) {
 }
 
 func (s *ConfigTestSuite) SetupTest() {
+	// config.Load writes configuration into the process environment
+	testutil.IsolateEnv(s.T())
+
 	var err error
 	s.tempDir, err = os.MkdirTemp("", "config_test_*")
 	s.Require().NoError(err)
@@ -704,6 +711,8 @@ func TestFindBaseEnvFileErrors(t *testing.T) {
 
 // TestLoadIntegrationWithRealProject tests loading in a real project structure
 func TestLoadIntegrationWithRealProject(t *testing.T) {
+	testutil.IsolateEnv(t) // Load writes configuration into the process environment
+
 	// Create a realistic project structure
 	tmpDir := t.TempDir()
 	oldDir, err := os.Getwd()

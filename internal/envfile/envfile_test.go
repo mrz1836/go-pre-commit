@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 // EnvFileTestSuite is a test suite for the envfile package
@@ -17,6 +19,9 @@ type EnvFileTestSuite struct {
 
 // SetupTest creates a temporary directory for each test
 func (s *EnvFileTestSuite) SetupTest() {
+	// config.Load writes configuration into the process environment
+	testutil.IsolateEnv(s.T())
+
 	tempDir, err := os.MkdirTemp("", "envfile-test-*")
 	s.Require().NoError(err)
 	s.tempDir = tempDir

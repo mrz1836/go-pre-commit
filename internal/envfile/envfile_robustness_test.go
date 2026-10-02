@@ -7,9 +7,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 func TestLoadDir_ErrorPaths(t *testing.T) {
+	testutil.IsolateEnv(t) // Load writes configuration into the process environment
+
 	t.Run("path is not a directory", func(t *testing.T) {
 		f := filepath.Join(t.TempDir(), "afile")
 		require.NoError(t, os.WriteFile(f, []byte("X=1\n"), 0o600))

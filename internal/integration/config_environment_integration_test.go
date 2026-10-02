@@ -15,6 +15,7 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
 	"github.com/mrz1836/go-pre-commit/internal/shared"
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 // ConfigEnvironmentIntegrationTestSuite tests configuration and environment integration
@@ -58,6 +59,12 @@ func (s *ConfigEnvironmentIntegrationTestSuite) SetupSuite() {
 
 	// Create multiple test project scenarios
 	s.createTestProjects()
+}
+
+// SetupTest restores the full process environment after each test, since
+// config.Load writes configuration values into it
+func (s *ConfigEnvironmentIntegrationTestSuite) SetupTest() {
+	testutil.IsolateEnv(s.T())
 }
 
 // TearDownSuite cleans up the test environment
@@ -515,7 +522,7 @@ func (s *ConfigEnvironmentIntegrationTestSuite) TestMinimalConfigurationWorkflow
 	ctx := context.Background()
 	opts := runner.Options{}
 	results, _ := testRunner.Run(ctx, opts)
-	s.NotNil(results, "Should get results from minimal configuration")
+	s.Require().NotNil(results, "Should get results from minimal configuration")
 	s.NotEmpty(results.CheckResults, "Should execute some checks")
 
 	s.T().Logf("✓ Minimal configuration workflow: %d checks executed", len(results.CheckResults))
@@ -576,7 +583,7 @@ func (s *ConfigEnvironmentIntegrationTestSuite) TestComplexConfigurationWorkflow
 	results, _ := testRunner.Run(ctx, opts)
 	executionTime := time.Since(startTime)
 
-	s.NotNil(results, "Should get results from complex configuration")
+	s.Require().NotNil(results, "Should get results from complex configuration")
 	s.NotEmpty(results.CheckResults, "Should execute checks")
 	s.Less(executionTime, 2*time.Minute, "Should complete within reasonable time")
 
@@ -887,7 +894,7 @@ func (s *ConfigEnvironmentIntegrationTestSuite) TestSkipEnvironmentIntegration()
 			}
 
 			s.Require().NoError(err, "Runner should execute without errors")
-			s.NotNil(results, "Results should not be nil")
+			s.Require().NotNil(results, "Results should not be nil")
 
 			// Analyze results
 			executedChecks := make(map[string]bool)
@@ -958,7 +965,7 @@ func (s *ConfigEnvironmentIntegrationTestSuite) TestConfigurationPerformanceImpa
 			results, _ := testRunner.Run(ctx, opts)
 			executionTime := time.Since(startTime)
 
-			s.NotNil(results)
+			s.Require().NotNil(results)
 			performanceResults[scenario.workers] = executionTime
 
 			s.T().Logf("✓ %s: %v for %d checks",

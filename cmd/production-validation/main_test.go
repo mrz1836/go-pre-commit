@@ -96,11 +96,17 @@ func TestMain_InvalidFormat(t *testing.T) {
 	// Save original values
 	oldArgs := os.Args
 	oldStderr := os.Stderr
+	oldCommandLine := flag.CommandLine
 	defer func() {
 		os.Args = oldArgs
 		os.Stderr = oldStderr
+		flag.CommandLine = oldCommandLine
 		log.SetOutput(os.Stderr)
 	}()
+
+	// mainWithDeps defines its flags on flag.CommandLine, so give it a fresh set;
+	// reusing one would panic with "flag redefined" on the next run (-count > 1)
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 
 	// Capture stderr
 	r, w, err := os.Pipe()
@@ -342,9 +348,11 @@ func TestMain_ExitCodes(t *testing.T) {
 
 // Test flag parsing
 func TestMain_FlagParsing(t *testing.T) {
-	// Save original command line flags
+	// Save original command line flags and arguments
+	oldArgs := os.Args
 	oldCommandLine := flag.CommandLine
 	defer func() {
+		os.Args = oldArgs
 		flag.CommandLine = oldCommandLine
 	}()
 

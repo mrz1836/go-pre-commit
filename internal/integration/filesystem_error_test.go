@@ -13,6 +13,7 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 	"github.com/mrz1836/go-pre-commit/internal/git"
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 // FileSystemErrorTestSuite tests file system error handling across the application
@@ -40,6 +41,12 @@ func (s *FileSystemErrorTestSuite) SetupSuite() {
 
 	// Define nonexistent path
 	s.nonExistentPath = filepath.Join(s.tempDir, "nonexistent", "path", "file.go")
+}
+
+// SetupTest restores the full process environment after each test, since
+// config.Load writes configuration values into it
+func (s *FileSystemErrorTestSuite) SetupTest() {
+	testutil.IsolateEnv(s.T())
 }
 
 // TearDownSuite cleans up the test environment

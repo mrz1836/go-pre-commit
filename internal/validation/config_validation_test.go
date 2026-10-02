@@ -11,6 +11,7 @@ import (
 
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	precommiterrors "github.com/mrz1836/go-pre-commit/internal/errors"
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 // ConfigValidationTestSuite validates configuration loading under various scenarios
@@ -61,6 +62,12 @@ func (s *ConfigValidationTestSuite) SetupSuite() {
 
 	// Change to temp directory for tests
 	s.Require().NoError(os.Chdir(s.tempDir))
+}
+
+// SetupTest restores the full process environment after each test, since
+// config.Load writes configuration values into it
+func (s *ConfigValidationTestSuite) SetupTest() {
+	testutil.IsolateEnv(s.T())
 }
 
 // TearDownSuite cleans up the test environment

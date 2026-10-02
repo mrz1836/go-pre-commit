@@ -14,6 +14,7 @@ import (
 
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 // ParallelSafetyTestSuite validates thread safety and parallel execution safety
@@ -63,6 +64,12 @@ GO_PRE_COMMIT_EOF_TIMEOUT=30
 
 	// Create test files for parallel testing
 	s.testFiles = s.createTestFiles()
+}
+
+// SetupTest restores the full process environment after each test, since
+// config.Load writes configuration values into it
+func (s *ParallelSafetyTestSuite) SetupTest() {
+	testutil.IsolateEnv(s.T())
 }
 
 // TearDownSuite cleans up the test environment
