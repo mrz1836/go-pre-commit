@@ -364,6 +364,8 @@ func TestPluginAddCmd_RunE(t *testing.T) {
 }
 
 func TestPluginRemoveCmd_RunE(t *testing.T) {
+	preserveWorkingDir(t)
+
 	t.Run("force removes plugin", func(t *testing.T) {
 		pluginDir := setupPluginTestEnv(t)
 		createPluginManifestDir(t, pluginDir, "alpha")

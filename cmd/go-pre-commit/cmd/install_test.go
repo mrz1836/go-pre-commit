@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mrz1836/go-pre-commit/internal/config"
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 func TestInstallCmd_ParseFlags(t *testing.T) {
@@ -288,6 +289,8 @@ func setupTempGitRepo(t *testing.T, enabled, hasConfig bool) string {
 }
 
 func TestInstallCmd_ConfigurationLoading(t *testing.T) {
+	testutil.IsolateEnv(t) // Load writes configuration into the process environment
+
 	// Test to debug configuration loading
 	// Clean up any environment variables from previous tests
 	originalEnv := os.Getenv("ENABLE_GO_PRE_COMMIT")

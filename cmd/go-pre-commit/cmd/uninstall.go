@@ -16,7 +16,8 @@ func (cb *CommandBuilder) BuildUninstallCmd() *cobra.Command {
 		Long: `Uninstall the Go pre-commit system hooks from your git repository.
 
 This command will:
-  - Remove .git/hooks/pre-commit (or other specified hook types)
+  - Remove the pre-commit hook (or other specified hook types) from the
+    hooks directory git uses (.git/hooks or core.hooksPath)
   - Only remove hooks that were installed by Go pre-commit system
   - Preserve any hooks not created by this tool`,
 		Example: `  # Uninstall pre-commit hook

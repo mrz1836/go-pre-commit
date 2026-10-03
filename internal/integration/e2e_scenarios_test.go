@@ -14,6 +14,7 @@ import (
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
 	"github.com/mrz1836/go-pre-commit/internal/shared"
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 // E2EIntegrationTestSuite tests complete end-to-end scenarios
@@ -52,6 +53,12 @@ func (s *E2EIntegrationTestSuite) SetupSuite() {
 	// Initialize a git repository for integration tests
 	s.initializeTestGitRepo()
 	s.setupTestGoProject()
+}
+
+// SetupTest restores the full process environment after each test, since
+// config.Load writes configuration values into it
+func (s *E2EIntegrationTestSuite) SetupTest() {
+	testutil.IsolateEnv(s.T())
 }
 
 // TearDownSuite cleans up the test environment

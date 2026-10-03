@@ -193,6 +193,8 @@ func TestBuildRootCmdPersistentPreRun(t *testing.T) {
 }
 
 func TestCommandBuilderExecute(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Save original args and restore after test
 	originalArgs := os.Args
 	defer func() { os.Args = originalArgs }()
@@ -257,6 +259,8 @@ func TestCommandBuilderExecute(t *testing.T) {
 }
 
 func TestExecuteLegacyFunction(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Save original args
 	originalArgs := os.Args
 	defer func() { os.Args = originalArgs }()
@@ -325,6 +329,8 @@ func TestResetCommandLegacyFunction(_ *testing.T) {
 }
 
 func TestInitConfigNoColorHandling(t *testing.T) {
+	preserveWorkingDir(t)
+
 	tests := []struct {
 		name        string
 		noColorFlag bool
@@ -697,6 +703,8 @@ func TestPrintFunctionsFormatting(t *testing.T) {
 }
 
 func TestCommandBuilderIntegration(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Integration test to verify the complete command builder workflow
 	app := NewCLIApp("2.1.0", "integration-test", "2025-08-10T10:30:00Z")
 	builder := NewCommandBuilder(app)

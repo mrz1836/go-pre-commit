@@ -207,13 +207,10 @@ type Tool struct {
 	Binary     string
 }
 
-// Common tools used by go-pre-commit
-// These globals are necessary for maintaining tool registry and installation state
-//
-//nolint:gochecknoglobals // Tool registry requires package-level state for singleton pattern
-var (
-	toolsMu sync.RWMutex
-	tools   = map[string]*Tool{
+// newToolRegistry returns the default registry of tools used by go-pre-commit.
+// Versions left empty are loaded from the environment by LoadVersionsFromEnv.
+func newToolRegistry() map[string]*Tool {
+	return map[string]*Tool{
 		toolGolangciLint: {
 			Name:       toolGolangciLint,
 			ImportPath: "github.com/golangci/golangci-lint/cmd/golangci-lint",
@@ -239,6 +236,15 @@ var (
 			Binary:     "gitleaks",
 		},
 	}
+}
+
+// Common tools used by go-pre-commit
+// These globals are necessary for maintaining tool registry and installation state
+//
+//nolint:gochecknoglobals // Tool registry requires package-level state for singleton pattern
+var (
+	toolsMu sync.RWMutex
+	tools   = newToolRegistry()
 
 	//nolint:gochecknoglobals // Installation cache requires package-level state
 	installedTools = make(map[string]bool)

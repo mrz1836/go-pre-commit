@@ -89,7 +89,7 @@ func (cb *CommandBuilder) runStatus(_ *cobra.Command, _ []string) error {
 		foundHooks = true
 
 		if status.IsOurHook {
-			if status.Executable {
+			if status.Executable && !status.Outdated {
 				printSuccess("  ✓ %s: %s", hookType, status.Message)
 			} else {
 				printWarning("  ⚠ %s: %s", hookType, status.Message)

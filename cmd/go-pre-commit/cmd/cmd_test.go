@@ -39,6 +39,8 @@ func TestRootCommand(t *testing.T) {
 }
 
 func TestExecute_Version(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Save original
 	oldArgs := os.Args
 	oldStdout := os.Stdout
@@ -72,6 +74,8 @@ func TestExecute_Version(t *testing.T) {
 }
 
 func TestExecute_Help(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Save original
 	oldArgs := os.Args
 	oldStdout := os.Stdout

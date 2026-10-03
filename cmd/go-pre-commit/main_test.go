@@ -18,22 +18,16 @@ import (
 	"github.com/mrz1836/go-pre-commit/cmd/go-pre-commit/cmd"
 )
 
-func TestMain(t *testing.T) {
+func TestMainBinary(t *testing.T) {
 	// Test that the binary can be built and executed
 	// This test verifies the main entry point works
 
-	// Build the binary for testing
+	// Build the binary for testing, outside the source tree so it never needs cleanup
 	ctx := context.Background()
-	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", "go-pre-commit-test", ".")
-	err := buildCmd.Run()
-	require.NoError(t, err, "Failed to build binary")
-
-	defer func() {
-		// Clean up the test binary
-		if err := os.Remove("go-pre-commit-test"); err != nil {
-			t.Logf("Failed to remove test binary: %v", err)
-		}
-	}()
+	testBinary := filepath.Join(t.TempDir(), "go-pre-commit-test")
+	buildCmd := exec.CommandContext(ctx, "go", "build", "-o", testBinary, ".") //nolint:gosec // Safe: controlled test output path
+	output, err := buildCmd.CombinedOutput()
+	require.NoError(t, err, "Failed to build binary: %s", output)
 
 	// Test various command scenarios
 	tests := []struct {
@@ -70,7 +64,7 @@ func TestMain(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.CommandContext(ctx, "./go-pre-commit-test", tt.args...) // #nosec G204 - test code with controlled input
+			cmd := exec.CommandContext(ctx, testBinary, tt.args...) // #nosec G204 - test code with controlled input
 			err := cmd.Run()
 
 			if tt.wantExit == 0 {
@@ -84,6 +78,8 @@ func TestMain(t *testing.T) {
 
 // Test the main function directly with command setup
 func TestMainFunction(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Save original args and restore after test
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
@@ -176,6 +172,8 @@ func TestMainFunction(t *testing.T) {
 
 // Test direct execution scenarios
 func TestDirectExecution(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Save original values
 	oldArgs := os.Args
 	oldStdout := os.Stdout
@@ -218,6 +216,8 @@ func TestDirectExecution(t *testing.T) {
 
 // Test the main function's error handling path by extracting the logic
 func TestMainFunctionErrorHandling(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Test the actual main function logic without os.Exit
 	// This function tests the path through main() to cmd.Execute()
 
@@ -274,6 +274,8 @@ func TestMainFunctionErrorHandling(t *testing.T) {
 
 // Test main function components individually to improve coverage
 func TestMainComponents(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Test version info setting
 	t.Run("version info setting", func(t *testing.T) {
 		cmd.ResetCommand()
@@ -498,6 +500,8 @@ func BenchmarkMain(b *testing.B) {
 
 // Test the run function directly for better coverage
 func TestRunFunction(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Save original args and stderr
 	oldArgs := os.Args
 	oldStderr := os.Stderr
@@ -591,6 +595,8 @@ func TestRunFunction(t *testing.T) {
 
 // Test run function with version info scenarios
 func TestRunFunctionVersionInfo(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Save original args
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
@@ -668,6 +674,8 @@ func TestRunFunctionVersionInfo(t *testing.T) {
 
 // TestRunFunctionVersionDirtySuffix tests the -dirty suffix logic in run()
 func TestRunFunctionVersionDirtySuffix(t *testing.T) {
+	preserveWorkingDir(t)
+
 	// Save original args
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
@@ -773,6 +781,8 @@ func TestMainProcess(_ *testing.T) {
 
 // TestMain_Help tests main() with --help flag using subprocess
 func TestMain_Help(t *testing.T) {
+	preserveWorkingDir(t)
+
 	if os.Getenv("GO_TEST_SUBPROCESS") == "1" {
 		return
 	}
@@ -786,6 +796,8 @@ func TestMain_Help(t *testing.T) {
 
 // TestMain_Version tests main() with --version flag using subprocess
 func TestMain_Version(t *testing.T) {
+	preserveWorkingDir(t)
+
 	if os.Getenv("GO_TEST_SUBPROCESS") == "1" {
 		return
 	}

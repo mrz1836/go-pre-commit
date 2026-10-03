@@ -11,6 +11,7 @@ import (
 
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 // SkipFunctionalityTestSuite validates SKIP environment variable functionality
@@ -66,6 +67,12 @@ GO_PRE_COMMIT_GOLANGCI_LINT_VERSION=latest
 	// Create test files
 	s.testFiles = []string{testFileMain, testFileService, testFileReadme, testFileConfig, "script.sh"}
 	s.Require().NoError(s.createTestFiles())
+}
+
+// SetupTest restores the full process environment after each test, since
+// config.Load writes configuration values into it
+func (s *SkipFunctionalityTestSuite) SetupTest() {
+	testutil.IsolateEnv(s.T())
 }
 
 // TearDownSuite cleans up the test environment

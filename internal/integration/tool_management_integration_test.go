@@ -12,6 +12,7 @@ import (
 
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/plugins"
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 	"github.com/mrz1836/go-pre-commit/internal/tools"
 )
 
@@ -44,6 +45,9 @@ func (s *ToolManagementIntegrationTestSuite) TearDownSuite() {
 
 // SetupTest clears CI environment variables before each test
 func (s *ToolManagementIntegrationTestSuite) SetupTest() {
+	// config.Load writes configuration into the process environment
+	testutil.IsolateEnv(s.T())
+
 	// Clear CI-related environment variables to ensure clean test state
 	ciEnvVars := []string{
 		"CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "BUILDKITE",
@@ -322,7 +326,7 @@ func (s *ToolManagementIntegrationTestSuite) TestToolConfigurationIntegration() 
 				"ENABLE_GO_PRE_COMMIT": "true",
 			},
 			expectedValues: map[string]any{
-				"timeout": 720,
+				"timeout": 300, // GO_PRE_COMMIT_TIMEOUT_SECONDS in the test project's .env.base
 			},
 		},
 		{
@@ -354,23 +358,14 @@ func (s *ToolManagementIntegrationTestSuite) TestToolConfigurationIntegration() 
 	// Test each configuration scenario
 	for _, tc := range configs {
 		s.Run(tc.name, func() {
+			// Each scenario starts from the same environment: config.Load below
+			// writes the project's settings into it, which must not carry over
+			testutil.IsolateEnv(s.T())
+
 			// Set environment variables
-			originalEnv := make(map[string]string)
 			for key, value := range tc.envSettings {
-				originalEnv[key] = os.Getenv(key)
 				s.Require().NoError(os.Setenv(key, value))
 			}
-
-			// Clean up environment after test
-			defer func() {
-				for key, original := range originalEnv {
-					if original == "" {
-						_ = os.Unsetenv(key)
-					} else {
-						_ = os.Setenv(key, original)
-					}
-				}
-			}()
 
 			// Change to repo root where .env.base is located
 			s.Require().NoError(os.Chdir(s.repoRoot))

@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 func TestDetectCIEnvironment(t *testing.T) {
@@ -290,6 +292,8 @@ func TestApplyCITimeoutAdjustments(t *testing.T) {
 }
 
 func TestLoad_CIAutoAdjustments(t *testing.T) {
+	testutil.IsolateEnv(t) // Load writes configuration into the process environment
+
 	// This test verifies that the config loading process properly detects CI
 	// and applies timeout adjustments when auto-adjust is enabled
 

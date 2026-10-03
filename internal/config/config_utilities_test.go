@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 // ConfigUtilitiesTestSuite tests configuration utility functions
@@ -21,6 +23,12 @@ type ConfigUtilitiesTestSuite struct {
 func (s *ConfigUtilitiesTestSuite) SetupSuite() {
 	s.originalEnv = make(map[string]string)
 	s.tempDir = s.T().TempDir()
+}
+
+// SetupTest restores the full process environment after each test, since
+// config.Load writes configuration values into it
+func (s *ConfigUtilitiesTestSuite) SetupTest() {
+	testutil.IsolateEnv(s.T())
 }
 
 // TearDownTest cleans up environment variables after each test

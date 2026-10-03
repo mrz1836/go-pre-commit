@@ -70,6 +70,8 @@ var (
 	ErrPreCommitDirNotExist  = errors.New("pre-commit directory does not exist")
 	ErrHookNotExecutable     = errors.New("hook file is not executable")
 	ErrHookMarkerMissing     = errors.New("installed hook does not contain expected marker")
+	ErrInvalidGitFile        = errors.New("invalid .git file")
+	ErrHooksDirUnresolved    = errors.New("unable to resolve git hooks directory")
 )
 
 // CheckError represents an enhanced error with context and suggestions

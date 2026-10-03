@@ -27,7 +27,9 @@ func (cb *CommandBuilder) BuildInstallCmd() *cobra.Command {
 		Long: `Install the Go pre-commit system hooks into your git repository.
 
 This command will:
-  - Create .git/hooks/pre-commit (or other specified hook types)
+  - Create the pre-commit hook (or other specified hook types) in the
+    hooks directory git uses: .git/hooks, the shared hooks directory when
+    run from a git worktree, or core.hooksPath when it is set
   - Make the hook executable
   - Preserve any existing hooks (unless --force is used)
   - Configure the hook to use the Go pre-commit system`,
@@ -91,6 +93,12 @@ func (cb *CommandBuilder) runInstallWithConfig(installConfig InstallConfig, _ *c
 
 	// Create installer with configuration for enhanced validation
 	installer := git.NewInstallerWithConfig(repoRoot, "", cfg)
+
+	if cb.app.config.Verbose {
+		if hooksDir, hooksErr := installer.HooksDir(); hooksErr == nil {
+			printInfo("Hooks directory: %s", hooksDir)
+		}
+	}
 
 	// Install each hook type
 	installed := make([]string, 0, len(installConfig.HookTypes))

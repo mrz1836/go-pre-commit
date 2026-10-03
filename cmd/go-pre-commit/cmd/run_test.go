@@ -780,6 +780,8 @@ func TestStripANSI(t *testing.T) {
 
 // TestRunCmd_ColorIntegration tests color output integration in the run command
 func TestRunCmd_ColorIntegration(t *testing.T) {
+	preserveWorkingDir(t)
+
 	tests := []struct {
 		name        string
 		args        []string
@@ -976,6 +978,8 @@ func TestRunCmd_ColorOutputEndToEnd(t *testing.T) {
 
 // TestRunCmd_ColorModeConfiguration tests color mode configuration parsing
 func TestRunCmd_ColorModeConfiguration(t *testing.T) {
+	preserveWorkingDir(t)
+
 	tests := []struct {
 		name        string
 		args        []string

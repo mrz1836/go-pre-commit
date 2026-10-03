@@ -13,6 +13,7 @@ import (
 
 	"github.com/mrz1836/go-pre-commit/internal/config"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 // ProductionScenariosTestSuite validates behavior under realistic production conditions
@@ -61,6 +62,12 @@ GO_PRE_COMMIT_EOF_TIMEOUT=60
 
 	// Initialize git repository
 	s.Require().NoError(s.initGitRepo())
+}
+
+// SetupTest restores the full process environment after each test, since
+// config.Load writes configuration values into it
+func (s *ProductionScenariosTestSuite) SetupTest() {
+	testutil.IsolateEnv(s.T())
 }
 
 // TearDownSuite cleans up the test environment
