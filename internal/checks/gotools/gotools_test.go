@@ -58,11 +58,7 @@ func TestFumptCheck_FilterFiles(t *testing.T) {
 }
 
 func TestFumptCheck_Run_NoTool(t *testing.T) {
-	// Skip this test if gofumpt is available since it would succeed
-	_, hasGofumpt := exec.LookPath("gofumpt")
-	if hasGofumpt == nil {
-		t.Skip("gofumpt is available - skipping error scenario test")
-	}
+	makeToolsUnavailable(t)
 
 	// Create a temporary directory
 	tmpDir := t.TempDir()
@@ -689,11 +685,7 @@ func TestModTidyCheckEdgeCases(t *testing.T) {
 
 // Test fumpt build command error scenarios
 func TestFumptCheckBuildErrorScenarios(t *testing.T) {
-	// Skip this test if gofumpt is available since it would succeed
-	_, hasGofumpt := exec.LookPath("gofumpt")
-	if hasGofumpt == nil {
-		t.Skip("gofumpt is available - skipping error scenario test")
-	}
+	makeToolsUnavailable(t)
 
 	tests := []struct {
 		name          string
@@ -751,11 +743,9 @@ func TestFumptCheckDirectErrorScenarios(t *testing.T) {
 		{
 			name: "gofumpt not available",
 			setupFunc: func(_ *testing.T, _ string) {
-				// Create scenario where gofumpt won't be found
-				// We can't really remove gofumpt from PATH in tests,
-				// so this test verifies the logic path exists
+				// makeToolsUnavailable (below) removes gofumpt from PATH
 			},
-			expectedError: "gofumpt", // This will only work if gofumpt is not installed
+			expectedError: "gofumpt",
 		},
 		{
 			name: "timeout in direct gofumpt",
@@ -800,11 +790,8 @@ func TestFumptCheckDirectErrorScenarios(t *testing.T) {
 				check = NewFumptCheck()
 			}
 
-			// Skip if this test requires gofumpt to not be available and it is available
 			if tt.name == "gofumpt not available" {
-				if _, lookupErr := exec.LookPath("gofumpt"); lookupErr == nil {
-					t.Skip("gofumpt is available, cannot test not found scenario")
-				}
+				makeToolsUnavailable(t)
 			}
 
 			// Skip timeout test if gofumpt is not available (CI environments)
@@ -845,12 +832,7 @@ func TestFumptCheckDirectErrorScenarios(t *testing.T) {
 
 // Test lint build command error scenarios
 func TestLintCheckBuildErrorScenarios(t *testing.T) {
-	// Skip this test if golangci-lint is available since it would succeed
-	_, hasGolangciLint := exec.LookPath("golangci-lint")
-
-	if hasGolangciLint == nil {
-		t.Skip("golangci-lint is available - skipping error scenario test")
-	}
+	makeToolsUnavailable(t)
 
 	tests := []struct {
 		name          string
@@ -893,14 +875,6 @@ func main() {
 			err = os.WriteFile(testFileTestGo, []byte(goFile), 0o600)
 			require.NoError(t, err)
 
-			// Make golangci-lint unavailable and impossible to install: with only git
-			// on PATH, neither the binary nor its installers (go, sh, curl) can be
-			// found, so the check reports the missing tool without network access.
-			// Clear the install cache so another test's install cannot mask this.
-			t.Setenv("PATH", gitOnlyPath(t))
-			tools.CleanCache()
-			t.Cleanup(tools.CleanCache)
-
 			check := NewLintCheck()
 
 			// When the tool cannot be found or installed, we should get an error
@@ -911,8 +885,12 @@ func main() {
 	}
 }
 
-// gitOnlyPath returns a PATH value containing only the git binary
-func gitOnlyPath(t *testing.T) string {
+// makeToolsUnavailable leaves only git on PATH and clears the tools install
+// cache for the rest of the test. External tools (golangci-lint, gofumpt, ...)
+// are then neither found nor installable, because their installers (go, sh,
+// curl) are missing too, so "tool not available" paths behave the same on
+// every machine and never reach the network.
+func makeToolsUnavailable(t *testing.T) {
 	t.Helper()
 	gitPath, err := exec.LookPath("git")
 	require.NoError(t, err)
@@ -921,7 +899,10 @@ func gitOnlyPath(t *testing.T) string {
 	if err := os.Symlink(gitPath, filepath.Join(binDir, filepath.Base(gitPath))); err != nil {
 		t.Skipf("symlinks not supported: %v", err)
 	}
-	return binDir
+	t.Setenv("PATH", binDir)
+
+	tools.CleanCache()
+	t.Cleanup(tools.CleanCache)
 }
 
 // Test lint direct execution error scenarios
@@ -981,11 +962,8 @@ func TestLintCheckDirectErrorScenarios(t *testing.T) {
 
 			tt.setupFunc(t, tmpDir)
 
-			// Skip if this test requires golangci-lint to not be available and it is available
 			if tt.name == "golangci-lint not available" {
-				if _, lookupErr := exec.LookPath("golangci-lint"); lookupErr == nil {
-					t.Skip("golangci-lint is available, cannot test not found scenario")
-				}
+				makeToolsUnavailable(t)
 			}
 
 			var check *LintCheck

@@ -50,11 +50,7 @@ func TestGitleaksCheck_FilterFiles(t *testing.T) {
 }
 
 func TestGitleaksCheck_Run_NoTool(t *testing.T) {
-	// Skip this test if gitleaks is available since it would succeed
-	_, hasGitleaks := exec.LookPath("gitleaks")
-	if hasGitleaks == nil {
-		t.Skip("gitleaks is available - skipping error scenario test")
-	}
+	makeToolsUnavailable(t)
 
 	// Create a temporary directory
 	tmpDir := t.TempDir()
