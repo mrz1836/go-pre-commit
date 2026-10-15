@@ -353,7 +353,7 @@ Most commands accept arguments to focus their scope:
 allowed-tools: Task, Read, Edit
 argument-hint: [parameter]
 description: Brief description
-claude-sonnet-4-0
+model: claude-sonnet-5-5
 ---
 
 ## Command Title
