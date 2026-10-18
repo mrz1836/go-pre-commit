@@ -601,7 +601,9 @@ func (s *FileSystemErrorTestSuite) TestRaceConditions() {
 				}
 
 				// Wait for deletion to complete
-				<-done
+				if err := <-done; err != nil {
+					return err
+				}
 
 				// The last read should have failed or file should be deleted
 				if lastErr == nil {
