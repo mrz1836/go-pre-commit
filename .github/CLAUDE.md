@@ -10,7 +10,7 @@ This is **go-pre-commit**: a lightning-fast, **pure Go** git pre-commit framewor
 - Provides git pre-commit hooks as a single Go binary
 - Runs checks in parallel: `eof`, `fumpt`, `gitleaks`, `lint`, `mod-tidy`, `whitespace`
 - **Pure Go implementation** - all checks run directly without Make dependencies
-- **Auto-installs tools** - fumpt, golangci-lint, goimports, and gitleaks are installed automatically when needed
+- **Auto-installs tools** - fumpt, golangci-lint, goimports, and gitleaks are installed automatically when needed (golangci-lint and gitleaks from checksum-verified release archives, the others with `go install`); `GO_PRE_COMMIT_AUTO_INSTALL_TOOLS=false` turns installs off
 - **Plugin system** - Extend with custom checks in any language (Shell, Python, Go, Docker, etc.)
 - Configures via environment files: `.github/env/` (modular, preferred) or `.github/.env.base` + `.github/.env.custom` (legacy fallback)
 

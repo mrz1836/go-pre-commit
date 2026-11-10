@@ -352,6 +352,7 @@ Core Settings:
   GO_PRE_COMMIT_MAX_FILES_OPEN=100          Maximum files to keep open
   GO_PRE_COMMIT_TIMEOUT_SECONDS=300         Global timeout in seconds
   GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT=300   Tool installation timeout in seconds
+  GO_PRE_COMMIT_AUTO_INSTALL_TOOLS=true    Install missing tools automatically (false: never install; a missing tool fails its check)
   GO_PRE_COMMIT_AUTO_ADJUST_CI_TIMEOUTS=true   Auto-adjust timeouts for CI environments
 
 Check Configuration:

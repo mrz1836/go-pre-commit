@@ -114,6 +114,9 @@ func (c *FumptCheck) Run(ctx context.Context, files []string) error {
 
 	// Ensure gofumpt is installed
 	if err := tools.EnsureInstalled(ctx, "gofumpt"); err != nil {
+		if errors.Is(err, tools.ErrAutoInstallDisabled) {
+			return toolInstallError("gofumpt", err)
+		}
 		// The old suggestion ("install manually with go install ...@latest") is
 		// actively misleading when the failure is a Go-toolchain mismatch: @latest
 		// would fail identically. Give an accurate, cause-specific suggestion and

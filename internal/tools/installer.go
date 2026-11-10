@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -24,7 +25,12 @@ import (
 
 const (
 	toolGolangciLint  = "golangci-lint"
+	toolGitleaks      = "gitleaks"
 	toolVersionLatest = "latest"
+
+	// EnvAutoInstallTools turns automatic tool installs off when set to false.
+	// A missing tool then fails its check with the command that installs it.
+	EnvAutoInstallTools = "GO_PRE_COMMIT_AUTO_INSTALL_TOOLS"
 )
 
 // runInstallCommand runs an install/download command and returns its combined
@@ -58,6 +64,9 @@ var (
 	// permitted to upgrade). This is a common, actionable failure when a pinned tool
 	// version outpaces the runner's Go version.
 	ErrToolNeedsNewerGo = errors.New("tool requires a newer Go toolchain")
+	// ErrAutoInstallDisabled is returned for a missing tool when automatic
+	// installs are turned off with GO_PRE_COMMIT_AUTO_INSTALL_TOOLS=false
+	ErrAutoInstallDisabled = errors.New("tool not installed and automatic installs are off")
 )
 
 // goRequiresVersionRe extracts the required Go version from a failed `go install`
@@ -229,11 +238,13 @@ func newToolRegistry() map[string]*Tool {
 			Version:    toolVersionLatest,
 			Binary:     "goimports",
 		},
-		"gitleaks": {
-			Name:       "gitleaks",
-			ImportPath: "github.com/gitleaks/gitleaks/v8",
+		toolGitleaks: {
+			Name: toolGitleaks,
+			// The module keeps its original path; go install of the
+			// github.com/gitleaks/gitleaks/v8 path fails.
+			ImportPath: "github.com/zricethezav/gitleaks/v8",
 			Version:    "", // Will be loaded from env
-			Binary:     "gitleaks",
+			Binary:     toolGitleaks,
 		},
 	}
 }
@@ -465,7 +476,73 @@ func EnsureInstalled(ctx context.Context, toolName string) error {
 	return InstallTool(ctx, toolCopy)
 }
 
-// InstallTool installs a specific tool
+// AutoInstallEnabled reports whether missing tools may be installed
+// automatically. GO_PRE_COMMIT_AUTO_INSTALL_TOOLS=false (or 0) turns installs
+// off; unset, or a value that is not a boolean, keeps the default (on), as
+// with every other boolean setting.
+func AutoInstallEnabled() bool {
+	value := strings.TrimSpace(os.Getenv(EnvAutoInstallTools))
+	if value == "" {
+		return true
+	}
+	enabled, err := strconv.ParseBool(value)
+	if err != nil {
+		return true
+	}
+	return enabled
+}
+
+// InstallCommand returns the command that installs the configured version of
+// a tool by hand, such as "go install mvdan.cc/gofumpt@v0.8.0", or "" for an
+// unknown tool. Checks show it when a tool is missing and was not installed.
+func InstallCommand(toolName string) string {
+	LoadVersionsFromEnv()
+
+	toolsMu.RLock()
+	defer toolsMu.RUnlock()
+	tool, ok := tools[toolName]
+	if !ok {
+		return ""
+	}
+	return manualInstallCommand(tool)
+}
+
+// manualInstallCommand is the go install command for the tool's version.
+// The Go module proxy and checksum database verify what it downloads.
+func manualInstallCommand(tool *Tool) string {
+	version := tool.Version
+	if version == "" {
+		version = toolVersionLatest
+	}
+	pkg := tool.ImportPath
+	if tool.Name == toolGolangciLint {
+		pkg = golangciLintPackage(version)
+	}
+	return "go install " + pkg + "@" + version
+}
+
+// golangciLintPackage is the package go install needs for a golangci-lint
+// version. golangci-lint moved to the github.com/golangci/golangci-lint/v2
+// module at v2, so v2 and later (and latest) use that module's path.
+func golangciLintPackage(version string) string {
+	major := 2 // latest
+	if version != toolVersionLatest {
+		if m, _, ok := parseGoMajorMinor(strings.TrimPrefix(version, "v")); ok {
+			major = m
+		}
+	}
+	if major < 2 {
+		return "github.com/golangci/golangci-lint/cmd/golangci-lint"
+	}
+	return fmt.Sprintf("github.com/golangci/golangci-lint/v%d/cmd/golangci-lint", major)
+}
+
+// InstallTool installs a specific tool. golangci-lint and gitleaks are
+// installed from their GitHub release archives, verified against the
+// release's checksums file; other tools with go install. When automatic
+// installs are off (GO_PRE_COMMIT_AUTO_INSTALL_TOOLS=false) a missing tool is
+// never installed: InstallTool returns ErrAutoInstallDisabled with the
+// command that installs it.
 func InstallTool(ctx context.Context, tool *Tool) error {
 	installMu.Lock()
 	defer installMu.Unlock()
@@ -474,6 +551,11 @@ func InstallTool(ctx context.Context, tool *Tool) error {
 	if _, err := exec.LookPath(tool.Binary); err == nil {
 		installedTools[tool.Name] = true
 		return nil
+	}
+
+	if !AutoInstallEnabled() {
+		return fmt.Errorf("%w: %s is not on PATH, and %s=false, so it was not installed. Install it with: %s",
+			ErrAutoInstallDisabled, tool.Name, EnvAutoInstallTools, manualInstallCommand(tool))
 	}
 
 	// Log installation status (output is intentional for user feedback)
@@ -506,17 +588,18 @@ func InstallTool(ctx context.Context, tool *Tool) error {
 	tracker.Start(installCtx)
 	defer tracker.Stop()
 
-	// Special handling for golangci-lint which has a custom installer
-	if tool.Name == toolGolangciLint {
-		return installGolangciLint(installCtx, tool.Version)
-	}
-
-	// Special handling for gitleaks which requires binary download
-	if tool.Name == "gitleaks" {
-		if err := installGitleaks(installCtx, tool.Version); err != nil {
-			return fmt.Errorf("%w for %s: %w", ErrInstallFailed, tool.Name, err)
+	// golangci-lint and gitleaks are installed from verified release archives
+	switch tool.Name {
+	case toolGolangciLint:
+		if err := installGolangciLint(installCtx, tool.Version); err != nil {
+			return err
 		}
-		return nil
+		return finishInstall(tool)
+	case toolGitleaks:
+		if err := installGitleaks(installCtx, tool.Version); err != nil {
+			return err
+		}
+		return finishInstall(tool)
 	}
 
 	// Standard go install for other tools with retry logic
@@ -555,7 +638,12 @@ func InstallTool(ctx context.Context, tool *Tool) error {
 		return fmt.Errorf("%w for %s: %w\nOutput: %s", ErrInstallFailed, tool.Name, err, output)
 	}
 
-	// Verify installation
+	return finishInstall(tool)
+}
+
+// finishInstall checks that a tool just installed is found on PATH, records
+// it as installed, and reports the success. Callers hold installMu.
+func finishInstall(tool *Tool) error {
 	if _, err := exec.LookPath(tool.Binary); err != nil {
 		return fmt.Errorf("%w: %s: %w", ErrToolNotInPath, tool.Name, err)
 	}
@@ -572,267 +660,73 @@ func InstallTool(ctx context.Context, tool *Tool) error {
 	return nil
 }
 
-// installGolangciLint uses the official installer script for golangci-lint
+// installGolangciLint installs golangci-lint from its verified release
+// archive. If that fails at any step, it falls back to go install of the same
+// version, which the Go checksum database verifies; when both fail, the error
+// reports both.
 func installGolangciLint(ctx context.Context, version string) error {
 	timeout := GetInstallTimeout()
+	start := time.Now()
 
-	// Check if this was a timeout at the start
+	tag, err := resolveReleaseTag(ctx, toolGolangciLint, golangciLintRepo, version)
+	if err == nil {
+		_, err = installRelease(ctx, golangciLintAsset(tag, runtime.GOOS, runtime.GOARCH), GetGoBin())
+	}
+	if err == nil {
+		return nil
+	}
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return prerrors.NewToolInstallTimeoutError(toolGolangciLint, timeout, 0)
+		return prerrors.NewToolInstallTimeoutError(toolGolangciLint, timeout, time.Since(start))
 	}
 
-	// Start progress tracking for golangci-lint installation
-	tracker := progress.New(progress.Options{
-		Operation:    "Tool installation",
-		Context:      toolGolangciLint,
-		Timeout:      timeout,
-		ProgressFunc: progress.InstallProgressFunc(toolGolangciLint),
-	})
-	tracker.Start(ctx)
-	defer tracker.Stop()
+	// Fall back to go install of the same version
+	fallbackVersion := version
+	if tag != "" {
+		fallbackVersion = tag
+	}
+	installTarget := golangciLintPackage(fallbackVersion) + "@" + fallbackVersion
+	if _, logErr := fmt.Fprintf(os.Stdout, "%s %v\n%s Trying go install %s instead...\n",
+		color.YellowString("⚠"), err, color.YellowString("→"), installTarget); logErr != nil {
+		// Ignore write error to stdout
+		_ = logErr
+	}
 
-	// Use the official installation method with retry logic
-	installScript := `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin %s`
-
-	start := time.Now()
 	var output []byte
-
-	err := retryWithBackoff(ctx, "installing golangci-lint", func() error {
+	fallbackStart := time.Now()
+	fallbackErr := retryWithBackoff(ctx, "installing golangci-lint (fallback)", func() error {
 		var cmdErr error
-		output, cmdErr = runInstallCommand(ctx, append(os.Environ(), "GO111MODULE=on"), "sh", "-c", fmt.Sprintf(installScript, version))
+		output, cmdErr = runInstallCommand(ctx, append(os.Environ(), "GO111MODULE=on"), "go", "install", installTarget)
 		return cmdErr
 	})
-
-	elapsed := time.Since(start)
-
-	if err != nil {
-		// Check for timeout on primary installation
+	if fallbackErr != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return prerrors.NewToolInstallTimeoutError(toolGolangciLint, timeout, elapsed)
+			return prerrors.NewToolInstallTimeoutError(toolGolangciLint, timeout, time.Since(start))
 		}
-
-		// If primary installation failed with network error after retries, try fallback
-		if isNetworkError(err) {
-			if _, logErr := fmt.Fprintf(os.Stdout, "%s Primary installation failed with network error, trying fallback method...\n",
-				color.YellowString("⚠")); logErr != nil {
-				// Ignore write error to stdout
-				_ = logErr
-			}
-		}
-
-		// Fallback to go install method with retry logic
-		installPath := fmt.Sprintf("github.com/golangci/golangci-lint/cmd/golangci-lint@%s", version)
-
-		var fallbackOutput []byte
-		fallbackStart := time.Now()
-
-		fallbackErr := retryWithBackoff(ctx, "installing golangci-lint (fallback)", func() error {
-			var cmdErr error
-			fallbackOutput, cmdErr = runInstallCommand(ctx, append(os.Environ(), "GO111MODULE=on"), "go", "install", installPath)
-			return cmdErr
-		})
-
-		fallbackElapsed := time.Since(fallbackStart)
-		totalElapsed := time.Since(start)
-
-		if fallbackErr != nil {
-			// Check for timeout on fallback
-			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-				return prerrors.NewToolInstallTimeoutError(toolGolangciLint, timeout, totalElapsed)
-			}
-
-			// Both methods failed
-			if isNetworkError(fallbackErr) {
-				attempts, _ := GetRetryConfig()
-				return fmt.Errorf("%w for golangci-lint after %d attempts on both methods (network errors): %w\nScript output: %s\nGo install output: %s",
-					ErrInstallFailed, attempts, err, output, fallbackOutput)
-			}
-
-			return fmt.Errorf("%w for golangci-lint: %w\nScript output: %s\nGo install output: %s",
-				ErrInstallFailed, err, output, fallbackOutput)
-		}
-
-		// Fallback succeeded, log that we used it
-		if _, logErr := fmt.Fprintf(os.Stdout, "%s Installed golangci-lint using fallback method (took %v)\n",
-			color.YellowString("⚠"), fallbackElapsed); logErr != nil {
-			// Ignore write error to stdout
-			_ = logErr
-		}
+		return fmt.Errorf("%w; %w\nOutput: %s", err,
+			fmt.Errorf("%s %s: go install fallback: %w", toolGolangciLint, fallbackVersion, fallbackErr), output)
 	}
 
+	if _, logErr := fmt.Fprintf(os.Stdout, "%s Installed golangci-lint with go install (took %v)\n",
+		color.YellowString("⚠"), time.Since(fallbackStart)); logErr != nil {
+		// Ignore write error to stdout
+		_ = logErr
+	}
 	return nil
 }
 
-// installGitleaks downloads and installs gitleaks binary from GitHub releases
+// installGitleaks installs gitleaks from its verified release archive.
 func installGitleaks(ctx context.Context, version string) error {
 	timeout := GetInstallTimeout()
-
-	// Check if this was a timeout at the start
-	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return prerrors.NewToolInstallTimeoutError("gitleaks", timeout, 0)
-	}
-
-	// Start progress tracking for gitleaks installation
-	tracker := progress.New(progress.Options{
-		Operation:    "Tool installation",
-		Context:      "gitleaks",
-		Timeout:      timeout,
-		ProgressFunc: progress.InstallProgressFunc("gitleaks"),
-	})
-	tracker.Start(ctx)
-	defer tracker.Stop()
-
-	// Detect OS and architecture
-	goos := os.Getenv("GOOS")
-	if goos == "" {
-		goos = "linux" // Default to linux
-		if v := os.Getenv("OS"); v == "Windows_NT" {
-			goos = "windows"
-		} else {
-			out, err := exec.CommandContext(ctx, "uname", "-s").Output()
-			if err == nil && strings.Contains(strings.ToLower(string(out)), "darwin") {
-				goos = "darwin"
-			}
-		}
-	}
-
-	goarch := os.Getenv("GOARCH")
-	if goarch == "" {
-		goarch = "amd64" // Default to amd64
-		out, err := exec.CommandContext(ctx, "uname", "-m").Output()
-		if err == nil {
-			arch := strings.TrimSpace(strings.ToLower(string(out)))
-			switch arch {
-			case "arm64", "aarch64":
-				goarch = "arm64"
-			case "x86_64", "amd64":
-				goarch = "amd64"
-			}
-		}
-	}
-
-	// Construct download URL
-	// Format: https://github.com/gitleaks/gitleaks/releases/download/v8.29.0/gitleaks_8.29.0_linux_x64.tar.gz
-	// GitHub releases use different arch names
-	archMap := map[string]string{
-		"amd64": "x64",
-		"arm64": "arm64",
-	}
-	releaseArch, ok := archMap[goarch]
-	if !ok {
-		releaseArch = "x64" // Default fallback
-	}
-
-	// Strip 'v' prefix from version if present for filename
-	versionNum := strings.TrimPrefix(version, "v")
-
-	// Construct filename based on OS
-	var filename string
-	if goos == "windows" {
-		filename = fmt.Sprintf("gitleaks_%s_windows_%s.zip", versionNum, releaseArch)
-	} else {
-		filename = fmt.Sprintf("gitleaks_%s_%s_%s.tar.gz", versionNum, goos, releaseArch)
-	}
-
-	downloadURL := fmt.Sprintf("https://github.com/gitleaks/gitleaks/releases/download/%s/%s", version, filename)
-
-	// Create temporary directory for download
-	tmpDir, err := os.MkdirTemp("", "gitleaks-install-*")
-	if err != nil {
-		return fmt.Errorf("failed to create temp directory: %w", err)
-	}
-	defer func() {
-		_ = os.RemoveAll(tmpDir)
-	}()
-
-	archivePath := filepath.Join(tmpDir, filename)
-
-	// Download the archive with retry logic
 	start := time.Now()
-	var output []byte
 
-	err = retryWithBackoff(ctx, "downloading gitleaks", func() error {
-		var cmdErr error
-		output, cmdErr = runInstallCommand(ctx, nil, "curl", "-sSfL", "-o", archivePath, downloadURL)
-		return cmdErr
-	})
-
-	elapsed := time.Since(start)
-
-	if err != nil {
-		// Check if this was a timeout
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return prerrors.NewToolInstallTimeoutError("gitleaks", timeout, elapsed)
-		}
-
-		// Check if we exhausted retries on network errors
-		if isNetworkError(err) {
-			attempts, _ := GetRetryConfig()
-			return fmt.Errorf("%w for gitleaks after %d attempts (network error): %w\nOutput: %s",
-				ErrInstallFailed, attempts, err, output)
-		}
-
-		return fmt.Errorf("%w for gitleaks: failed to download: %w\nOutput: %s", ErrInstallFailed, err, output)
+	tag, err := resolveReleaseTag(ctx, toolGitleaks, gitleaksRepo, version)
+	if err == nil {
+		_, err = installRelease(ctx, gitleaksAsset(tag, runtime.GOOS, runtime.GOARCH), GetGoBin())
 	}
-
-	// Extract the archive
-	var extractCmd *exec.Cmd
-	if goos == "windows" {
-		// Use unzip for Windows
-		extractCmd = exec.CommandContext(ctx, "unzip", "-o", archivePath, "-d", tmpDir) //nolint:gosec // archivePath is constructed from trusted tmpDir
-	} else {
-		// Use tar for Unix-like systems
-		extractCmd = exec.CommandContext(ctx, "tar", "-xzf", archivePath, "-C", tmpDir) //nolint:gosec // archivePath is constructed from trusted tmpDir
+	if err != nil && errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return prerrors.NewToolInstallTimeoutError(toolGitleaks, timeout, time.Since(start))
 	}
-
-	output, err = extractCmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%w for gitleaks: failed to extract: %w\nOutput: %s", ErrInstallFailed, err, output)
-	}
-
-	// Find the gitleaks binary in the extracted files
-	var binaryName string
-	if goos == "windows" {
-		binaryName = "gitleaks.exe"
-	} else {
-		binaryName = "gitleaks"
-	}
-
-	binaryPath := filepath.Join(tmpDir, binaryName)
-	if _, statErr := os.Stat(binaryPath); os.IsNotExist(statErr) {
-		return fmt.Errorf("%w for gitleaks: binary not found in archive", ErrInstallFailed)
-	}
-
-	// Get the Go bin directory
-	gobin := GetGoBin()
-
-	// Ensure the directory exists
-	if mkdirErr := os.MkdirAll(gobin, 0o750); mkdirErr != nil {
-		return fmt.Errorf("failed to create GOBIN directory: %w", mkdirErr)
-	}
-
-	// Move the binary to GOBIN
-	destPath := filepath.Join(gobin, binaryName)
-
-	// Remove existing binary if present
-	_ = os.Remove(destPath)
-
-	// Copy the file
-	input, err := os.ReadFile(binaryPath) //nolint:gosec // binaryPath is constructed from trusted tmpDir
-	if err != nil {
-		return fmt.Errorf("failed to read binary: %w", err)
-	}
-
-	if err := os.WriteFile(destPath, input, 0o750); err != nil { //nolint:gosec // executable binary needs execute permissions
-		return fmt.Errorf("failed to write binary: %w", err)
-	}
-
-	// Verify installation
-	if _, err := exec.LookPath(binaryName); err != nil {
-		return fmt.Errorf("%w: gitleaks: %w", ErrToolNotInPath, err)
-	}
-
-	return nil
+	return err
 }
 
 // GetToolPath returns the full path to a tool binary

@@ -326,7 +326,8 @@ func (s *ToolManagementIntegrationTestSuite) TestToolConfigurationIntegration() 
 				"ENABLE_GO_PRE_COMMIT": "true",
 			},
 			expectedValues: map[string]any{
-				"timeout": 300, // GO_PRE_COMMIT_TIMEOUT_SECONDS in the test project's .env.base
+				"timeout":      300,  // GO_PRE_COMMIT_TIMEOUT_SECONDS in the test project's .env.base
+				"auto_install": true, // GO_PRE_COMMIT_AUTO_INSTALL_TOOLS in the test project's .env.base
 			},
 		},
 		{
@@ -386,8 +387,9 @@ func (s *ToolManagementIntegrationTestSuite) TestToolConfigurationIntegration() 
 				case "golangci_lint_version":
 					s.Equal(expectedValue, cfg.ToolVersions.GolangciLint, "GolangCI-Lint version should match")
 				case "auto_install":
-					// This would need to be implemented in the config if not already present
-					s.T().Logf("Auto install setting: %v", expectedValue)
+					// The installer reads the setting from the environment that
+					// config.Load fills from the project's configuration files
+					s.Equal(expectedValue, tools.AutoInstallEnabled(), "Auto install setting should match")
 				case "install_timeout":
 					// This would need to be implemented in the config if not already present
 					s.T().Logf("Install timeout setting: %v", expectedValue)

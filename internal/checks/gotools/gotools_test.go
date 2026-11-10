@@ -885,11 +885,12 @@ func main() {
 	}
 }
 
-// makeToolsUnavailable leaves only git on PATH and clears the tools install
-// cache for the rest of the test. External tools (golangci-lint, gofumpt, ...)
-// are then neither found nor installable, because their installers (go, sh,
-// curl) are missing too, so "tool not available" paths behave the same on
-// every machine and never reach the network.
+// makeToolsUnavailable leaves only git on PATH, turns automatic tool installs
+// off, and clears the tools install cache for the rest of the test. External
+// tools (golangci-lint, gofumpt, ...) are then neither found nor installed, so
+// "tool not available" paths behave the same on every machine and never reach
+// the network: golangci-lint and gitleaks are downloaded in-process, so a
+// missing go, sh, or curl would no longer stop their installs.
 func makeToolsUnavailable(t *testing.T) {
 	t.Helper()
 	gitPath, err := exec.LookPath("git")
@@ -900,6 +901,7 @@ func makeToolsUnavailable(t *testing.T) {
 		t.Skipf("symlinks not supported: %v", err)
 	}
 	t.Setenv("PATH", binDir)
+	t.Setenv(tools.EnvAutoInstallTools, "false")
 
 	tools.CleanCache()
 	t.Cleanup(tools.CleanCache)
