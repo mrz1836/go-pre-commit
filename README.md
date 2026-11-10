@@ -261,6 +261,11 @@ go-pre-commit install --hook-type pre-commit --hook-type pre-push
 go-pre-commit install --force
 ```
 
+`install` updates a hook it installed before, but leaves another tool's hook in place unless
+you pass `--force`, which moves that hook aside as a backup (`uninstall` puts it back). It exits
+non-zero unless every requested hook type is installed, so a script or CI step can rely on its
+exit status. When it skips a hook type, it says so and still installs the others.
+
 </details>
 
 <details>

@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/mrz1836/go-pre-commit/internal/config"
+	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 	"github.com/mrz1836/go-pre-commit/internal/git"
 )
 
@@ -31,8 +33,14 @@ This command will:
     hooks directory git uses: .git/hooks, the shared hooks directory when
     run from a git worktree, or core.hooksPath when it is set
   - Make the hook executable
-  - Preserve any existing hooks (unless --force is used)
-  - Configure the hook to use the Go pre-commit system`,
+  - Update a hook it installed before, and leave another tool's hook in
+    place unless --force is used (--force moves it aside as a backup)
+  - Configure the hook to use the Go pre-commit system
+
+It exits with a non-zero status unless every requested hook is installed.
+When another tool's hook is in place and --force is not used, that hook
+type is skipped and reported, the other hook types are still installed,
+and the command fails.`,
 		Example: `  # Install pre-commit hook
   go-pre-commit install
 
@@ -68,6 +76,11 @@ This command will:
 }
 
 func (cb *CommandBuilder) runInstallWithConfig(installConfig InstallConfig, _ *cobra.Command, _ []string) error {
+	// An empty --hook-type would install nothing, so it must not succeed
+	if len(installConfig.HookTypes) == 0 {
+		return fmt.Errorf("%w: name at least one with --hook-type", prerrors.ErrNoHookTypes)
+	}
+
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
@@ -102,6 +115,7 @@ func (cb *CommandBuilder) runInstallWithConfig(installConfig InstallConfig, _ *c
 
 	// Install each hook type
 	installed := make([]string, 0, len(installConfig.HookTypes))
+	skipped := make([]string, 0, len(installConfig.HookTypes))
 	for _, hookType := range installConfig.HookTypes {
 		if cb.app.config.Verbose {
 			printInfo("Installing %s hook...", hookType)
@@ -110,10 +124,12 @@ func (cb *CommandBuilder) runInstallWithConfig(installConfig InstallConfig, _ *c
 		err := installer.InstallHook(hookType, installConfig.Force)
 		if err != nil {
 			// handleExistingHook wraps os.ErrExist, so use errors.Is (os.IsExist
-			// does not unwrap %w-wrapped errors) to detect the already-installed
-			// case and warn-and-continue instead of failing the whole install.
+			// does not unwrap %w-wrapped errors) to detect another tool's hook.
+			// Leave it in place and keep installing the other hook types, then
+			// fail below so the exit status shows that a hook is missing.
 			if !installConfig.Force && errors.Is(err, os.ErrExist) {
 				printWarning("Hook already exists: %s (use --force to overwrite)", hookType)
+				skipped = append(skipped, hookType)
 				continue
 			}
 			return fmt.Errorf("failed to install %s hook: %w", hookType, err)
@@ -125,11 +141,14 @@ func (cb *CommandBuilder) runInstallWithConfig(installConfig InstallConfig, _ *c
 	// Summary
 	if len(installed) > 0 {
 		printSuccess("Successfully installed hooks: %v", installed)
-		printInfo("Run 'git commit' to test the pre-commit hook")
-		printInfo("Run '%s run --help' to see available checks", filepath.Base(os.Args[0]))
 	} else {
 		printWarning("No hooks were installed")
 	}
+	if len(skipped) > 0 {
+		return fmt.Errorf("%w: %s (use --force to overwrite)", prerrors.ErrHooksNotInstalled, strings.Join(skipped, ", "))
+	}
 
+	printInfo("Run 'git commit' to test the pre-commit hook")
+	printInfo("Run '%s run --help' to see available checks", filepath.Base(os.Args[0]))
 	return nil
 }
