@@ -73,6 +73,11 @@ type CheckResult struct {
 	Suggestion string
 	CanSkip    bool
 	Command    string
+
+	// ChangedFiles lists the files the check rewrote, for checks that fix
+	// files in place and report it (checks.ChangeReporter): empty when such a
+	// check changed nothing, and nil for every other check
+	ChangedFiles []string
 }
 
 // ProgressCallback is called during check execution for progress updates
@@ -238,23 +243,28 @@ func (r *Runner) runCheck(ctx context.Context, check checks.Check, files []strin
 	nonExcludedFiles := r.applyExcludePatterns(files)
 	filteredFiles := check.FilterFiles(nonExcludedFiles)
 	if len(filteredFiles) == 0 {
-		return CheckResult{
+		result := CheckResult{
 			Name:     check.Name(),
 			Success:  true,
 			Duration: time.Since(start),
 			Files:    filteredFiles,
 		}
+		if _, ok := check.(checks.ChangeReporter); ok {
+			result.ChangedFiles = []string{}
+		}
+		return result
 	}
 
 	// Run the check, recovering from panics so a single faulty check (or plugin)
 	// becomes a failed result rather than crashing the whole run.
-	err := r.safeCheckRun(ctx, check, filteredFiles)
+	changed, err := r.safeCheckRun(ctx, check, filteredFiles)
 
 	result := CheckResult{
-		Name:     check.Name(),
-		Success:  err == nil,
-		Duration: time.Since(start),
-		Files:    filteredFiles,
+		Name:         check.Name(),
+		Success:      err == nil,
+		Duration:     time.Since(start),
+		Files:        filteredFiles,
+		ChangedFiles: changed,
 	}
 
 	if err != nil {
@@ -296,15 +306,24 @@ func (r *Runner) runCheck(ctx context.Context, check checks.Check, files []strin
 	return result
 }
 
-// safeCheckRun executes check.Run, converting any panic into an error so a faulty
+// safeCheckRun executes the check, converting any panic into an error so a faulty
 // check or plugin degrades to a failed result instead of crashing the process.
-func (r *Runner) safeCheckRun(ctx context.Context, check checks.Check, files []string) (err error) {
+// For a check that reports the files it changed (checks.ChangeReporter), it
+// returns them, never nil; for any other check, changed is nil.
+func (r *Runner) safeCheckRun(ctx context.Context, check checks.Check, files []string) (changed []string, err error) {
+	reporter, reportsChanges := check.(checks.ChangeReporter)
 	defer func() {
 		if rec := recover(); rec != nil {
 			err = fmt.Errorf("%w in %s: %v", ErrCheckPanicked, check.Name(), rec)
 		}
+		if reportsChanges && changed == nil {
+			changed = []string{}
+		}
 	}()
-	return check.Run(ctx, files)
+	if reportsChanges {
+		return reporter.RunWithChanges(ctx, files)
+	}
+	return nil, check.Run(ctx, files)
 }
 
 // determineChecks figures out which checks to run based on options and config

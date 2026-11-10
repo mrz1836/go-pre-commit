@@ -775,6 +775,23 @@ func TestColorMode(t *testing.T) {
 	}
 }
 
+// TestNewWithWriters tests that a formatter writes regular messages to out
+// and errors and warnings to errOut, in the given color mode
+func TestNewWithWriters(t *testing.T) {
+	var out, errOut bytes.Buffer
+	formatter := NewWithWriters(ColorNever, &out, &errOut)
+
+	formatter.Info("info")
+	formatter.Success("success")
+	formatter.Warning("warning")
+	formatter.Error("error")
+
+	assert.False(t, formatter.colorEnabled)
+	assert.Equal(t, "ℹ info\n✓ success\n", out.String())
+	assert.Equal(t, "⚠ warning\n✗ error\n", errOut.String())
+	assert.True(t, NewWithWriters(ColorAlways, &out, &errOut).colorEnabled)
+}
+
 // TestShouldUseColor tests the color detection logic
 func TestShouldUseColor(t *testing.T) {
 	tests := []struct {

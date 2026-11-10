@@ -61,3 +61,14 @@ func runGit(tb testing.TB, dir string, args ...string) (string, error) {
 	output, err := cmd.CombinedOutput()
 	return strings.TrimSpace(string(output)), err
 }
+
+// RunGit runs git with args in dir, failing the test on error, and returns
+// its trimmed output
+func RunGit(tb testing.TB, dir string, args ...string) string {
+	tb.Helper()
+	output, err := runGit(tb, dir, args...)
+	if err != nil {
+		tb.Fatalf("git %s: %v: %s", strings.Join(args, " "), err, output)
+	}
+	return output
+}

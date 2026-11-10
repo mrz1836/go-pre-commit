@@ -50,3 +50,13 @@ type Check interface {
 	// FilterFiles filters the list of files to only those this check should process
 	FilterFiles(files []string) []string
 }
+
+// ChangeReporter is implemented by checks that fix files in place (eof,
+// whitespace, fumpt) and can tell which files they changed. The runner calls
+// RunWithChanges instead of Run for these checks.
+type ChangeReporter interface {
+	// RunWithChanges does exactly what Run does and also returns the files it
+	// rewrote, as they appear in files. It returns them even when it fails,
+	// and an empty, non-nil slice when it changed nothing.
+	RunWithChanges(ctx context.Context, files []string) (changed []string, err error)
+}

@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -29,6 +32,7 @@ type RunConfig struct {
 	ShowProgress        bool
 	Quiet               bool
 	DebugTimeout        bool
+	JSON                bool
 }
 
 // BuildRunCmd creates the run command
@@ -47,7 +51,35 @@ Available checks:
   gitleaks     - Scan for secrets and credentials in code
   lint         - Run golangci-lint
   mod-tidy     - Ensure go.mod and go.sum are tidy
-  whitespace   - Fix trailing whitespace`,
+  whitespace   - Fix trailing whitespace
+
+JSON output (--json):
+  Prints one JSON document on stdout when the run ends. All human-readable
+  output (progress, results, tool installation) goes to stderr instead, as
+  --quiet and --progress allow. The exit status is unchanged: 1 if a check
+  failed, else 0. The document:
+    version        go-pre-commit version
+    enabled        ENABLE_GO_PRE_COMMIT (false: nothing ran)
+    result         "failed" if any check failed, "skipped" if no check ran
+                   (system disabled or no files to check), else "passed"
+    files          the files given to the checks
+    checks         one entry per check that ran, sorted by name:
+      name           check name
+      result         passed, failed, or skipped (could not run, with --graceful)
+      duration_ms    how long the check took
+      files          the files the check processed
+      changed_files  the files the check rewrote (eof, whitespace, fumpt), or
+                     null for a check that does not report what it changes
+      error          why the check failed or was skipped (only then)
+      suggestion     how to fix it (only when there is one)
+      output         the tool's output, without color codes (only when failed)
+    totals         {"checks", "passed", "failed", "skipped", "files", "duration_ms"}
+    warnings       messages about the run, such as a disabled system or a
+                   skipped check
+  If the run cannot start, the document is {"version", "error": {"code",
+  "message"}} and the exit status is 1. Codes: config_not_found,
+  config_invalid, not_a_repository, git_failed, no_checks_to_run, run_failed.
+  --json cannot be combined with --show-checks.`,
 		Example: `  # Run all checks on staged files
   go-pre-commit run
 
@@ -64,7 +96,10 @@ Available checks:
   go-pre-commit run --skip lint,fumpt
 
   # Run only specific checks
-  go-pre-commit run --only whitespace,eof`,
+  go-pre-commit run --only whitespace,eof
+
+  # List the files the fixing checks changed, from a script
+  go-pre-commit run --json 2>/dev/null | jq -r '.checks[].changed_files // [] | .[]'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get flags and create config
 			config := RunConfig{}
@@ -125,6 +160,11 @@ Available checks:
 				return err
 			}
 
+			config.JSON, err = cmd.Flags().GetBool(jsonFlag)
+			if err != nil {
+				return err
+			}
+
 			return cb.runChecksWithConfig(config, cmd, args)
 		},
 	}
@@ -141,26 +181,53 @@ Available checks:
 	cmd.Flags().Bool("progress", true, "Show progress indicators during execution")
 	cmd.Flags().BoolP("quiet", "q", false, "Suppress progress messages, show only errors and results")
 	cmd.Flags().Bool("debug-timeout", false, "Enable detailed timeout debugging information")
+	cmd.Flags().Bool(jsonFlag, false, "Print the results as one JSON document on stdout; other output goes to stderr")
+	cmd.MarkFlagsMutuallyExclusive(jsonFlag, "show-checks")
 
 	return cmd
 }
 
-func (cb *CommandBuilder) runChecksWithConfig(runConfig RunConfig, _ *cobra.Command, args []string) error {
+func (cb *CommandBuilder) runChecksWithConfig(runConfig RunConfig, cmd *cobra.Command, args []string) error {
+	if !runConfig.JSON {
+		return cb.runChecks(runConfig, args, &runRecord{})
+	}
+
+	restore := routeHumanOutputToStderr()
+	defer restore()
+
+	record := &runRecord{}
+	err := cb.runChecks(runConfig, args, record)
+
+	stdout := stdoutOf(cmd)
+	if err != nil && !errors.Is(err, prerrors.ErrChecksFailed) {
+		return writeErrorReport(stdout, cb.app.version, err)
+	}
+	if writeErr := writeJSON(stdout, newRunReport(cb.app.version, record)); writeErr != nil {
+		return errors.Join(err, writeErr)
+	}
+	return err
+}
+
+// runChecks runs the checks, printing the human-readable report, and records
+// what happened in record for the JSON report. With runConfig.JSON, the human
+// report goes to stderr.
+func (cb *CommandBuilder) runChecks(runConfig RunConfig, args []string, record *runRecord) error {
 	// Load configuration first
 	cfg, err := config.Load()
 	if err != nil {
 		// Use basic formatter for this error since config failed to load
 		formatter := output.NewDefault()
 		formatter.Error("Failed to load configuration: %v", err)
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return withCode(configErrorCode(err), fmt.Errorf("failed to load configuration: %w", err))
 	}
 
 	// Create output formatter with config-based color settings
-	formatter := cb.newFormatter(cfg)
+	formatter := cb.newFormatter(cfg, runConfig.JSON)
 
 	// Check if pre-commit system is enabled
+	record.enabled = cfg.Enabled
 	if !cfg.Enabled {
-		formatter.Warning("Pre-commit system is disabled in configuration (ENABLE_GO_PRE_COMMIT=false)")
+		formatter.Warning(disabledWarning)
 		return nil
 	}
 
@@ -168,7 +235,7 @@ func (cb *CommandBuilder) runChecksWithConfig(runConfig RunConfig, _ *cobra.Comm
 	repoRoot, err := git.FindRepositoryRoot()
 	if err != nil {
 		formatter.Error("Failed to find git repository: %v", err)
-		return fmt.Errorf("failed to find git repository: %w", err)
+		return withCode(errCodeNotARepository, fmt.Errorf("failed to find git repository: %w", err))
 	}
 
 	// If show-checks flag is set, display available checks and exit
@@ -179,8 +246,9 @@ func (cb *CommandBuilder) runChecksWithConfig(runConfig RunConfig, _ *cobra.Comm
 	// Determine which files to check
 	filesToCheck, err := selectFilesToCheck(runConfig, repoRoot, formatter)
 	if err != nil {
-		return err
+		return withCode(errCodeGitFailed, err)
 	}
+	record.files = filesToCheck
 
 	if len(filesToCheck) == 0 {
 		formatter.Info("No files to check")
@@ -206,8 +274,13 @@ func (cb *CommandBuilder) runChecksWithConfig(runConfig RunConfig, _ *cobra.Comm
 	results, err := r.Run(context.Background(), opts)
 	if err != nil {
 		formatter.Error("Failed to run checks: %v", err)
-		return fmt.Errorf("failed to run checks: %w", err)
+		code := errCodeRunFailed
+		if errors.Is(err, prerrors.ErrNoChecksToRun) {
+			code = errCodeNoChecksToRun
+		}
+		return withCode(code, fmt.Errorf("failed to run checks: %w", err))
 	}
+	record.results = results
 
 	// Display results
 	displayEnhancedResults(formatter, results, runConfig.Quiet, cb.app.config.Verbose)
@@ -227,26 +300,37 @@ func (cb *CommandBuilder) runChecksWithConfig(runConfig RunConfig, _ *cobra.Comm
 
 // newFormatter builds an output formatter honoring the CLI color flags
 // (--no-color, --color) with a fallback to the configured color preference.
-func (cb *CommandBuilder) newFormatter(cfg *config.Config) *output.Formatter {
+// For JSON output, everything it prints goes to stderr.
+func (cb *CommandBuilder) newFormatter(cfg *config.Config, jsonOutput bool) *output.Formatter {
+	stdout := io.Writer(os.Stdout)
+	if jsonOutput {
+		stdout = os.Stderr
+	}
+	return output.NewWithWriters(cb.colorMode(cfg), stdout, os.Stderr)
+}
+
+// colorMode resolves the color mode from the CLI color flags (--no-color,
+// --color) with a fallback to the configured color preference
+func (cb *CommandBuilder) colorMode(cfg *config.Config) output.ColorMode {
 	if cb.app.config.NoColor {
 		// --no-color flag takes highest priority
-		return output.NewWithColorMode(output.ColorNever)
+		return output.ColorNever
 	}
 
 	// Use --color flag or auto-detect
 	switch cb.app.config.ColorMode {
 	case colorModeAlways:
-		return output.NewWithColorMode(output.ColorAlways)
+		return output.ColorAlways
 	case colorModeNever:
-		return output.NewWithColorMode(output.ColorNever)
+		return output.ColorNever
 	case colorModeAuto:
-		return output.NewWithColorMode(output.ColorAuto)
+		return output.ColorAuto
 	default:
 		// Default to auto mode with config override
 		if !cfg.UI.ColorOutput {
-			return output.NewWithColorMode(output.ColorNever)
+			return output.ColorNever
 		}
-		return output.NewWithColorMode(output.ColorAuto)
+		return output.ColorAuto
 	}
 }
 

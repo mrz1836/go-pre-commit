@@ -75,12 +75,16 @@ func NewDefault() *Formatter {
 
 // NewWithColorMode creates a formatter with the specified color mode
 func NewWithColorMode(mode ColorMode) *Formatter {
-	colorEnabled := shouldUseColor(mode)
+	return NewWithWriters(mode, os.Stdout, os.Stderr)
+}
 
+// NewWithWriters creates a formatter with the specified color mode that
+// writes regular messages to out and errors and warnings to errOut
+func NewWithWriters(mode ColorMode, out, errOut io.Writer) *Formatter {
 	return New(Options{
-		ColorEnabled: colorEnabled,
-		Out:          os.Stdout,
-		Err:          os.Stderr,
+		ColorEnabled: shouldUseColor(mode),
+		Out:          out,
+		Err:          errOut,
 	})
 }
 

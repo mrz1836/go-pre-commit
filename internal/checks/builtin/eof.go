@@ -59,36 +59,43 @@ func (c *EOFCheck) Metadata() any {
 
 // Run executes the EOF check
 func (c *EOFCheck) Run(ctx context.Context, files []string) error {
+	_, err := c.RunWithChanges(ctx, files)
+	return err
+}
+
+// RunWithChanges executes the EOF check and returns the files it added a
+// final newline to
+func (c *EOFCheck) RunWithChanges(ctx context.Context, files []string) ([]string, error) {
 	// Add timeout to context
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
 	var errors []string
-	var foundIssues bool
+	modifiedFiles := []string{}
 
 	for _, file := range files {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return modifiedFiles, ctx.Err()
 		default:
 			modified, err := c.processFile(file)
 			if err != nil {
 				errors = append(errors, fmt.Sprintf("%s: %v", file, err))
 			} else if modified {
-				foundIssues = true
+				modifiedFiles = append(modifiedFiles, file)
 			}
 		}
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf("%w:\n%s", prerrors.ErrEOFIssues, strings.Join(errors, "\n"))
+		return modifiedFiles, fmt.Errorf("%w:\n%s", prerrors.ErrEOFIssues, strings.Join(errors, "\n"))
 	}
 
-	if foundIssues {
-		return prerrors.ErrEOFIssues
+	if len(modifiedFiles) > 0 {
+		return modifiedFiles, prerrors.ErrEOFIssues
 	}
 
-	return nil
+	return modifiedFiles, nil
 }
 
 // FilterFiles filters to only text files
