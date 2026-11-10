@@ -158,7 +158,9 @@ git commit -m "Test commit"
 
 > **Good to know:** `go-pre-commit` is a pure Go solution with minimal external dependencies.
 > It's a single Go binary that replaces Python-based pre-commit frameworks.
-> All formatting and linting tools are automatically installed when needed!
+> All formatting and linting tools are automatically installed when needed, from checksum-verified
+> downloads (see [How tools are installed](#how-tools-are-installed)), unless you turn that off with
+> `GO_PRE_COMMIT_AUTO_INSTALL_TOOLS=false`.
 
 <br/>
 
@@ -197,6 +199,10 @@ GO_PRE_COMMIT_WHITESPACE_AUTO_STAGE=true
 GO_PRE_COMMIT_FUMPT_VERSION=latest
 GO_PRE_COMMIT_GOLANGCI_LINT_VERSION=latest
 GO_PRE_COMMIT_GITLEAKS_VERSION=v8.29.0
+
+# Tool installation (see "How tools are installed" below)
+GO_PRE_COMMIT_AUTO_INSTALL_TOOLS=true     # false: never install; a missing tool fails its check
+GO_PRE_COMMIT_TOOL_INSTALL_TIMEOUT=300    # seconds allowed for one tool install
 
 # Dual-version pinning for gofumpt (optional). gofumpt raises its go.mod 'go'
 # directive over time, so a newer build will not `go install` on an older Go
@@ -387,6 +393,27 @@ go-pre-commit uninstall --hook-type pre-commit
 | **whitespace**   | Removes trailing whitespace                        | ✅        | Auto-stages changes if enabled |
 
 All checks run in parallel for maximum performance. The whitespace, eof, and mod-tidy checks are pure Go with no dependencies; fumpt, lint, and gitleaks shell out to external tools (gofumpt, golangci-lint, gitleaks) that are auto-installed on first use — so everything works out of the box.
+
+#### How tools are installed
+
+When a check's tool is not on your `PATH`, `go-pre-commit` installs the version you pinned:
+
+- **golangci-lint and gitleaks** are downloaded from the tool's GitHub release over HTTPS. `go-pre-commit`
+  fetches the release's checksums file, takes the one line for the archive's exact file name, downloads
+  the archive, and checks its SHA‑256 before extracting anything. Only the tool's binary is extracted, into
+  `$GOBIN` (or `$GOPATH/bin`). No install script is downloaded or run. If golangci-lint's download fails at
+  any step, `go-pre-commit` falls back to `go install` of the same version.
+- **gofumpt and goimports** are installed with `go install`, which the Go module proxy and checksum
+  database verify.
+
+A failed install is never silent: the check fails and reports the tool, the version, and the step that
+failed (for example `verify checksum`). Make sure `$GOBIN` (or `$GOPATH/bin`) is on your `PATH`, so the
+installed tools are found.
+
+To never install anything, set `GO_PRE_COMMIT_AUTO_INSTALL_TOOLS=false`. A missing tool then fails its check
+with the exact command that installs the pinned version, for example
+`go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0`. Tools already on your `PATH`
+are used either way.
 
 </details>
 

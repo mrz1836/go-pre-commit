@@ -21,6 +21,7 @@ func TestGetConfigHelpIncludesSections(t *testing.T) {
 	require.Contains(t, help, "GO_PRE_COMMIT_ENABLE_FUMPT")
 	require.Contains(t, help, "GO_PRE_COMMIT_GOLANGCI_LINT_VERSION")
 	require.Contains(t, help, "GO_PRE_COMMIT_EXCLUDE_PATTERNS")
+	require.Contains(t, help, "GO_PRE_COMMIT_AUTO_INSTALL_TOOLS")
 }
 
 func TestStripComments(t *testing.T) {

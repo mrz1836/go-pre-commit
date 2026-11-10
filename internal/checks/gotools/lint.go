@@ -254,10 +254,9 @@ func (c *LintCheck) runLintOnDirectory(ctx context.Context, repoRoot, dir string
 	// Ensure golangci-lint is installed only after confirming we need to run it.
 	// This keeps orphaned-file skips (above) free of any install attempt.
 	if err := tools.EnsureInstalled(ctx, "golangci-lint"); err != nil {
-		return prerrors.NewToolNotFoundError(
-			"golangci-lint",
-			"Install golangci-lint manually: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest",
-		)
+		installErr := toolInstallError("golangci-lint", err)
+		installErr.CanSkip = true // a missing linter can be skipped with --graceful
+		return installErr
 	}
 
 	// Add timeout for golangci-lint command

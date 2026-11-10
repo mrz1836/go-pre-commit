@@ -99,11 +99,7 @@ func (c *GitleaksCheck) Run(ctx context.Context, files []string) error {
 
 	// Ensure gitleaks is installed (auto-install if needed)
 	if err := tools.EnsureInstalled(ctx, "gitleaks"); err != nil {
-		return prerrors.NewToolExecutionError(
-			"gitleaks",
-			err.Error(),
-			"Failed to install gitleaks. You can install it manually from: https://github.com/gitleaks/gitleaks#installation",
-		)
+		return toolInstallError("gitleaks", err)
 	}
 
 	// Run gitleaks
