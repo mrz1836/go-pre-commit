@@ -312,6 +312,9 @@ go-pre-commit run --graceful
 # Suppress progress output (show only errors and results)
 go-pre-commit run --quiet
 
+# Print the results as one JSON document on stdout (see "Machine-Readable Output")
+go-pre-commit run --json
+
 # Color output control
 go-pre-commit run --color=never     # Disable color output
 go-pre-commit run --color=always    # Force color output
@@ -339,6 +342,9 @@ go-pre-commit status
 # - Enabled checks
 # - Configuration location
 # - Current settings
+
+# Print the status as one JSON document on stdout (see "Machine-Readable Output")
+go-pre-commit status --json
 ```
 
 ### Updating go-pre-commit
@@ -374,6 +380,133 @@ go-pre-commit uninstall
 
 # Remove specific hook types
 go-pre-commit uninstall --hook-type pre-commit
+```
+
+</details>
+
+<details>
+<summary><strong><code>Machine-Readable Output (--json)</code></strong></summary>
+<br/>
+
+`go-pre-commit status --json` and `go-pre-commit run --json` print exactly one JSON document on
+stdout, for scripts, editors, and CI steps. The text output without `--json` is unchanged.
+
+- **stdout** carries only the JSON document. With `run --json`, all human-readable output (progress,
+  the results block, and tool installation messages, including a golangci-lint download that falls back
+  to `go install`) goes to **stderr** instead, still shaped by `--quiet` and `--progress`;
+  `status --json` prints nothing else.
+- **Exit status** is unchanged: `run` exits 1 when a check failed, else 0; `status` exits 0. Both exit 1
+  when they print an error document instead (see **Errors** below).
+- Field names are `snake_case`; lists are arrays, empty rather than `null` (except `changed_files`, below);
+  durations are whole milliseconds in `duration_ms`. Paths in `status` are absolute.
+- New fields may be added in later releases; existing fields keep their names and meaning.
+
+**`go-pre-commit status --json`**
+
+```json
+{
+  "version": "v1.14.0",
+  "enabled": true,
+  "config": { "mode": "modular", "path": "/home/me/project/.github/env" },
+  "repository_root": "/home/me/project",
+  "hooks_dir": "/home/me/project/.git/hooks",
+  "hooks": [
+    { "name": "pre-commit", "state": "outdated", "path": "/home/me/project/.git/hooks/pre-commit", "executable": true, "outdated": true },
+    { "name": "pre-push", "state": "missing", "path": "/home/me/project/.git/hooks/pre-push", "executable": false, "outdated": false },
+    { "name": "commit-msg", "state": "missing", "path": "/home/me/project/.git/hooks/commit-msg", "executable": false, "outdated": false },
+    { "name": "post-commit", "state": "other", "path": "/home/me/project/.git/hooks/post-commit", "executable": true, "outdated": false }
+  ]
+}
+```
+
+| Field                | Meaning                                                                                            |
+|----------------------|----------------------------------------------------------------------------------------------------|
+| `enabled`            | `ENABLE_GO_PRE_COMMIT`                                                                             |
+| `config.mode`        | `modular` (`.github/env/*.env`) or `legacy` (`.github/.env.base`)                                  |
+| `config.path`        | The `.github/env` directory or the `.github/.env.base` file that was read                          |
+| `hooks_dir`          | The directory git runs hooks from (honors worktrees and `core.hooksPath`)                          |
+| `hooks[]`            | One entry per hook type, always in the order `pre-commit`, `pre-push`, `commit-msg`, `post-commit` |
+| `hooks[].state`      | `ready`, `outdated`, `not_executable`, `other`, `missing`, or `error` (see below)                  |
+| `hooks[].executable` | The hook file is executable                                                                        |
+| `hooks[].outdated`   | The hook is go-pre-commit's but differs from the script this binary would install                  |
+| `hooks[].error`      | Why the hook could not be read; present only when `state` is `error`                               |
+
+| State            | Meaning                                                                                      |
+|------------------|----------------------------------------------------------------------------------------------|
+| `ready`          | go-pre-commit's current hook, executable                                                     |
+| `outdated`       | go-pre-commit's hook from another release; run `go-pre-commit install` to update it          |
+| `not_executable` | go-pre-commit's hook, but not executable, so git skips it (`outdated` may also be `true`)    |
+| `other`          | A hook another tool installed                                                                |
+| `missing`        | No hook file                                                                                 |
+| `error`          | The hook file could not be read                                                              |
+
+**`go-pre-commit run --json`**
+
+```json
+{
+  "version": "v1.14.0",
+  "enabled": true,
+  "result": "failed",
+  "files": ["main.go", "README.md"],
+  "checks": [
+    { "name": "eof", "result": "passed", "duration_ms": 0, "files": ["main.go", "README.md"], "changed_files": [] },
+    { "name": "fumpt", "result": "passed", "duration_ms": 41, "files": ["main.go"], "changed_files": ["main.go"] },
+    { "name": "lint", "result": "failed", "duration_ms": 2310, "files": ["main.go"], "changed_files": null,
+      "error": "Found 1 linting issue(s):\nmain.go:10:5: ineffectual assignment to x (ineffassign)",
+      "suggestion": "Fix the linting issues shown above. Run 'golangci-lint run .' to see full details.",
+      "output": "Found 1 linting issue(s):\nmain.go:10:5: ineffectual assignment to x (ineffassign)" },
+    { "name": "whitespace", "result": "failed", "duration_ms": 1, "files": ["main.go", "README.md"],
+      "changed_files": ["README.md"], "error": "whitespace issues found" }
+  ],
+  "totals": { "checks": 4, "passed": 2, "failed": 2, "skipped": 0, "files": 2, "duration_ms": 2353 },
+  "warnings": []
+}
+```
+
+| Field                    | Meaning                                                                                                   |
+|--------------------------|-----------------------------------------------------------------------------------------------------------|
+| `enabled`                | `ENABLE_GO_PRE_COMMIT`; when `false`, nothing ran                                                         |
+| `result`                 | `failed` if any check failed; `skipped` if no check ran (system disabled, or no files to check); else `passed` |
+| `files`                  | The files given to the checks (staged files, `--all-files`, or `--files`)                                 |
+| `checks[]`               | One entry per check that ran, sorted by name                                                              |
+| `checks[].result`        | `passed`, `failed`, or `skipped` (the check could not run and `--graceful` skipped it)                     |
+| `checks[].files`         | The files the check processed, after its own file filter                                                 |
+| `checks[].changed_files` | The files the check rewrote (`eof`, `whitespace`, `fumpt`); `[]` if none; `null` for a check that does not report what it changes |
+| `checks[].error`         | Why the check failed or was skipped; present only then                                                    |
+| `checks[].suggestion`    | How to fix it; present only when there is one                                                             |
+| `checks[].output`        | The tool's output, without color codes; present only for a failed check that has some                    |
+| `totals`                 | Counts of `checks`, `passed`, `failed`, `skipped`, and `files`, and the run's `duration_ms`              |
+| `warnings`               | Messages about the run, such as a disabled system or a skipped check                                     |
+
+Note that `eof` and `whitespace` fail when they fix a file, so the fix can be reviewed and staged, while
+`fumpt` formats files and passes; `changed_files` lists what each of them rewrote either way.
+
+**Errors.** When a command cannot produce its report, it prints an error document instead and exits 1:
+
+```json
+{
+  "version": "v1.14.0",
+  "error": { "code": "config_not_found", "message": "failed to load configuration: ..." }
+}
+```
+
+| Code               | Commands      | Meaning                                                             |
+|--------------------|---------------|---------------------------------------------------------------------|
+| `config_not_found` | status, run   | No `.github/env/*.env` and no `.github/.env.base`                   |
+| `config_invalid`   | status, run   | The configuration could not be read, or failed validation           |
+| `not_a_repository` | status, run   | Not inside a git repository                                         |
+| `git_failed`       | run           | git could not list the files to check                               |
+| `no_checks_to_run` | run           | `--only`, `--skip`, or the check argument matched no enabled check  |
+| `run_failed`       | run           | Any other failure before the checks could report                   |
+
+`--json` cannot be combined with `run --show-checks`.
+
+```bash
+# Is the pre-commit hook current?
+go-pre-commit status --json | jq -r '.hooks[] | select(.name == "pre-commit") | .state'
+
+# Which files did the fixing checks rewrite?
+go-pre-commit run --json 2>/dev/null | jq -r '.checks[].changed_files // [] | .[]'
 ```
 
 </details>

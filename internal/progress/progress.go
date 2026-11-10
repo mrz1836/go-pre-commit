@@ -4,6 +4,7 @@ package progress
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ type Tracker struct {
 	canceled       bool
 	progressFunc   func(elapsed, remaining time.Duration) string
 	suppressOutput bool
+	output         io.Writer
 }
 
 // Options configures a progress tracker
@@ -34,6 +36,7 @@ type Options struct {
 	Interval       time.Duration                                 // Update interval (default: 10s)
 	ProgressFunc   func(elapsed, remaining time.Duration) string // Custom progress message function
 	SuppressOutput bool                                          // Don't output progress messages (for testing)
+	Output         io.Writer                                     // Where progress messages go (default: os.Stdout)
 }
 
 // New creates a new progress tracker
@@ -54,6 +57,7 @@ func New(opts Options) *Tracker {
 		done:           make(chan bool, 1),
 		progressFunc:   opts.ProgressFunc,
 		suppressOutput: opts.SuppressOutput,
+		output:         opts.Output,
 	}
 }
 
@@ -126,7 +130,12 @@ func (t *Tracker) updateProgress() {
 		contextStr = fmt.Sprintf(" (%s)", t.context)
 	}
 
-	_, _ = fmt.Fprintf(os.Stdout, "%s %s%s - %s\n",
+	output := t.output
+	if output == nil {
+		output = os.Stdout
+	}
+
+	_, _ = fmt.Fprintf(output, "%s %s%s - %s\n",
 		color.CyanString("⏳"),
 		t.operation,
 		contextStr,

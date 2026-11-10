@@ -40,3 +40,10 @@ func TestNewGitRepo(t *testing.T) {
 	assert.NotContains(t, output, "global", "git must not read a global configuration")
 	assert.NotContains(t, output, "user.", "git must not see the developer's identity")
 }
+
+func TestRunGit(t *testing.T) {
+	root := NewGitRepo(t)
+
+	assert.Equal(t, root, filepath.FromSlash(RunGit(t, root, "rev-parse", "--show-toplevel")))
+	assert.Empty(t, RunGit(t, root, "status", "--porcelain"))
+}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"os/exec"
@@ -205,6 +206,7 @@ var (
 	installTimeout = 5 * time.Minute // Default timeout for tool installation
 	retryAttempts  = 3               // Default number of retry attempts for network operations
 	retryDelay     = 2 * time.Second // Default delay between retry attempts
+	messageOutput  io.Writer         // Where installation messages go (nil: os.Stdout)
 	configMu       sync.RWMutex      // Protects configuration
 )
 
@@ -328,6 +330,27 @@ func GetInstallTimeout() time.Duration {
 	return installTimeout
 }
 
+// SetOutput sets where installation messages ("Installing ...", retries,
+// progress) are written; nil means os.Stdout, the default. It returns the
+// previous setting so the caller can restore it.
+func SetOutput(w io.Writer) io.Writer {
+	configMu.Lock()
+	defer configMu.Unlock()
+	previous := messageOutput
+	messageOutput = w
+	return previous
+}
+
+// Output returns where installation messages are written
+func Output() io.Writer {
+	configMu.RLock()
+	defer configMu.RUnlock()
+	if messageOutput == nil {
+		return os.Stdout
+	}
+	return messageOutput
+}
+
 // SetRetryConfig configures retry behavior for network operations
 func SetRetryConfig(attempts int, delay time.Duration) {
 	configMu.Lock()
@@ -393,9 +416,9 @@ func retryWithBackoff(ctx context.Context, operation string, fn func() error) er
 				// Continue with retry
 			}
 
-			if _, err := fmt.Fprintf(os.Stdout, "%s Retrying %s (attempt %d/%d)...\n",
+			if _, err := fmt.Fprintf(Output(), "%s Retrying %s (attempt %d/%d)...\n",
 				color.YellowString("⚠"), operation, attempt+1, attempts); err != nil {
-				// Ignore write error to stdout
+				// Ignore write error to the message output
 				_ = err
 			}
 		}
@@ -559,11 +582,11 @@ func InstallTool(ctx context.Context, tool *Tool) error {
 	}
 
 	// Log installation status (output is intentional for user feedback)
-	if _, err := fmt.Fprintf(os.Stdout, "%s Installing %s@%s...\n",
+	if _, err := fmt.Fprintf(Output(), "%s Installing %s@%s...\n",
 		color.YellowString("→"),
 		tool.Name,
 		tool.Version); err != nil {
-		// Ignore write error to stdout
+		// Ignore write error to the message output
 		_ = err
 	}
 
@@ -584,6 +607,7 @@ func InstallTool(ctx context.Context, tool *Tool) error {
 		Context:      tool.Name,
 		Timeout:      timeout,
 		ProgressFunc: progress.InstallProgressFunc(tool.Name),
+		Output:       Output(),
 	})
 	tracker.Start(installCtx)
 	defer tracker.Stop()
@@ -650,10 +674,10 @@ func finishInstall(tool *Tool) error {
 
 	installedTools[tool.Name] = true
 	// Log success status (output is intentional for user feedback)
-	if _, err := fmt.Fprintf(os.Stdout, "%s Successfully installed %s\n",
+	if _, err := fmt.Fprintf(Output(), "%s Successfully installed %s\n",
 		color.GreenString("✓"),
 		tool.Name); err != nil {
-		// Ignore write error to stdout
+		// Ignore write error to the message output
 		_ = err
 	}
 
@@ -685,9 +709,9 @@ func installGolangciLint(ctx context.Context, version string) error {
 		fallbackVersion = tag
 	}
 	installTarget := golangciLintPackage(fallbackVersion) + "@" + fallbackVersion
-	if _, logErr := fmt.Fprintf(os.Stdout, "%s %v\n%s Trying go install %s instead...\n",
+	if _, logErr := fmt.Fprintf(Output(), "%s %v\n%s Trying go install %s instead...\n",
 		color.YellowString("⚠"), err, color.YellowString("→"), installTarget); logErr != nil {
-		// Ignore write error to stdout
+		// Ignore write error to the message output
 		_ = logErr
 	}
 
@@ -706,9 +730,9 @@ func installGolangciLint(ctx context.Context, version string) error {
 			fmt.Errorf("%s %s: go install fallback: %w", toolGolangciLint, fallbackVersion, fallbackErr), output)
 	}
 
-	if _, logErr := fmt.Fprintf(os.Stdout, "%s Installed golangci-lint with go install (took %v)\n",
+	if _, logErr := fmt.Fprintf(Output(), "%s Installed golangci-lint with go install (took %v)\n",
 		color.YellowString("⚠"), time.Since(fallbackStart)); logErr != nil {
-		// Ignore write error to stdout
+		// Ignore write error to the message output
 		_ = logErr
 	}
 	return nil

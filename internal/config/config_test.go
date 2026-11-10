@@ -545,6 +545,48 @@ func (s *ConfigTestSuite) TestLoadLegacyFallbackWhenNoEnvDir() {
 	s.Equal("warn", cfg.LogLevel) // legacy file loaded
 }
 
+// TestLoadRecordsSource tests that Load reports which configuration it read:
+// the modular env directory when it has .env files, else the legacy base file
+func (s *ConfigTestSuite) TestLoadRecordsSource() {
+	tests := []struct {
+		name     string
+		modular  bool
+		legacy   bool
+		wantMode string
+		wantPath string
+	}{
+		{name: "modular only", modular: true, wantMode: ModeModular, wantPath: filepath.Join(".github", "env")},
+		{name: "legacy only", legacy: true, wantMode: ModeLegacy, wantPath: filepath.Join(".github", ".env.base")},
+		{name: "modular wins over legacy", modular: true, legacy: true, wantMode: ModeModular, wantPath: filepath.Join(".github", "env")},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.Require().NoError(os.RemoveAll(filepath.Join(s.tempDir, ".github")))
+			if tt.modular {
+				s.createEnvDir(map[string]string{"00-core.env": "ENABLE_GO_PRE_COMMIT=true\n"})
+			}
+			if tt.legacy {
+				s.createEnvFile("ENABLE_GO_PRE_COMMIT=true\n")
+			}
+
+			cfg, err := Load()
+			s.Require().NoError(err)
+			s.Equal(tt.wantMode, cfg.Source.Mode)
+			s.True(filepath.IsAbs(cfg.Source.Path), "source path should be absolute: %s", cfg.Source.Path)
+			s.Equal(evalSymlinks(s.T(), filepath.Join(s.tempDir, tt.wantPath)), cfg.Source.Path, "source path should have symlinks resolved")
+		})
+	}
+}
+
+// evalSymlinks resolves symlinks in path (such as /var -> /private/var on macOS)
+func evalSymlinks(t *testing.T, path string) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(path)
+	require.NoError(t, err)
+	return resolved
+}
+
 // TestFindEnvDirInParentDirectory tests that findEnvDir walks up to find env/ in parent
 func (s *ConfigTestSuite) TestFindEnvDirInParentDirectory() {
 	s.createEnvDir(map[string]string{

@@ -101,9 +101,16 @@ func (c *FumptCheck) Metadata() any {
 
 // Run executes the fumpt check
 func (c *FumptCheck) Run(ctx context.Context, files []string) error {
+	_, err := c.RunWithChanges(ctx, files)
+	return err
+}
+
+// RunWithChanges executes the fumpt check and returns the files gofumpt
+// reformatted
+func (c *FumptCheck) RunWithChanges(ctx context.Context, files []string) ([]string, error) {
 	// Early return if no files to process
 	if len(files) == 0 {
-		return nil
+		return []string{}, nil
 	}
 
 	// Get list of files before formatting for auto-stage detection
@@ -115,7 +122,7 @@ func (c *FumptCheck) Run(ctx context.Context, files []string) error {
 	// Ensure gofumpt is installed
 	if err := tools.EnsureInstalled(ctx, "gofumpt"); err != nil {
 		if errors.Is(err, tools.ErrAutoInstallDisabled) {
-			return toolInstallError("gofumpt", err)
+			return []string{}, toolInstallError("gofumpt", err)
 		}
 		// The old suggestion ("install manually with go install ...@latest") is
 		// actively misleading when the failure is a Go-toolchain mismatch: @latest
@@ -127,22 +134,22 @@ func (c *FumptCheck) Run(ctx context.Context, files []string) error {
 			suggestion = "gofumpt requires a newer Go toolchain than is available. Upgrade Go, or pin a compatible gofumpt via GO_PRE_COMMIT_FUMPT_VERSION " +
 				"(use GO_PRE_COMMIT_FUMPT_VERSION_LATEST / _LATEST_MIN_GO for dual-version pinning across mixed Go versions)."
 		}
-		return prerrors.NewToolExecutionError("gofumpt", err.Error(), suggestion)
+		return []string{}, prerrors.NewToolExecutionError("gofumpt", err.Error(), suggestion)
 	}
 
 	// Run gofumpt directly
-	err := c.runDirectFumpt(ctx, files)
+	changed, err := c.runDirectFumpt(ctx, files)
 
 	// If formatting succeeded and auto-stage is enabled, stage the modified files
 	if err == nil && c.autoStage && len(modifiedFiles) > 0 {
 		if stageErr := c.stageFiles(ctx, modifiedFiles); stageErr != nil {
 			// Log warning but don't fail the check
 			// The formatting was successful, staging is a convenience feature
-			return fmt.Errorf("formatting completed but auto-staging failed: %w", stageErr)
+			return changed, fmt.Errorf("formatting completed but auto-staging failed: %w", stageErr)
 		}
 	}
 
-	return err
+	return changed, err
 }
 
 // FilterFiles filters to only Go files
@@ -156,19 +163,22 @@ func (c *FumptCheck) FilterFiles(files []string) []string {
 	return filtered
 }
 
-// runDirectFumpt runs gofumpt directly on files
-func (c *FumptCheck) runDirectFumpt(ctx context.Context, files []string) error {
+// runDirectFumpt runs gofumpt directly on files and returns the ones it
+// reformatted, as they appear in files
+func (c *FumptCheck) runDirectFumpt(ctx context.Context, files []string) ([]string, error) {
 	// Tool installation is already handled in Run(), so we can proceed directly
 
 	repoRoot, err := c.sharedCtx.GetRepoRoot(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to find repository root: %w", err)
+		return []string{}, fmt.Errorf("failed to find repository root: %w", err)
 	}
 
-	// Build absolute paths
+	// Build absolute paths, remembering which file each one came from
 	absFiles := make([]string, len(files))
+	givenAs := make(map[string]string, len(files))
 	for i, file := range files {
 		absFiles[i] = filepath.Join(repoRoot, file)
+		givenAs[absFiles[i]] = file
 	}
 
 	// Add timeout for gofumpt command
@@ -187,7 +197,8 @@ func (c *FumptCheck) runDirectFumpt(ctx context.Context, files []string) error {
 	}
 	// If no module path found, gofumpt will auto-detect from go.mod in the current directory
 
-	args = append(args, "-w")
+	// -l lists the files whose formatting differed, which -w then rewrites
+	args = append(args, "-l", "-w")
 	args = append(args, absFiles...)
 
 	cmd := exec.CommandContext(ctx, "gofumpt", args...) //nolint:gosec // Command arguments are validated
@@ -197,12 +208,15 @@ func (c *FumptCheck) runDirectFumpt(ctx context.Context, files []string) error {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	if err := cmd.Run(); err != nil {
-		output := stdout.String() + stderr.String()
+	runErr := cmd.Run()
+	changed := listedFiles(stdout.String(), givenAs)
+	if runErr != nil {
+		// stdout holds only the -l file list, reported as changed files above
+		output := stderr.String()
 
 		// Check if it's a context timeout
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return prerrors.NewToolExecutionError(
+			return changed, prerrors.NewToolExecutionError(
 				"gofumpt",
 				output,
 				fmt.Sprintf("Fumpt timed out after %v. Consider running on fewer files or increasing GO_PRE_COMMIT_FUMPT_TIMEOUT.", c.timeout),
@@ -210,7 +224,7 @@ func (c *FumptCheck) runDirectFumpt(ctx context.Context, files []string) error {
 		}
 
 		if strings.Contains(output, "permission denied") {
-			return prerrors.NewToolExecutionError(
+			return changed, prerrors.NewToolExecutionError(
 				"gofumpt",
 				output,
 				"Permission denied. Check file permissions and ensure you have write access to all Go files.",
@@ -218,7 +232,7 @@ func (c *FumptCheck) runDirectFumpt(ctx context.Context, files []string) error {
 		}
 
 		if strings.Contains(output, "syntax error") || strings.Contains(output, "invalid Go syntax") {
-			return prerrors.NewToolExecutionError(
+			return changed, prerrors.NewToolExecutionError(
 				"gofumpt",
 				output,
 				"Go syntax errors prevent formatting. Fix syntax errors in your Go files before running fumpt.",
@@ -226,14 +240,31 @@ func (c *FumptCheck) runDirectFumpt(ctx context.Context, files []string) error {
 		}
 
 		// Generic failure
-		return prerrors.NewToolExecutionError(
+		return changed, prerrors.NewToolExecutionError(
 			"gofumpt",
 			output,
 			"Run 'gofumpt -w <files>' manually to see detailed error output.",
 		)
 	}
 
-	return nil
+	return changed, nil
+}
+
+// listedFiles parses the file list gofumpt -l printed and returns each file as
+// it appears in givenAs (absolute path to the file as given)
+func listedFiles(output string, givenAs map[string]string) []string {
+	changed := []string{}
+	for _, line := range strings.Split(output, "\n") {
+		path := strings.TrimSpace(line)
+		if path == "" {
+			continue
+		}
+		if file, ok := givenAs[filepath.Clean(path)]; ok {
+			path = file
+		}
+		changed = append(changed, path)
+	}
+	return changed
 }
 
 // stageFiles adds modified files to git staging area

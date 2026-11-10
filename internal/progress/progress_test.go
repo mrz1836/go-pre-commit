@@ -491,3 +491,32 @@ func TestUpdateProgressBranches(t *testing.T) {
 		}
 	})
 }
+
+func TestUpdateProgressWritesToOutput(t *testing.T) {
+	var buf bytes.Buffer
+	tracker := New(Options{
+		Operation: "test",
+		Context:   testContext,
+		Timeout:   5 * time.Second,
+		Output:    &buf,
+	})
+	tracker.Start(t.Context())
+	defer tracker.Stop()
+
+	// Capture stdout to verify the message goes only to the configured writer
+	oldStdout := os.Stdout
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	os.Stdout = w
+
+	tracker.updateProgress()
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	var stdout bytes.Buffer
+	_, _ = stdout.ReadFrom(r)
+
+	assert.Empty(t, stdout.String())
+	assert.Contains(t, buf.String(), "test ("+testContext+")")
+}

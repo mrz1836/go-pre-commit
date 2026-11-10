@@ -83,24 +83,29 @@ func (c *WhitespaceCheck) Metadata() any {
 
 // Run executes the whitespace check
 func (c *WhitespaceCheck) Run(ctx context.Context, files []string) error {
+	_, err := c.RunWithChanges(ctx, files)
+	return err
+}
+
+// RunWithChanges executes the whitespace check and returns the files it
+// removed trailing whitespace from
+func (c *WhitespaceCheck) RunWithChanges(ctx context.Context, files []string) ([]string, error) {
 	// Add timeout to context
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
 	var errors []string
-	var foundIssues bool
-	var modifiedFiles []string
+	modifiedFiles := []string{}
 
 	for _, file := range files {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return modifiedFiles, ctx.Err()
 		default:
 			modified, err := c.processFile(file)
 			if err != nil {
 				errors = append(errors, fmt.Sprintf("%s: %v", file, err))
 			} else if modified {
-				foundIssues = true
 				modifiedFiles = append(modifiedFiles, file)
 			}
 		}
@@ -115,14 +120,14 @@ func (c *WhitespaceCheck) Run(ctx context.Context, files []string) error {
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf("%w:\n%s", prerrors.ErrWhitespaceIssues, strings.Join(errors, "\n"))
+		return modifiedFiles, fmt.Errorf("%w:\n%s", prerrors.ErrWhitespaceIssues, strings.Join(errors, "\n"))
 	}
 
-	if foundIssues {
-		return prerrors.ErrWhitespaceIssues
+	if len(modifiedFiles) > 0 {
+		return modifiedFiles, prerrors.ErrWhitespaceIssues
 	}
 
-	return nil
+	return modifiedFiles, nil
 }
 
 // FilterFiles filters to only text files

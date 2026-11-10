@@ -17,6 +17,14 @@ const (
 	defaultStrValue = "default"
 )
 
+// Configuration modes reported in Config.Source.Mode
+const (
+	// ModeModular means the configuration came from the .github/env/*.env files
+	ModeModular = "modular"
+	// ModeLegacy means the configuration came from .github/.env.base (and .github/.env.custom)
+	ModeLegacy = "legacy"
+)
+
 // Config holds the configuration for the pre-commit system
 type Config struct {
 	// Core settings
@@ -26,6 +34,12 @@ type Config struct {
 	MaxFileSize  int64  // GO_PRE_COMMIT_MAX_FILE_SIZE_MB
 	MaxFilesOpen int    // GO_PRE_COMMIT_MAX_FILES_OPEN
 	Timeout      int    // GO_PRE_COMMIT_TIMEOUT_SECONDS
+
+	// Source records which configuration Load read
+	Source struct {
+		Mode string // ModeModular or ModeLegacy
+		Path string // Absolute, symlink-resolved path of the .github/env directory (modular) or the .github/.env.base file (legacy)
+	}
 
 	// Check configurations
 	Checks struct {
@@ -106,11 +120,14 @@ type Config struct {
 
 // Load reads configuration from modular .github/env/*.env files or legacy .github/.env.base
 func Load() (*Config, error) {
+	var sourceMode, sourcePath string
+
 	// Try modular mode first (preferred)
 	if envDir := findEnvDir(); envDir != "" {
 		if err := envfile.LoadDir(envDir, isCI()); err != nil {
 			return nil, fmt.Errorf("failed to load modular configuration from %s: %w", envDir, err)
 		}
+		sourceMode, sourcePath = ModeModular, envDir
 	} else {
 		// Fall back to legacy mode
 		basePath, err := findBaseEnvFile()
@@ -126,10 +143,21 @@ func Load() (*Config, error) {
 				return nil, fmt.Errorf("failed to load %s: %w", customPath, overloadErr)
 			}
 		}
+		sourceMode, sourcePath = ModeLegacy, basePath
 	}
 
 	cfg := &Config{
 		Directory: "", // No longer using directory-based approach
+	}
+
+	cfg.Source.Mode = sourceMode
+	cfg.Source.Path = sourcePath
+	if absPath, err := filepath.Abs(sourcePath); err == nil {
+		cfg.Source.Path = absPath
+	}
+	// Resolve symlinks as git does for the repository root, so the two compare
+	if resolved, err := filepath.EvalSymlinks(cfg.Source.Path); err == nil {
+		cfg.Source.Path = resolved
 	}
 
 	// Core settings
