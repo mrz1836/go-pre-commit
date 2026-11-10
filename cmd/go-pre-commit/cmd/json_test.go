@@ -61,12 +61,18 @@ func runTotalsKeys() []string {
 // jsonTestRepo creates a git repository (with an isolated git, see
 // testutil.NewGitRepo) holding go-pre-commit configuration, changes into it, and
 // returns its root. modular selects .github/env/00-test.env over the legacy
-// .github/.env.base.
+// .github/.env.base. The test sees no go-pre-commit configuration but this
+// file (see isolateConfigEnv), and nothing but git on PATH, with empty GOPATH
+// and GOBIN, so no check can use or install a tool from the developer's
+// machine; a test that needs a tool puts a fake one on PATH with isolatePath.
 func jsonTestRepo(t *testing.T, modular bool, settings string) string {
 	t.Helper()
-	testutil.IsolateEnv(t) // config.Load exports what it reads
+	isolateConfigEnv(t)
 	preserveWorkingDir(t)
 	repo := testutil.NewGitRepo(t)
+	isolatePath(t, nil)
+	t.Setenv("GOPATH", t.TempDir())
+	t.Setenv("GOBIN", t.TempDir())
 
 	configPath := filepath.Join(repo, ".github", ".env.base")
 	if modular {
@@ -79,8 +85,22 @@ func jsonTestRepo(t *testing.T, modular bool, settings string) string {
 	return repo
 }
 
-// builtinChecksOnly enables just the checks that need no external tool
+// isolateConfigEnv restores the process environment when the test ends, and
+// starts the test with no go-pre-commit configuration in it. config.Load
+// exports every value it reads, and the legacy .github/.env.base never
+// overrides a value already set, so settings another test in this package
+// left behind would otherwise replace the test's own configuration.
+func isolateConfigEnv(t *testing.T) {
+	t.Helper()
+	testutil.IsolateEnv(t)
+	require.NoError(t, testutil.ClearConfigEnv())
+}
+
+// builtinChecksOnly enables just the checks that need no external tool, and
+// turns automatic installs off, so a tool check enabled by mistake fails
+// rather than installs
 const builtinChecksOnly = `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_AUTO_INSTALL_TOOLS=false
 GO_PRE_COMMIT_ENABLE_FUMPT=false
 GO_PRE_COMMIT_ENABLE_LINT=false
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=false
@@ -301,7 +321,7 @@ func TestStatusJSONDisabled(t *testing.T) {
 
 func TestStatusJSONErrors(t *testing.T) {
 	t.Run("no configuration", func(t *testing.T) {
-		testutil.IsolateEnv(t)
+		isolateConfigEnv(t)
 		preserveWorkingDir(t)
 		t.Chdir(testutil.NewGitRepo(t))
 
@@ -320,7 +340,7 @@ func TestStatusJSONErrors(t *testing.T) {
 	})
 
 	t.Run("not a repository", func(t *testing.T) {
-		testutil.IsolateEnv(t)
+		isolateConfigEnv(t)
 		testutil.IsolateGit(t)
 		preserveWorkingDir(t)
 		dir := t.TempDir()
@@ -351,6 +371,7 @@ func TestStatusWithoutJSONIsUnchanged(t *testing.T) {
 // runJSONSettings enables the built-in checks and fumpt, which the tests back
 // with a fake gofumpt on an isolated PATH (see isolatePath)
 const runJSONSettings = `ENABLE_GO_PRE_COMMIT=true
+GO_PRE_COMMIT_AUTO_INSTALL_TOOLS=false
 GO_PRE_COMMIT_ENABLE_FUMPT=true
 GO_PRE_COMMIT_ENABLE_LINT=false
 GO_PRE_COMMIT_ENABLE_MOD_TIDY=false
@@ -461,6 +482,9 @@ func TestRunJSONReportsSuggestionAndOutput(t *testing.T) {
 }
 
 func TestRunJSONAllPassed(t *testing.T) {
+	// A setting another test left in the process, which the legacy
+	// configuration below would not override: the test must not see it
+	t.Setenv("GO_PRE_COMMIT_ENABLE_FUMPT", "true")
 	jsonTestRepo(t, false, builtinChecksOnly)
 	require.NoError(t, os.WriteFile("clean.go", []byte("package main\n"), 0o600))
 	testutil.RunGit(t, ".", "add", "clean.go")
@@ -471,9 +495,12 @@ func TestRunJSONAllPassed(t *testing.T) {
 	doc := decodeSingleJSON(t, stdout)
 	assert.Equal(t, runResultPassed, doc["result"])
 	assert.Equal(t, []any{"clean.go"}, doc["files"], "staged files are checked by default")
+	names := make([]any, 0, 2)
 	for _, check := range objects(t, doc["checks"]) {
+		names = append(names, check["name"])
 		assert.Equal(t, checkResultPassed, check["result"])
 	}
+	assert.Equal(t, []any{"eof", "whitespace"}, names, "only the configured checks run")
 }
 
 func TestRunJSONNothingToRun(t *testing.T) {
@@ -511,7 +538,7 @@ func TestRunJSONNothingToRun(t *testing.T) {
 
 func TestRunJSONErrors(t *testing.T) {
 	t.Run("no configuration", func(t *testing.T) {
-		testutil.IsolateEnv(t)
+		isolateConfigEnv(t)
 		preserveWorkingDir(t)
 		t.Chdir(testutil.NewGitRepo(t))
 
@@ -680,7 +707,9 @@ func TestStdoutOf(t *testing.T) {
 // not installed is a failed (or, with --graceful, skipped) check in the report,
 // with the install error as its output, and that the installer's messages,
 // including the golangci-lint go install fallback, go to stderr, never to
-// stdout. PATH holds only git, so nothing can be installed or downloaded.
+// stdout. PATH holds only git (see jsonTestRepo), so the go install fallback
+// cannot run, and the release install stops at its version check, before any
+// download.
 func TestRunJSONReportsToolInstallFailures(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -728,9 +757,6 @@ func TestRunJSONReportsToolInstallFailures(t *testing.T) {
 			jsonTestRepo(t, true, tt.settings)
 			require.NoError(t, os.WriteFile("go.mod", []byte("module example.com/app\n\ngo 1.22\n"), 0o600))
 			require.NoError(t, os.WriteFile("main.go", []byte("package main\n\nfunc main() {}\n"), 0o600))
-			t.Setenv("GOBIN", t.TempDir())
-			t.Setenv("GOPATH", t.TempDir())
-			isolatePath(t, nil) // nothing but git on PATH
 
 			stdout, stderr, err := executeCLI(t, append([]string{"run", "--json", "--files", "main.go"}, tt.args...)...)
 
