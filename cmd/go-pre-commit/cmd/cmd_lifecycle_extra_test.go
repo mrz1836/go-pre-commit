@@ -9,8 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	prerrors "github.com/mrz1836/go-pre-commit/internal/errors"
 	"github.com/mrz1836/go-pre-commit/internal/output"
 	"github.com/mrz1836/go-pre-commit/internal/runner"
+	"github.com/mrz1836/go-pre-commit/internal/testutil"
 )
 
 // lintCheckName is a check name reused across the run-option tests.
@@ -60,27 +62,45 @@ func TestInstallCmd_VerboseAndExistingHook(t *testing.T) {
 		assert.Contains(t, out, "Installing pre-commit hook")
 	})
 
-	t.Run("existing hook without force warns and continues", func(t *testing.T) {
-		// An existing (non-managed) hook without --force must not fail the install;
-		// it warns and skips that hook. handleExistingHook wraps os.ErrExist, so
-		// install.go detects it with errors.Is (os.IsExist would not unwrap %w).
+	t.Run("existing hook without force warns, skips it, and fails", func(t *testing.T) {
+		// An existing (non-managed) hook without --force is left in place with a
+		// warning, and the install fails so its exit status shows the hook is
+		// missing. handleExistingHook wraps os.ErrExist, so install.go detects it
+		// with errors.Is (os.IsExist would not unwrap %w).
+		testutil.IsolateGit(t)
 		repo := setupTempGitRepo(t, true, true)
 		chdirToRepo(t, repo)
 
+		existing := []byte("#!/bin/sh\necho existing\n")
 		hookPath := filepath.Join(repo, ".git", "hooks", hookTypePreCommit)
 		require.NoError(t, os.MkdirAll(filepath.Dir(hookPath), 0o750))
-		require.NoError(t, os.WriteFile(hookPath, []byte("#!/bin/sh\necho existing\n"), 0o600))
+		require.NoError(t, os.WriteFile(hookPath, existing, 0o600))
 
 		app := NewCLIApp("test", "commit", "date")
 		builder := NewCommandBuilder(app)
 
+		var err error
 		out := captureCmdOutput(t, func() {
-			require.NoError(t, builder.runInstallWithConfig(
+			err = builder.runInstallWithConfig(
 				InstallConfig{Force: false, HookTypes: []string{hookTypePreCommit}}, nil, nil,
-			))
+			)
 		})
+		require.ErrorIs(t, err, prerrors.ErrHooksNotInstalled)
+		assert.Contains(t, err.Error(), hookTypePreCommit)
 		assert.Contains(t, out, "Hook already exists")
 		assert.Contains(t, out, "No hooks were installed")
+
+		content, readErr := os.ReadFile(hookPath) //nolint:gosec // test file path is controlled
+		require.NoError(t, readErr)
+		assert.Equal(t, existing, content, "the existing hook must be left in place")
+	})
+
+	t.Run("empty hook type list fails", func(t *testing.T) {
+		app := NewCLIApp("test", "commit", "date")
+		builder := NewCommandBuilder(app)
+
+		err := builder.runInstallWithConfig(InstallConfig{HookTypes: []string{}}, nil, nil)
+		require.ErrorIs(t, err, prerrors.ErrNoHookTypes)
 	})
 }
 
